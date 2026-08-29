@@ -249,8 +249,37 @@ function emptyEntry(y,m,d){
   };
 }
 
-// ---------- Storage-Weiche: Claude-Artefakt (window.storage) ODER Standalone-PWA (IndexedDB) ----------
-const Store = (function(){
+// ---------- Appwrite-Konfiguration (Cloud-Sync für Geräte-übergreifende Nutzung) ----------
+const APPWRITE_CONFIG = {
+  endpoint: 'https://fra.cloud.appwrite.io/v1',
+  projectId: '6a92d8e0002e9b585e39',
+  databaseId: '6a92dad20003b47b4a19',
+  tableId: 'key-value',
+  bucketId: '6a92dd0f003962ea7128',
+};
+
+function loadScript(src){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+function blobToDataURL(blob){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+// Appwrite-Dokument-/Datei-IDs dürfen keine ":" enthalten -> für IDs sanitisieren
+function toAppwriteId(key){
+  return key.replace(/:/g, '_');
+}
+
+// ---------- Storage-Weiche: Claude-Artefakt (window.storage) ODER Appwrite (Cloud-Sync) ODER IndexedDB (Fallback) ----------
+async function createStore(){
   // Fall 1: läuft als Claude-Artefakt -> nutzt die vorhandene Artefakt-Persistenz
   if (typeof window.storage !== 'undefined' && window.storage) {
     return {
@@ -259,7 +288,75 @@ const Store = (function(){
       async delete(key){ return window.storage.delete(key); },
     };
   }
-  // Fall 2: läuft standalone (eigenes Hosting) -> IndexedDB im Browser
+
+  // Fall 2: Appwrite Cloud-Sync (funktioniert geräteübergreifend)
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/appwrite@latest');
+    const client = new Appwrite.Client()
+      .setEndpoint(APPWRITE_CONFIG.endpoint)
+      .setProject(APPWRITE_CONFIG.projectId);
+    const tablesDB = new Appwrite.TablesDB(client);
+    const storage = new Appwrite.Storage(client);
+
+    return {
+      async get(key){
+        const rowId = toAppwriteId(key);
+        if (key.indexOf('receipt:') === 0){
+          let row;
+          try {
+            row = await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId });
+          } catch(e){ return null; }
+          const metaObj = JSON.parse(row.value);
+          try {
+            const url = storage.getFileDownload({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId });
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            metaObj.dataUrl = await blobToDataURL(blob);
+          } catch(e){ metaObj.dataUrl = null; }
+          return { key, value: JSON.stringify(metaObj) };
+        }
+        try {
+          const row = await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId });
+          return { key, value: row.value };
+        } catch(e){ return null; }
+      },
+      async set(key, value){
+        const rowId = toAppwriteId(key);
+        if (key.indexOf('receipt:') === 0){
+          const obj = JSON.parse(value);
+          const dataUrl = obj.dataUrl;
+          const metaObj = Object.assign({}, obj);
+          delete metaObj.dataUrl;
+          if (dataUrl){
+            const resp = await fetch(dataUrl);
+            const blob = await resp.blob();
+            const file = new File([blob], (obj.name||'beleg')+'.pdf', { type: 'application/pdf' });
+            try { await storage.deleteFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId }); } catch(e){}
+            await storage.createFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId, file });
+          }
+          value = JSON.stringify(metaObj);
+        }
+        try {
+          await tablesDB.updateRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId, data: { value } });
+        } catch(e){
+          await tablesDB.createRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId, data: { value } });
+        }
+        return { key, value };
+      },
+      async delete(key){
+        const rowId = toAppwriteId(key);
+        if (key.indexOf('receipt:') === 0){
+          try { await storage.deleteFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId }); } catch(e){}
+        }
+        try { await tablesDB.deleteRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId }); } catch(e){}
+        return { key, deleted: true };
+      },
+    };
+  } catch(err){
+    console.warn('Appwrite-Sync nicht verfügbar, nutze lokalen Speicher (kein Geräte-Sync).', err);
+  }
+
+  // Fall 3: IndexedDB-Fallback (rein lokal, nur auf diesem Gerät)
   const dbReady = new Promise((resolve, reject)=>{
     const req = indexedDB.open('zeiterfassung-db', 1);
     req.onupgradeneeded = ()=> { req.result.createObjectStore('kv'); };
@@ -295,7 +392,9 @@ const Store = (function(){
       });
     },
   };
-})();
+}
+
+let Store; // wird beim App-Start durch createStore() gesetzt (siehe Init-Bereich unten)
 
 // ---------- Storage helpers ----------
 async function loadEntry(key){
@@ -818,7 +917,10 @@ function downloadExport(){
 }
 
 // ---------- Init ----------
-loadMonth();
+(async function initApp(){
+  Store = await createStore();
+  loadMonth();
+})();
 
 // Service Worker nur registrieren, wenn Datei über http(s) läuft (nicht im Claude-Artefakt-Frame)
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
