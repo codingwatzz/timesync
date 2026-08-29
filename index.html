@@ -318,9 +318,14 @@ function blobToDataURL(blob){
     r.readAsDataURL(blob);
   });
 }
-// Appwrite-Dokument-/Datei-IDs dürfen keine ":" enthalten -> für IDs sanitisieren
+// Appwrite-IDs: nur a-z, A-Z, 0-9, "_" erlaubt (keine ":", ".", "-"), max. 36 Zeichen,
+// dürfen nicht mit "_" beginnen -> Key entsprechend sanitisieren.
 function toAppwriteId(key){
-  return key.replace(/:/g, '_');
+  let id = key.replace(/[^a-zA-Z0-9_]/g, '_'); // alles Ungültige (":", "-", ".") -> "_"
+  id = id.replace(/^_+/, '');                   // führende "_" entfernen (nicht erlaubt)
+  if (!id) id = 'id' + Date.now();
+  if (id.length > 36) id = id.slice(0, 36);
+  return id;
 }
 
 // ---------- Storage-Weiche: Claude-Artefakt (window.storage) ODER Appwrite (Cloud-Sync) ODER IndexedDB (Fallback) ----------
@@ -349,7 +354,7 @@ async function createStore(){
 
     // Verbindungstest: eine harmlose Leseanfrage, um Endpoint/Project/Table/Permissions sofort zu prüfen
     try {
-      await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId: '__connection_test__' });
+      await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId: 'connection_test' });
       logDebug('Verbindungstest OK (Zeile nicht gefunden ist normal, Zugriff funktioniert).');
     } catch(testErr){
       if (testErr && (testErr.code === 404 || /not.*found/i.test(testErr.message||''))) {
