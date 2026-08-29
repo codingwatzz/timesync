@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeiterfassung-v3';
+const CACHE_NAME = 'zeiterfassung-v4';
 const APP_SHELL = [
   './',
   './index.html',
