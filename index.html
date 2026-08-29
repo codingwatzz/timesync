@@ -98,9 +98,11 @@
   .day-right .sum { font-family:"SF Mono",monospace; font-weight:700; color: var(--ink); font-size:13px; }
 
   .fab { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); width: min(452px, calc(100% - 32px));
-    display:flex; justify-content:flex-end; pointer-events:none; }
+    display:flex; justify-content:space-between; gap:8px; pointer-events:none; }
   .fab button { pointer-events:all; background: var(--teal); color:white; border:none; border-radius: 50px;
     padding: 14px 22px; font-size: 14px; font-weight:700; box-shadow: 0 6px 18px rgba(31,95,91,0.35); cursor:pointer; }
+  .fab button.secondary { background: var(--card); color: var(--teal-dark); border:1px solid var(--line);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 14px 16px; }
 
   /* Detail sheet */
   .sheet-backdrop { position:fixed; inset:0; background: rgba(20,24,20,0.4); z-index:50; display:flex; align-items:flex-end; }
@@ -635,12 +637,59 @@ function renderMonth(){
 
   const fab = document.createElement('div');
   fab.className = 'fab';
-  fab.innerHTML = `<button id="exportBtn">Monat exportieren →</button>`;
+  fab.innerHTML = `
+    <button id="importBtn" class="secondary">⇪ Importieren</button>
+    <button id="exportBtn">Monat exportieren →</button>
+    <input type="file" id="importFileInput" accept="application/json" style="display:none">
+  `;
   app.appendChild(fab);
 
   document.getElementById('prevM').onclick = ()=> changeMonth(-1);
   document.getElementById('nextM').onclick = ()=> changeMonth(1);
   document.getElementById('exportBtn').onclick = openExport;
+  document.getElementById('importBtn').onclick = ()=> document.getElementById('importFileInput').click();
+  document.getElementById('importFileInput').addEventListener('change', async (ev)=>{
+    const file = ev.target.files[0];
+    if (!file) return;
+    showToast('Importiere…');
+    await handleImportFile(file);
+    ev.target.value = '';
+  });
+}
+
+// ---------- Import (historische Daten / Export-Datei einlesen) ----------
+async function handleImportFile(file){
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const list = Array.isArray(data) ? data : data.entries;
+    if (!Array.isArray(list)) throw new Error('Ungültiges Format: kein "entries"-Array gefunden.');
+    let count = 0;
+    for (const raw of list){
+      const key = raw.date;
+      if (!key) continue;
+      const entry = {
+        typ: raw.typ || 'A',
+        typManuell: true,
+        ho: !!raw.ho,
+        start: raw.start || '', ende: raw.ende || '', pause: raw.pause || '',
+        beschreibung: raw.beschreibung || '',
+        km: raw.km ?? '', transport: raw.transport ?? '', hotel: raw.hotel ?? '',
+        bewirtung: raw.bewirtung ?? '', sonstiges: raw.sonstiges ?? '',
+        reiseland: raw.reiseland || 'Deutschland', reiseart: raw.reiseart || '',
+        fr: !!raw.fr, mi: !!raw.mi, ab: !!raw.ab,
+        receiptIds: [],
+      };
+      await saveEntry(key, entry);
+      count++;
+    }
+    logDebug('Import abgeschlossen: ' + count + ' Einträge geschrieben.');
+    showToast(count + ' Einträge importiert');
+    await loadMonth();
+  } catch(err){
+    logDebug('⚠ Import fehlgeschlagen: ' + (err.message||err));
+    showToast('Import fehlgeschlagen – siehe Diagnose 🛈');
+  }
 }
 
 function openDetail(key){
