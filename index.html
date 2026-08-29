@@ -69,6 +69,13 @@
 
   .day-row { display:flex; align-items:stretch; background: var(--card); border:1px solid var(--line); border-radius: 12px; margin-bottom: 8px; overflow:hidden; cursor:pointer; }
   .day-row:active { background:#f1efe6; }
+  .day-row.weekend { background: #e4e1d6; }
+  .day-row.weekend:active { background:#d9d6c9; }
+  .day-row.weekend .day-body { padding: 4px 12px; gap:8px; }
+  .day-row.weekend .day-date { display:flex; align-items:baseline; gap:5px; width:auto; }
+  .day-row.weekend .day-date .dow { font-size:9px; }
+  .day-row.weekend .day-date .num { font-size:13px; }
+  .day-row.weekend .day-mid .desc { font-size:11px; }
   .tab { width: 6px; flex-shrink:0; }
   .tab.A { background: var(--tab-a); } .tab.W { background: var(--tab-w); }
   .tab.F { background: var(--tab-f); } .tab.U { background: var(--tab-u); }
@@ -286,7 +293,7 @@ function defaultTyp(y,m,d){
 }
 function emptyEntry(y,m,d){
   return {
-    typ: defaultTyp(y,m,d), typManuell:false, ho:false,
+    typ: defaultTyp(y,m,d), typManuell:false, ho:true,
     start:'', ende:'', pause:'',
     beschreibung:'', km:'', transport:'', hotel:'', bewirtung:'', sonstiges:'',
     reiseland:'Deutschland', reiseart:'', fr:false, mi:false, ab:false,
@@ -594,7 +601,7 @@ function renderMonth(){
     const typ = e ? e.typ : defaultTyp(state.year, state.month, d);
 
     const row = document.createElement('div');
-    row.className = 'day-row';
+    row.className = 'day-row' + (typ === 'W' ? ' weekend' : '');
     row.dataset.key = key;
 
     const flags = [];
