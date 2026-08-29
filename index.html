@@ -617,7 +617,10 @@ async function renderDetailSheet(key){
 
   sheet.querySelector('#closeBtn').addEventListener('click', closeDetail);
 
-  sheet.querySelector('#saveBtn').addEventListener('click', async ()=>{
+  // Liest alle Formularfelder aus dem DOM in localE – wird vor JEDEM Speichern aufgerufen
+  // (nicht nur beim "Speichern"-Button), damit Beleg-Uploads/-Löschungen zwischendurch
+  // keine bereits getippten, aber noch ungespeicherten Eingaben verwerfen.
+  function syncFormIntoLocalE(){
     localE.start = sheet.querySelector('#f_start').value;
     localE.ende = sheet.querySelector('#f_ende').value;
     localE.pause = sheet.querySelector('#f_pause').value;
@@ -631,6 +634,10 @@ async function renderDetailSheet(key){
       localE.reiseland = sheet.querySelector('#f_reiseland').value;
       localE.reiseart = sheet.querySelector('#f_reiseart').value;
     }
+  }
+
+  sheet.querySelector('#saveBtn').addEventListener('click', async ()=>{
+    syncFormIntoLocalE();
     await saveEntry(key, localE);
     state.entries[key] = localE;
     showToast('Gespeichert');
@@ -643,6 +650,7 @@ async function renderDetailSheet(key){
       ev.stopPropagation();
       const rid = btn.dataset.rid;
       await deleteReceipt(rid);
+      syncFormIntoLocalE();
       localE.receiptIds = (localE.receiptIds||[]).filter(x=>x!==rid);
       await saveEntry(key, localE);
       state.entries[key] = localE;
@@ -660,6 +668,7 @@ async function renderDetailSheet(key){
     const dataUrl = await fileToDataURL(file);
     const rid = 'r'+Date.now()+Math.random().toString(36).slice(2,7);
     await saveReceipt(rid, { id:rid, name:file.name, mime:'application/pdf', dataUrl, createdAt: Date.now(), date:key });
+    syncFormIntoLocalE();
     localE.receiptIds = [...(localE.receiptIds||[]), rid];
     await saveEntry(key, localE);
     state.entries[key] = localE;
@@ -679,6 +688,7 @@ async function renderDetailSheet(key){
       const rid = 'r'+Date.now()+Math.random().toString(36).slice(2,7);
       const name = 'Foto-' + new Date().toISOString().slice(0,10) + '.pdf';
       await saveReceipt(rid, { id:rid, name, mime:'application/pdf', dataUrl: pdfDataUrl, createdAt: Date.now(), date:key });
+      syncFormIntoLocalE();
       localE.receiptIds = [...(localE.receiptIds||[]), rid];
       await saveEntry(key, localE);
       state.entries[key] = localE;
