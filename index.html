@@ -164,14 +164,59 @@
 
   .empty-state { text-align:center; padding: 40px 20px; color:var(--grey); }
   .empty-state .big { font-size:34px; margin-bottom:8px; }
+
+  #debugBtn { position:fixed; bottom:14px; right:14px; z-index:90; width:34px; height:34px; border-radius:50%;
+    background: var(--card); border:1px solid var(--line); color:var(--grey); font-size:15px; cursor:pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  #debugOverlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(20,24,20,0.55); align-items:center; justify-content:center; }
+  #debugOverlay.show { display:flex; }
+  #debugPanel { background: var(--paper); width:min(92vw,480px); max-height:78vh; border-radius:14px; padding:16px;
+    display:flex; flex-direction:column; box-shadow:0 20px 50px rgba(0,0,0,0.35); }
+  #debugPanel .debug-header { font-weight:700; font-size:14px; margin-bottom:8px; color:var(--teal-dark); }
+  #debugContent { flex:1; overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:9px;
+    padding:10px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:11px; white-space:pre-wrap; word-break:break-word; margin:0 0 10px; }
+  #debugCloseBtn { align-self:flex-end; background:var(--teal); color:white; border:none; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
+<button id="debugBtn" title="Diagnose anzeigen">🛈</button>
+<div id="debugOverlay">
+  <div id="debugPanel">
+    <div class="debug-header">Diagnose</div>
+    <pre id="debugContent"></pre>
+    <button id="debugCloseBtn">Schließen</button>
+  </div>
+</div>
 
 <script>
 const { jsPDF } = window.jspdf;
+
+// ---------- Diagnose-Log (sichtbar über den 🛈-Button, ersetzt Browser-Konsole für einfaches Debugging) ----------
+const DEBUG_LOG = [];
+let storageMode = 'wird ermittelt…';
+function logDebug(msg){
+  const line = '[' + new Date().toLocaleTimeString('de-DE') + '] ' + msg;
+  DEBUG_LOG.push(line);
+  if (DEBUG_LOG.length > 60) DEBUG_LOG.shift();
+  renderDebugPanel();
+}
+function renderDebugPanel(){
+  const content = document.getElementById('debugContent');
+  if (!content) return;
+  content.textContent = 'Speicher-Modus: ' + storageMode + '\n' +
+    'URL: ' + location.href + '\n' +
+    'User-Agent: ' + navigator.userAgent + '\n\n' +
+    (DEBUG_LOG.length ? DEBUG_LOG.join('\n') : '(noch keine Log-Einträge)');
+}
+document.getElementById('debugBtn').addEventListener('click', ()=>{
+  renderDebugPanel();
+  document.getElementById('debugOverlay').classList.add('show');
+});
+document.getElementById('debugCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('debugOverlay').classList.remove('show');
+});
 
 // ---------- Konstanten ----------
 const WOCHENTAGE = ['So','Mo','Di','Mi','Do','Fr','Sa'];
@@ -282,6 +327,8 @@ function toAppwriteId(key){
 async function createStore(){
   // Fall 1: läuft als Claude-Artefakt -> nutzt die vorhandene Artefakt-Persistenz
   if (typeof window.storage !== 'undefined' && window.storage) {
+    storageMode = 'Claude-Artefakt (window.storage)';
+    logDebug('Speicher-Modus: ' + storageMode);
     return {
       async get(key){ return window.storage.get(key); },
       async set(key, value){ return window.storage.set(key, value); },
@@ -291,12 +338,31 @@ async function createStore(){
 
   // Fall 2: Appwrite Cloud-Sync (funktioniert geräteübergreifend)
   try {
+    logDebug('Lade Appwrite-SDK von cdn.jsdelivr.net…');
     await loadScript('https://cdn.jsdelivr.net/npm/appwrite@latest');
+    logDebug('Appwrite-SDK geladen. Verbinde mit ' + APPWRITE_CONFIG.endpoint + ' (Projekt ' + APPWRITE_CONFIG.projectId + ')');
     const client = new Appwrite.Client()
       .setEndpoint(APPWRITE_CONFIG.endpoint)
       .setProject(APPWRITE_CONFIG.projectId);
     const tablesDB = new Appwrite.TablesDB(client);
     const storage = new Appwrite.Storage(client);
+
+    // Verbindungstest: eine harmlose Leseanfrage, um Endpoint/Project/Table/Permissions sofort zu prüfen
+    try {
+      await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId: '__connection_test__' });
+      logDebug('Verbindungstest OK (Zeile nicht gefunden ist normal, Zugriff funktioniert).');
+    } catch(testErr){
+      if (testErr && (testErr.code === 404 || /not.*found/i.test(testErr.message||''))) {
+        logDebug('Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).');
+      } else {
+        logDebug('⚠ Verbindungstest FEHLGESCHLAGEN: ' + (testErr && testErr.message ? testErr.message : testErr) +
+          (testErr && testErr.code ? ' (Code ' + testErr.code + ')' : ''));
+        throw testErr; // -> fällt in den äußeren catch, damit IndexedDB-Fallback greift statt einer App, die "leer" wirkt
+      }
+    }
+
+    storageMode = 'Appwrite Cloud-Sync (aktiv)';
+    logDebug('Speicher-Modus: ' + storageMode);
 
     return {
       async get(key){
@@ -305,20 +371,20 @@ async function createStore(){
           let row;
           try {
             row = await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId });
-          } catch(e){ return null; }
+          } catch(e){ logDebug('get(' + key + ') – Zeile nicht gefunden: ' + (e.message||e)); return null; }
           const metaObj = JSON.parse(row.value);
           try {
             const url = storage.getFileDownload({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId });
             const resp = await fetch(url);
             const blob = await resp.blob();
             metaObj.dataUrl = await blobToDataURL(blob);
-          } catch(e){ metaObj.dataUrl = null; }
+          } catch(e){ logDebug('get(' + key + ') – Beleg-Datei-Download fehlgeschlagen: ' + (e.message||e)); metaObj.dataUrl = null; }
           return { key, value: JSON.stringify(metaObj) };
         }
         try {
           const row = await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId });
           return { key, value: row.value };
-        } catch(e){ return null; }
+        } catch(e){ logDebug('get(' + key + ') fehlgeschlagen: ' + (e.message||e)); return null; }
       },
       async set(key, value){
         const rowId = toAppwriteId(key);
@@ -332,14 +398,18 @@ async function createStore(){
             const blob = await resp.blob();
             const file = new File([blob], (obj.name||'beleg')+'.pdf', { type: 'application/pdf' });
             try { await storage.deleteFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId }); } catch(e){}
-            await storage.createFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId, file });
+            try {
+              await storage.createFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId, file });
+            } catch(e){ logDebug('⚠ Beleg-Upload fehlgeschlagen (' + key + '): ' + (e.message||e)); }
           }
           value = JSON.stringify(metaObj);
         }
         try {
           await tablesDB.updateRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId, data: { value } });
         } catch(e){
-          await tablesDB.createRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId, data: { value } });
+          try {
+            await tablesDB.createRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId, data: { value } });
+          } catch(e2){ logDebug('⚠ set(' + key + ') fehlgeschlagen – weder update noch create möglich: ' + (e2.message||e2)); }
         }
         return { key, value };
       },
@@ -348,15 +418,17 @@ async function createStore(){
         if (key.indexOf('receipt:') === 0){
           try { await storage.deleteFile({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId }); } catch(e){}
         }
-        try { await tablesDB.deleteRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId }); } catch(e){}
+        try { await tablesDB.deleteRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId }); } catch(e){ logDebug('delete(' + key + ') fehlgeschlagen: ' + (e.message||e)); }
         return { key, deleted: true };
       },
     };
   } catch(err){
-    console.warn('Appwrite-Sync nicht verfügbar, nutze lokalen Speicher (kein Geräte-Sync).', err);
+    logDebug('⚠ Appwrite-Sync nicht verfügbar, nutze lokalen Speicher (kein Geräte-Sync). Grund: ' + (err && err.message ? err.message : err));
   }
 
   // Fall 3: IndexedDB-Fallback (rein lokal, nur auf diesem Gerät)
+  storageMode = 'Lokal (IndexedDB) – KEIN Geräte-Sync!';
+  logDebug('Speicher-Modus: ' + storageMode);
   const dbReady = new Promise((resolve, reject)=>{
     const req = indexedDB.open('zeiterfassung-db', 1);
     req.onupgradeneeded = ()=> { req.result.createObjectStore('kv'); };
@@ -401,22 +473,26 @@ async function loadEntry(key){
   try {
     const r = await Store.get('entry:'+key);
     return r ? JSON.parse(r.value) : null;
-  } catch(e){ return null; }
+  } catch(e){ logDebug('loadEntry(' + key + ') fehlgeschlagen: ' + (e.message||e)); return null; }
 }
 async function saveEntry(key, data){
-  await Store.set('entry:'+key, JSON.stringify(data));
+  try {
+    await Store.set('entry:'+key, JSON.stringify(data));
+  } catch(e){ logDebug('⚠ saveEntry(' + key + ') fehlgeschlagen: ' + (e.message||e)); showToast('Fehler beim Speichern – siehe Diagnose 🛈'); }
 }
 async function loadReceipt(id){
   try {
     const r = await Store.get('receipt:'+id);
     return r ? JSON.parse(r.value) : null;
-  } catch(e){ return null; }
+  } catch(e){ logDebug('loadReceipt(' + id + ') fehlgeschlagen: ' + (e.message||e)); return null; }
 }
 async function saveReceipt(id, data){
-  await Store.set('receipt:'+id, JSON.stringify(data));
+  try {
+    await Store.set('receipt:'+id, JSON.stringify(data));
+  } catch(e){ logDebug('⚠ saveReceipt(' + id + ') fehlgeschlagen: ' + (e.message||e)); showToast('Fehler beim Beleg-Speichern – siehe Diagnose 🛈'); }
 }
 async function deleteReceipt(id){
-  try { await Store.delete('receipt:'+id); } catch(e){}
+  try { await Store.delete('receipt:'+id); } catch(e){ logDebug('deleteReceipt(' + id + ') fehlgeschlagen: ' + (e.message||e)); }
 }
 
 function showToast(msg){
@@ -482,10 +558,15 @@ function renderMonth(){
 
   const header = document.createElement('header');
   header.className = 'top';
+  const syncBadge = storageMode.indexOf('Appwrite') === 0 || storageMode.indexOf('Appwrite') > -1
+    ? '<span class="flag ho" style="margin-left:6px;">☁ Sync aktiv</span>'
+    : (storageMode.indexOf('Claude-Artefakt') > -1
+        ? '<span class="flag ho" style="margin-left:6px;">Claude-Speicher</span>'
+        : '<span class="flag warn" style="margin-left:6px;">⚠ kein Sync</span>');
   header.innerHTML = `
     <div class="brand">
       <h1>Zeiterfassung</h1>
-      <span class="tag">Ledger</span>
+      <span class="tag">Ledger</span>${syncBadge}
     </div>
     <div class="month-nav">
       <button id="prevM">‹</button>
