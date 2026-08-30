@@ -9,7 +9,8 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const APP_URL = 'https://codingwatzz.github.io/timesync/';
+const APP_URL = process.env.APP_URL || 'https://codingwatzz.github.io/timesync/';
+const RESULT_FILE = process.env.RESULT_FILE || 'last-result.json';
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 const MAX_RETRIES = 10;
 const RETRY_DELAY_MS = 10000;
@@ -67,7 +68,7 @@ async function main() {
   }
   results.loaded = loaded;
   if (!loaded) {
-    fs.writeFileSync(path.join(__dirname, 'last-result.json'), JSON.stringify({ pass: false, results }, null, 2));
+    fs.writeFileSync(path.join(__dirname, RESULT_FILE), JSON.stringify({ pass: false, results }, null, 2));
     console.error('FAIL: Seite konnte nicht geladen werden.');
     await browser.close();
     process.exit(1);
@@ -397,7 +398,7 @@ async function main() {
   results.pass = failedChecks.length === 0 && pageErrors.length === 0;
   results.failedChecks = failedChecks;
 
-  fs.writeFileSync(path.join(__dirname, 'last-result.json'), JSON.stringify(results, null, 2));
+  fs.writeFileSync(path.join(__dirname, RESULT_FILE), JSON.stringify(results, null, 2));
 
   log('--- Zusammenfassung ---');
   Object.entries(results).forEach(([k, v]) => {
@@ -416,7 +417,7 @@ async function main() {
 
 main().catch((e) => {
   const result = { pass: false, crashed: true, error: String((e && e.stack) || e), timestamp: new Date().toISOString() };
-  try { fs.writeFileSync(path.join(__dirname, 'last-result.json'), JSON.stringify(result, null, 2)); } catch (_) {}
+  try { fs.writeFileSync(path.join(__dirname, RESULT_FILE), JSON.stringify(result, null, 2)); } catch (_) {}
   console.error('FAIL (unerwarteter Fehler):', e);
   process.exit(1);
 });
