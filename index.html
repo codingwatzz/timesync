@@ -1068,13 +1068,11 @@ function downloadExport(){
 // Auto-Update: sobald eine neue service-worker.js-Version erkannt wird, übernimmt sie sofort
 // die Kontrolle (skipWaiting + clients.claim im SW) und die Seite lädt sich automatisch neu –
 // kein manuelles Cache-Leeren während der aktiven Entwicklung mehr nötig.
+// Prüfung erfolgt einmalig bei jedem Öffnen/Neustart der App (reicht für diesen Anwendungsfall).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', ()=> {
     navigator.serviceWorker.register('./service-worker.js').then((reg)=>{
-      // Bei jedem Start sofort nach Updates fragen …
       reg.update().catch(()=>{});
-      // … und danach in kurzen Abständen weiter prüfen, solange der Tab offen bleibt
-      setInterval(()=> reg.update().catch(()=>{}), 60 * 1000);
     }).catch(()=>{});
 
     let reloadedAlready = false;
