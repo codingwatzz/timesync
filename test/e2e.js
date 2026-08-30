@@ -206,6 +206,9 @@ async function main() {
     await dayRows.first().click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
   }
+  // Belege werden asynchron nachgeladen (eigener Netzwerk-Roundtrip) - explizit warten,
+  // statt sofort zu zählen (.count() wartet anders als .click() nicht auf das Erscheinen).
+  await page.waitForSelector('.receipt-item', { timeout: 5000 }).catch(() => {});
   results.receiptUploaded = (await page.locator('.receipt-item').count()) === 1;
   log(`Beleg erfolgreich hochgeladen: ${results.receiptUploaded}`);
   await shot('03_entry_with_receipt.png');
@@ -272,11 +275,16 @@ async function main() {
   log(`Gelesene Werte: ${JSON.stringify(persisted)}`);
   await shot('04_after_reload.png');
 
+  // .count() wartet (anders als .click()/.waitForSelector()) NICHT darauf, dass ein Element
+  // erscheint - da Belege asynchron nachgeladen werden (eigener Netzwerk-Roundtrip), hier
+  // explizit kurz warten, um ein verfrühtes "0 gefunden" zu vermeiden.
+  await page.waitForSelector('.receipt-item', { timeout: 5000 }).catch(() => {});
   results.receiptPersisted = (await page.locator('.receipt-item').count()) === 1;
   log(`Beleg nach Reload noch vorhanden: ${results.receiptPersisted}`);
 
   await page.click('.receipt-item .del');
-  await page.waitForTimeout(1500);
+  await page.waitForSelector('.receipt-item', { state: 'detached', timeout: 5000 }).catch(() => {});
+  await page.waitForTimeout(500);
   if (!(await page.locator('.sheet').isVisible())) {
     await dayRows.first().click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
