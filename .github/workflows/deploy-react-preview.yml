@@ -45,6 +45,7 @@ jobs:
           git config user.email "actions@github.com"
           git add preview-react
           git diff --staged --quiet && echo "keine Änderung" || git commit -m "[skip ci] React-Vorschau aktualisiert (aus react-migration)"
+          git pull --rebase origin main
           git push
 
       - name: Kurz warten, bis GitHub Pages die Vorschau ausliefert
@@ -70,4 +71,5 @@ jobs:
         run: |
           git add test/last-result-react-preview.json
           git diff --staged --quiet && echo "keine Änderung" || git commit -m "[skip ci] React-Vorschau E2E-Testergebnis"
+          git pull --rebase origin main
           git push
