@@ -175,8 +175,9 @@
   .empty-state .big { font-size:34px; margin-bottom:8px; }
 
   #debugBtn { position:fixed; bottom:14px; right:14px; z-index:90; width:34px; height:34px; border-radius:50%;
-    background: var(--card); border:1px solid var(--line); color:var(--grey); font-size:15px; cursor:pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    background: var(--card); border:1px solid var(--line); color:var(--teal-dark); font-size:16px; font-weight:800;
+    font-family: Georgia, "Times New Roman", serif; font-style:italic; cursor:pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; }
   #debugOverlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(20,24,20,0.55); align-items:center; justify-content:center; }
   #debugOverlay.show { display:flex; }
   #debugPanel { background: var(--paper); width:min(92vw,480px); max-height:78vh; border-radius:14px; padding:16px;
@@ -190,7 +191,7 @@
 <body>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
-<button id="debugBtn" title="Diagnose anzeigen">🛈</button>
+<button id="debugBtn" title="Diagnose anzeigen">i</button>
 <div id="debugOverlay">
   <div id="debugPanel">
     <div class="debug-header">Diagnose</div>
@@ -492,7 +493,7 @@ async function loadEntry(key){
 async function saveEntry(key, data){
   try {
     await Store.set('entry:'+key, JSON.stringify(data));
-  } catch(e){ logDebug('⚠ saveEntry(' + key + ') fehlgeschlagen: ' + (e.message||e)); showToast('Fehler beim Speichern – siehe Diagnose 🛈'); }
+  } catch(e){ logDebug('⚠ saveEntry(' + key + ') fehlgeschlagen: ' + (e.message||e)); showToast('Fehler beim Speichern – siehe Diagnose-Button unten rechts'); }
 }
 async function loadReceipt(id){
   try {
@@ -503,7 +504,7 @@ async function loadReceipt(id){
 async function saveReceipt(id, data){
   try {
     await Store.set('receipt:'+id, JSON.stringify(data));
-  } catch(e){ logDebug('⚠ saveReceipt(' + id + ') fehlgeschlagen: ' + (e.message||e)); showToast('Fehler beim Beleg-Speichern – siehe Diagnose 🛈'); }
+  } catch(e){ logDebug('⚠ saveReceipt(' + id + ') fehlgeschlagen: ' + (e.message||e)); showToast('Fehler beim Beleg-Speichern – siehe Diagnose-Button unten rechts'); }
 }
 async function deleteReceipt(id){
   try { await Store.delete('receipt:'+id); } catch(e){ logDebug('deleteReceipt(' + id + ') fehlgeschlagen: ' + (e.message||e)); }
@@ -688,7 +689,7 @@ async function handleImportFile(file){
     await loadMonth();
   } catch(err){
     logDebug('⚠ Import fehlgeschlagen: ' + (err.message||err));
-    showToast('Import fehlgeschlagen – siehe Diagnose 🛈');
+    showToast('Import fehlgeschlagen – siehe Diagnose-Button unten rechts');
   }
 }
 
