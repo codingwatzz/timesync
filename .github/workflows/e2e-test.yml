@@ -3,8 +3,13 @@ name: E2E Test (Live App)
 on:
   push:
     branches: [main]
-    paths-ignore: ['test/last-result.json', 'test/last-result-react-preview.json', 'preview-react/**']
+    paths-ignore: ['test/last-result.json', 'test/last-result-react-preview.json', 'test/last-result-offline.json', 'preview-react/**']
   workflow_dispatch: {}
+  schedule:
+    # Läuft täglich um 06:00 UTC, unabhängig von Code-Änderungen - fängt "stille"
+    # Verschlechterung ab (z.B. Appwrite-API-Änderung, CDN-Ausfall, abgelaufenes Zertifikat),
+    # die sonst erst beim nächsten Push oder bei manueller Nutzung auffallen würde.
+    - cron: '0 6 * * *'
 
 permissions:
   contents: write
@@ -49,6 +54,49 @@ jobs:
             git fetch origin main
             # -X ours: bei Konflikten gewinnt IMMER unsere frisch erzeugte Ergebnisdatei -
             # verhindert Rebase-Konflikte, wenn mehrere Läufe kurz hintereinander schreiben.
+            git rebase -X ours origin/main && break
+            git rebase --abort || true
+            sleep $((RANDOM % 5 + 2))
+          done
+          git push
+
+  offline-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Playwright installieren
+        run: |
+          npm init -y
+          npm install playwright@1.48.0
+          npx playwright install --with-deps chromium
+
+      - name: Offline-/PWA-Test ausführen
+        run: node test/offline-test.js
+
+      - name: Offline-Screenshots als Artefakt hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-screenshots
+          path: test/screenshots-offline/
+          retention-days: 14
+
+      - name: Offline-Testergebnis zurück ins Repo committen
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name "offline-test-bot"
+          git config user.email "actions@github.com"
+          git add test/last-result-offline.json
+          git diff --staged --quiet && echo "keine Änderung" && exit 0
+          git commit -m "[skip ci] Offline-Testergebnis: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            git fetch origin main
             git rebase -X ours origin/main && break
             git rebase --abort || true
             sleep $((RANDOM % 5 + 2))
