@@ -3,7 +3,11 @@ name: E2E Test (Live App)
 on:
   push:
     branches: [main]
+    paths-ignore: ['test/last-result.json']
   workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -31,3 +35,12 @@ jobs:
           name: e2e-screenshots
           path: test/screenshots/
           retention-days: 14
+
+      - name: Testergebnis zurück ins Repo committen
+        if: always()
+        run: |
+          git config user.name "e2e-bot"
+          git config user.email "actions@github.com"
+          git add test/last-result.json
+          git diff --staged --quiet && echo "keine Änderung" || git commit -m "[skip ci] E2E-Testergebnis: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
