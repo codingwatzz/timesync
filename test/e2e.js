@@ -124,23 +124,30 @@ async function main() {
   async function resetDayToDefault(rowIndex){
     await dayRows.nth(rowIndex).click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
+    // Erst Typ 'A' setzen UND Homeoffice ausschalten, damit der Reiseabschnitt (und damit
+    // die km/Transport/etc.-Felder) überhaupt sichtbar sind, BEVOR wir versuchen, sie zu leeren.
+    await page.click('#typPick button[data-t="A"]');
+    const hoOnAtStart = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+    if (hoOnAtStart) await page.click('#hoSwitch');
+    await page.waitForTimeout(150);
+
     await page.fill('#f_beschreibung', '');
-    await page.fill('#f_km', '');
-    await page.fill('#f_transport', '');
-    await page.fill('#f_hotel', '').catch(() => {});
-    await page.fill('#f_bewirtung', '').catch(() => {});
-    await page.fill('#f_sonstiges', '').catch(() => {});
     await page.fill('#f_start', '');
     await page.fill('#f_ende', '');
     await page.fill('#f_pause', '');
-    // Reihenfolge wichtig: Reiseland/Reiseart-Reset MUSS vor dem Zurückschalten von Homeoffice
-    // passieren (Reiseabschnitt verschwindet sonst, siehe Kommentar weiter unten im Cleanup).
-    if (await page.locator('#f_reiseland').isVisible()) {
+    if (await page.locator('#f_km').isVisible()) {
+      await page.fill('#f_km', '');
+      await page.fill('#f_transport', '');
+      await page.fill('#f_hotel', '').catch(() => {});
+      await page.fill('#f_bewirtung', '').catch(() => {});
+      await page.fill('#f_sonstiges', '').catch(() => {});
       await page.selectOption('#f_reiseland', 'Deutschland');
       await page.selectOption('#f_reiseart', '');
     }
     const frActiveNow = await page.locator('.yesno[data-field="fr"] button').evaluate((el) => el.classList.contains('active')).catch(() => false);
     if (frActiveNow) await page.click('.yesno[data-field="fr"] button');
+    // Reihenfolge wichtig: Reiseabschnitt-Reset MUSS vor dem Zurückschalten von Homeoffice
+    // passieren (Reiseabschnitt verschwindet sonst, siehe Kommentar weiter unten im Cleanup).
     const hoOnNow = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
     if (!hoOnNow) await page.click('#hoSwitch');
     await page.click('#saveBtn');
