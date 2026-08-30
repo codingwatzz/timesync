@@ -1,12 +1,43 @@
 {
-  "timestamp": "2026-08-30T16:08:45.517Z",
-  "pass": true,
   "loaded": true,
   "syncActive": true,
+  "testMonthIsDecember": true,
+  "weekendTilesFound": 10,
+  "holiday25Detected": true,
+  "holiday26Detected": true,
   "homeofficeDefaultActive": true,
-  "persistenceTestPassed": true,
+  "travelSectionVisible": true,
+  "reiseartWarningVisibleBefore": true,
+  "reiseartWarningVisibleAfter": false,
+  "receiptUploaded": true,
+  "fieldsSurvivedReceiptUpload": true,
+  "persistedValues": {
+    "beschreibung": "E2E-Test 2026-08-30T16:20:50.043Z",
+    "start": "08:00",
+    "ende": "17:00",
+    "pause": "30",
+    "km": "120",
+    "transport": "15.50",
+    "hotel": "90",
+    "bewirtung": "12.30",
+    "sonstiges": "7.50",
+    "reiseland": "Österreich",
+    "reiseart": "Abwesenheitstag (>8h)"
+  },
+  "allFieldsPersisted": false,
+  "receiptPersisted": true,
+  "receiptDeleted": true,
+  "exportShowsEntry": true,
+  "exportDownloadTriggered": true,
+  "importWorked": true,
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788106833050\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[16:20:33] Lade Appwrite-SDK von cdn.jsdelivr.net…\n[16:20:33] Appwrite-SDK geladen. Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)\n[16:20:34] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[16:20:34] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788106833050\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[16:20:54] Lade Appwrite-SDK von cdn.jsdelivr.net…\n[16:20:54] Appwrite-SDK geladen. Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)\n[16:20:54] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[16:20:54] Speicher-Modus: Appwrite Cloud-Sync (aktiv)\n[16:21:12] Import abgeschlossen: 1 Einträge geschrieben.",
   "consoleErrors": [],
   "pageErrors": [],
-  "debugPanelContent": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788106096674\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[16:08:17] Lade Appwrite-SDK von cdn.jsdelivr.net…\n[16:08:17] Appwrite-SDK geladen. Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)\n[16:08:18] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[16:08:18] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelContentAfterTest": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788106096674\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[16:08:32] Lade Appwrite-SDK von cdn.jsdelivr.net…\n[16:08:32] Appwrite-SDK geladen. Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)\n[16:08:32] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[16:08:32] Speicher-Modus: Appwrite Cloud-Sync (aktiv)"
+  "timestamp": "2026-08-30T16:21:15.761Z",
+  "reiseartWarningVisibleAfterOk": true,
+  "pass": false,
+  "failedChecks": [
+    "allFieldsPersisted"
+  ]
 }
