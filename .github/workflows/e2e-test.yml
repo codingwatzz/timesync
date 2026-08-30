@@ -1,1 +1,33 @@
+name: E2E Test (Live App)
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Playwright installieren
+        run: |
+          npm init -y
+          npm install playwright@1.48.0
+          npx playwright install --with-deps chromium
+
+      - name: E2E-Test ausführen
+        run: node test/e2e.js
+
+      - name: Screenshots als Artefakt hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: test/screenshots/
+          retention-days: 14
