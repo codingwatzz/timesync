@@ -3,7 +3,7 @@ name: E2E Test (Live App)
 on:
   push:
     branches: [main]
-    paths-ignore: ['test/last-result.json', 'preview-react/**']
+    paths-ignore: ['test/last-result.json', 'test/last-result-react-preview.json', 'preview-react/**']
   workflow_dispatch: {}
 
 permissions:
