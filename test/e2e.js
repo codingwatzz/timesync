@@ -23,7 +23,14 @@ async function main() {
 
   const consoleErrors = [];
   const pageErrors = [];
-  page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') {
+      const text = msg.text();
+      // Erwartete 404-Antworten (kein Eintrag für diesen Tag vorhanden) sind normal, kein Fehler.
+      if (/404/.test(text) && /Failed to load resource/.test(text)) return;
+      consoleErrors.push(text);
+    }
+  });
   page.on('pageerror', (err) => pageErrors.push(String(err)));
 
   let loaded = false;
@@ -68,8 +75,9 @@ async function main() {
   log('Navigiere 24 Monate nach vorne, um echte Daten nicht zu gefährden…');
   for (let i = 0; i < 24; i++) {
     await page.click('#nextM');
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(300);
   }
+  await page.waitForTimeout(1500); // Puffer: letzte loadMonth()-Anfrage sicher abschließen lassen
 
   // Funktionaler Rundgang-Test: Testeintrag anlegen, neu laden, prüfen, wieder löschen.
   const TEST_NOTE = `E2E-Test ${new Date().toISOString()}`;
@@ -83,7 +91,14 @@ async function main() {
 
   await page.fill('#f_beschreibung', TEST_NOTE);
   await page.click('#saveBtn');
-  await page.waitForTimeout(1500);
+  // Statt einer festen Wartezeit: auf den "Gespeichert"-Toast warten. Der erscheint erst,
+  // NACHDEM der await auf saveEntry() (inkl. Appwrite-Netzwerk-Roundtrip) abgeschlossen ist –
+  // das garantiert, dass der Schreibvorgang wirklich fertig ist, bevor wir neu laden.
+  await page.waitForFunction(
+    () => document.getElementById('toast')?.textContent?.includes('Gespeichert'),
+    { timeout: 10000 }
+  ).catch(() => log('⚠ "Gespeichert"-Toast nicht rechtzeitig gesehen, fahre trotzdem fort.'));
+  await page.waitForTimeout(500); // kleiner Puffer zusätzlich
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03_after_save.png') });
 
   // Neu laden, um zu prüfen, ob der Eintrag wirklich aus der Cloud kommt (nicht nur lokaler State).
@@ -92,8 +107,9 @@ async function main() {
   await page.waitForTimeout(1500);
   for (let i = 0; i < 24; i++) {
     await page.click('#nextM');
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(300);
   }
+  await page.waitForTimeout(1500); // Puffer: letzte loadMonth()-Anfrage sicher abschließen lassen
   await dayRows.first().click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
   const savedNote = await page.locator('#f_beschreibung').inputValue();
@@ -105,6 +121,13 @@ async function main() {
   await page.fill('#f_beschreibung', '');
   await page.click('#saveBtn');
   await page.waitForTimeout(1000);
+
+  // Diagnose-Panel ein zweites Mal auslesen, um Fehler zu erfassen, die erst während des
+  // Schreib-/Lese-Rundgangs aufgetreten sein könnten (z.B. Appwrite-Schreibfehler).
+  await page.click('#debugBtn');
+  await page.waitForSelector('#debugOverlay.show', { timeout: 5000 });
+  const debugTextAfter = await page.locator('#debugContent').innerText();
+  await page.click('#debugCloseBtn');
 
   await browser.close();
 
@@ -129,6 +152,7 @@ async function main() {
     consoleErrors,
     pageErrors,
     debugPanelContent: debugText,
+    debugPanelContentAfterTest: debugTextAfter,
   };
   fs.writeFileSync(path.join(__dirname, 'last-result.json'), JSON.stringify(result, null, 2));
 
