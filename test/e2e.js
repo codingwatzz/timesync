@@ -129,6 +129,15 @@ async function main() {
   async function resetDayToDefault(rowIndex){
     await dayRows.nth(rowIndex).click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
+    // Zuerst alle eventuell von abgebrochenen Vorläufen übrig gebliebenen Belege entfernen,
+    // sonst zählen spätere Prüfungen ("genau 1 Beleg") wegen alter Leichen falsch.
+    await page.waitForTimeout(500); // kurz warten, bis eventuell vorhandene Belege geladen sind
+    let safety = 0;
+    while ((await page.locator('.receipt-item .del').count()) > 0 && safety < 10) {
+      await page.click('.receipt-item .del');
+      await page.waitForTimeout(600);
+      safety++;
+    }
     // Erst Typ 'A' setzen UND Homeoffice ausschalten, damit der Reiseabschnitt (und damit
     // die km/Transport/etc.-Felder) überhaupt sichtbar sind, BEVOR wir versuchen, sie zu leeren.
     await page.click('#typPick button[data-t="A"]');
