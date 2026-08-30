@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeiterfassung-v11';
+const CACHE_NAME = 'zeiterfassung-v12';
 const APP_SHELL = [
   './',
   './index.html',
@@ -9,7 +9,14 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then((cache) =>
+      // { cache: 'reload' } zwingt jede Anfrage, den HTTP-Cache zu umgehen und wirklich frisch vom
+      // Netz zu laden – sonst könnte GitHub Pages' ~10-min Cache-Control auch hier veraltete
+      // Dateien in unseren eigenen Service-Worker-Cache einschleusen.
+      Promise.all(APP_SHELL.map((url) =>
+        fetch(url, { cache: 'reload' }).then((resp) => cache.put(url, resp))
+      ))
+    )
   );
   self.skipWaiting();
 });
