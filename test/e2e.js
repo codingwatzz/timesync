@@ -381,9 +381,15 @@ async function main() {
   await dayRows.nth(1).click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
   await page.fill('#f_beschreibung', '');
-  await page.fill('#f_km', '');
-  await page.fill('#f_transport', '');
-  if (await page.locator('#f_reiseland').isVisible()) {
+  // Wie beim Tag-1-Reset: erst Typ 'A' setzen + Homeoffice aus, damit die km/Transport-Felder
+  // überhaupt sichtbar sind, BEVOR wir versuchen sie zu leeren.
+  await page.click('#typPick button[data-t="A"]');
+  const day2HoOnAtStart = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+  if (day2HoOnAtStart) await page.click('#hoSwitch');
+  await page.waitForTimeout(150);
+  if (await page.locator('#f_km').isVisible()) {
+    await page.fill('#f_km', '');
+    await page.fill('#f_transport', '');
     await page.selectOption('#f_reiseland', 'Deutschland');
     await page.selectOption('#f_reiseart', '');
   }
