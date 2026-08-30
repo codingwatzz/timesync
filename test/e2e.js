@@ -220,8 +220,9 @@ async function main() {
   results.allFieldsPersisted =
     persisted.beschreibung === TEST_NOTE &&
     persisted.start === '08:00' && persisted.ende === '17:00' && persisted.pause === '30' &&
-    persisted.km === '120' && persisted.transport === '15.5' && persisted.hotel === '90' &&
-    persisted.bewirtung === '12.3' && persisted.sonstiges === '7.5' &&
+    Number(persisted.km) === 120 && Number(persisted.transport) === 15.5 &&
+    Number(persisted.hotel) === 90 && Number(persisted.bewirtung) === 12.3 &&
+    Number(persisted.sonstiges) === 7.5 &&
     persisted.reiseland === 'Österreich' && persisted.reiseart === 'Abwesenheitstag (>8h)';
   log(`Alle Felder korrekt persistiert: ${results.allFieldsPersisted}`);
   log(`Gelesene Werte: ${JSON.stringify(persisted)}`);
