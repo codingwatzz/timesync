@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeiterfassung-v14-react';
+const CACHE_NAME = 'zeiterfassung-v15-offline-fix';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,13 +30,25 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first für App-Shell, Netzwerk für alles andere (z.B. jsPDF von CDN)
+// Cache-first für bereits gecachte Ressourcen, sonst Netzwerk - und JEDE erfolgreiche
+// Netzwerk-Antwort wird nachträglich mit in den Cache aufgenommen (nicht nur die feste
+// APP_SHELL-Liste). Das ist nötig, weil Vite bei jedem Build neue Datei-Hashes erzeugt
+// (z.B. assets/index-XYZ.js) - diese stehen nie in der statischen APP_SHELL-Liste, müssen
+// aber trotzdem für echte Offline-Nutzung verfügbar sein.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch(() => cached);
+      const networkFetch = fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
+      return cached || networkFetch;
     })
   );
 });
