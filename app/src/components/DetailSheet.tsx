@@ -1,0 +1,245 @@
+import { useEffect, useRef, useState } from 'react';
+import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
+import { pad } from '../core/formatters';
+import { feiertagName } from '../core/holidays';
+import { useStore } from '../hooks/useStore';
+import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
+import { fileToDataURL, photoToPdf } from '../lib/pdf';
+import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
+
+interface DetailSheetProps {
+  dateKey: string; // YYYY-MM-DD
+  entry: TagesEintrag;
+  onSave: (key: string, entry: TagesEintrag) => Promise<void>;
+  onClose: () => void;
+  showToast: (msg: string) => void;
+}
+
+export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, showToast }: DetailSheetProps) {
+  const { store } = useStore();
+  const [entry, setEntry] = useState<TagesEintrag>(initialEntry);
+  const [receipts, setReceipts] = useState<BelegMeta[]>([]);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dow = WOCHENTAGE[new Date(y, m - 1, d).getDay()];
+  const feiertag = feiertagName(y, m, d);
+  const showTravel = entry.typ === 'A' && !entry.ho;
+
+  // Beleg-Metadaten laden, sobald sich die Beleg-IDs ändern (z.B. nach Upload/Löschen)
+  useEffect(() => {
+    if (!store) return;
+    let cancelled = false;
+    Promise.all(entry.receiptIds.map((id) => loadReceipt(store, id))).then((list) => {
+      if (!cancelled) setReceipts(list.filter((r): r is BelegMeta => r !== null));
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, entry.receiptIds.join(',')]);
+
+  function update<K extends keyof TagesEintrag>(field: K, value: TagesEintrag[K]) {
+    setEntry((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function setTyp(typ: Wochentyp) {
+    setEntry((prev) => ({ ...prev, typ, typManuell: true }));
+  }
+
+  async function handleSave() {
+    await onSave(dateKey, entry);
+    showToast('Gespeichert');
+    onClose();
+  }
+
+  async function handlePdfUpload(file: File) {
+    if (file.size > 4.5 * 1024 * 1024) { showToast('PDF zu groß (max ~4,5 MB)'); return; }
+    if (!store) return;
+    const dataUrl = await fileToDataURL(file);
+    const rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
+    const meta: BelegMeta = { id: rid, name: file.name, mime: 'application/pdf', dataUrl, createdAt: Date.now(), date: dateKey };
+    await saveReceipt(store, rid, meta);
+    const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
+    setEntry(nextEntry);
+    await onSave(dateKey, nextEntry);
+    showToast('Beleg gespeichert');
+  }
+
+  async function handlePhotoUpload(file: File) {
+    if (!store) return;
+    showToast('Wird verarbeitet…');
+    try {
+      const pdfDataUrl = await photoToPdf(file);
+      const rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
+      const name = `Foto-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const meta: BelegMeta = { id: rid, name, mime: 'application/pdf', dataUrl: pdfDataUrl, createdAt: Date.now(), date: dateKey };
+      await saveReceipt(store, rid, meta);
+      const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
+      setEntry(nextEntry);
+      await onSave(dateKey, nextEntry);
+      showToast('Beleg gespeichert');
+    } catch {
+      showToast('Fehler bei PDF-Erstellung');
+    }
+  }
+
+  async function handleDeleteReceipt(rid: string) {
+    if (!store) return;
+    await deleteReceiptFromStore(store, rid);
+    const nextEntry = { ...entry, receiptIds: entry.receiptIds.filter((id) => id !== rid) };
+    setEntry(nextEntry);
+    await onSave(dateKey, nextEntry);
+  }
+
+  function toggleYesNo(field: 'fr' | 'mi' | 'ab') {
+    update(field, !entry[field]);
+  }
+
+  return (
+    <div className="sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="sheet">
+        <div className="sheet-handle" />
+        <h2>{dow}, {pad(d)}.{pad(m)}.{y}</h2>
+        <div className="sheet-sub">Tageseintrag bearbeiten{feiertag ? ' · ' + feiertag : ''}</div>
+
+        <div className="section-title">Tagestyp</div>
+        <div className="typ-pick" id="typPick">
+          {(Object.keys(TYP_LABEL) as Wochentyp[]).map((t) => (
+            <button
+              key={t}
+              data-t={t}
+              className={t === entry.typ ? `active ${t}` : ''}
+              onClick={() => setTyp(t)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="toggle-row" style={{ marginTop: 14 }}>
+          <div className="tl">Homeoffice</div>
+          <div
+            id="hoSwitch"
+            className={`switch${entry.ho ? ' on' : ''}`}
+            onClick={() => update('ho', !entry.ho)}
+          >
+            <div className="knob" />
+          </div>
+        </div>
+
+        <div className="section-title">Zeiten</div>
+        <div className="row3">
+          <div className="field"><label>Start</label>
+            <input id="f_start" type="time" value={entry.start} onChange={(e) => update('start', e.target.value)} />
+          </div>
+          <div className="field"><label>Ende</label>
+            <input id="f_ende" type="time" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
+          </div>
+          <div className="field"><label>Pause (Min)</label>
+            <input id="f_pause" type="number" placeholder="0" value={entry.pause} onChange={(e) => update('pause', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Notiz / Beschreibung</label>
+          <textarea
+            id="f_beschreibung"
+            placeholder="Anlass, Details, Ort..."
+            value={entry.beschreibung}
+            onChange={(e) => update('beschreibung', e.target.value)}
+          />
+        </div>
+
+        <div id="travelSection" style={{ display: showTravel ? '' : 'none' }}>
+          <div className="section-title">Fahrt &amp; Kosten</div>
+          <div className="row2">
+            <div className="field"><label>Gefahrene km</label>
+              <input id="f_km" type="number" placeholder="0" value={entry.km} onChange={(e) => update('km', e.target.value)} />
+            </div>
+            <div className="field"><label>Transport €</label>
+              <input id="f_transport" type="number" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', e.target.value)} />
+            </div>
+          </div>
+          <div className="row2">
+            <div className="field"><label>Hotel €</label>
+              <input id="f_hotel" type="number" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', e.target.value)} />
+            </div>
+            <div className="field"><label>Sonstiges €</label>
+              <input id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
+            </div>
+          </div>
+          <div className="field">
+            <label>Bewirtung € <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(zusätzlich Bewirtungsbeleg als Beleg hinzufügen)</span></label>
+            <input id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
+          </div>
+
+          <div className="section-title">Verpflegungsmehraufwand</div>
+          {!entry.reiseart && (
+            <div id="reiseartWarn" className="warn-banner">
+              ⚠ Ohne Art des Reisetages wird in der Spesenabrechnung kein Verpflegungsmehraufwand berechnet.
+            </div>
+          )}
+          <div className="row2">
+            <div className="field">
+              <label>Reiseland</label>
+              <select id="f_reiseland" value={entry.reiseland} onChange={(e) => update('reiseland', e.target.value as TagesEintrag['reiseland'])}>
+                {LAENDER.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Art des Reisetages</label>
+              <select id="f_reiseart" value={entry.reiseart} onChange={(e) => update('reiseart', e.target.value as TagesEintrag['reiseart'])}>
+                {REISEARTEN.map((a) => <option key={a} value={a}>{a || '– keine –'}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="field">
+            <label>Mahlzeit durch Firma bezahlt?</label>
+            <div className="row3">
+              <div className="yesno" data-field="fr">
+                <button className={entry.fr ? 'active' : ''} onClick={() => toggleYesNo('fr')}>Frühstück</button>
+              </div>
+              <div className="yesno" data-field="mi">
+                <button className={entry.mi ? 'active' : ''} onClick={() => toggleYesNo('mi')}>Mittag</button>
+              </div>
+              <div className="yesno" data-field="ab">
+                <button className={entry.ab ? 'active' : ''} onClick={() => toggleYesNo('ab')}>Abend</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="section-title">Belege</div>
+        <div className="receipt-list">
+          {receipts.map((r) => (
+            <div key={r.id} className="receipt-item" data-rid={r.id}>
+              <div className="ic">📄</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="rn">{r.name}</div>
+                <div className="rd">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
+              </div>
+              <button className="del" data-rid={r.id} onClick={() => handleDeleteReceipt(r.id)}>×</button>
+            </div>
+          ))}
+        </div>
+        <div className="add-receipt-row">
+          <button id="uploadPdfBtn" onClick={() => pdfInputRef.current?.click()}>📎 PDF hochladen</button>
+          <button id="takePhotoBtn" onClick={() => photoInputRef.current?.click()}>📷 Foto aufnehmen</button>
+        </div>
+        <input
+          ref={pdfInputRef} id="pdfInput" type="file" accept="application/pdf" style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f); e.target.value = ''; }}
+        />
+        <input
+          ref={photoInputRef} id="photoInput" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ''; }}
+        />
+
+        <div className="sheet-actions">
+          <button className="close" id="closeBtn" onClick={onClose}>Schließen</button>
+          <button className="save" id="saveBtn" onClick={handleSave}>Speichern</button>
+        </div>
+      </div>
+    </div>
+  );
+}

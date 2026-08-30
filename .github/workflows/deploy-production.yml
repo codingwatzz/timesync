@@ -1,0 +1,44 @@
+name: Build and Deploy (Production)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/deploy-production.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Abhängigkeiten installieren und bauen
+        working-directory: app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build in Root kopieren (dort liegt GitHub Pages)
+        run: |
+          # Alles außer app/, test/, .github/ und .git im Root leeren, dann frisch befüllen
+          find . -maxdepth 1 -mindepth 1 \
+            ! -name 'app' ! -name 'test' ! -name '.github' ! -name '.git' \
+            -exec rm -rf {} +
+          cp -r app/dist/. .
+
+      - name: Änderungen committen und pushen
+        run: |
+          git config user.name "production-deploy-bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --staged --quiet && echo "keine Änderung" || git commit -m "[skip ci] Produktions-Build aktualisiert"
+          git pull --rebase origin main
+          git push
