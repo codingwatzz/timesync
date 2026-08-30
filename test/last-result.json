@@ -23,7 +23,7 @@
   "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "persistedValues": {
-    "beschreibung": "E2E-Test 2026-08-30T19:43:30.287Z",
+    "beschreibung": "E2E-Test 2026-08-30T20:39:32.475Z",
     "start": "08:00",
     "ende": "17:00",
     "pause": "30",
@@ -41,11 +41,11 @@
   "exportShowsEntry": true,
   "exportDownloadTriggered": true,
   "importWorked": true,
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788118993976\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:43:14] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:43:14] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:43:14] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788118993976\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:43:39] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:43:39] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:43:39] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788122354323\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[20:39:16] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[20:39:17] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[20:39:17] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788122354323\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[20:39:42] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[20:39:42] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[20:39:42] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-08-30T19:44:02.219Z",
+  "timestamp": "2026-08-30T20:40:04.161Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": true,
   "failedChecks": []
