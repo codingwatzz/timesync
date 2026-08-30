@@ -132,12 +132,16 @@ async function main() {
     await page.fill('#f_start', '');
     await page.fill('#f_ende', '');
     await page.fill('#f_pause', '');
-    const hoOnNow = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
-    if (!hoOnNow) await page.click('#hoSwitch');
+    // Reihenfolge wichtig: Reiseland/Reiseart-Reset MUSS vor dem Zurückschalten von Homeoffice
+    // passieren (Reiseabschnitt verschwindet sonst, siehe Kommentar weiter unten im Cleanup).
     if (await page.locator('#f_reiseland').isVisible()) {
       await page.selectOption('#f_reiseland', 'Deutschland');
       await page.selectOption('#f_reiseart', '');
     }
+    const frActiveNow = await page.locator('.yesno[data-field="fr"] button').evaluate((el) => el.classList.contains('active')).catch(() => false);
+    if (frActiveNow) await page.click('.yesno[data-field="fr"] button');
+    const hoOnNow = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+    if (!hoOnNow) await page.click('#hoSwitch');
     await page.click('#saveBtn');
     await page.waitForTimeout(600);
   }
@@ -338,14 +342,17 @@ async function main() {
   // Vollständig auf Ausgangszustand zurücksetzen (wichtig für Idempotenz bei wiederholten
   // Testläufen, sonst würden z.B. "Homeoffice-Default"- oder "Warnung sichtbar"-Prüfungen im
   // nächsten Lauf fälschlich fehlschlagen, weil der Tag nicht mehr "leer" ist):
-  const hoOnAfter = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
-  if (!hoOnAfter) await page.click('#hoSwitch'); // zurück auf Standard: an
+  // WICHTIG: Reiseland/Reiseart/Frühstück-Reset MUSS VOR dem Zurückschalten von Homeoffice
+  // passieren, weil der Reiseabschnitt (und damit diese Buttons) verschwindet, sobald
+  // Homeoffice wieder an ist!
   if (await page.locator('#f_reiseland').isVisible()) {
     await page.selectOption('#f_reiseland', 'Deutschland');
     await page.selectOption('#f_reiseart', '');
   }
   const fruehstueckActive = await page.locator('.yesno[data-field="fr"] button').evaluate((el) => el.classList.contains('active'));
   if (fruehstueckActive) await page.click('.yesno[data-field="fr"] button');
+  const hoOnAfter = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+  if (!hoOnAfter) await page.click('#hoSwitch'); // zurück auf Standard: an
   await page.click('#saveBtn');
   await page.waitForTimeout(800);
 
