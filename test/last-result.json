@@ -1,6 +1,6 @@
 {
   "pass": false,
   "crashed": true,
-  "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.receipt-item .del')\n\n    at main (/home/runner/work/timesync/timesync/test/e2e.js:273:14)",
-  "timestamp": "2026-08-30T17:27:02.027Z"
+  "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.receipt-item .del')\n\n    at main (/home/runner/work/timesync/timesync/test/e2e.js:278:14)",
+  "timestamp": "2026-08-30T17:34:30.976Z"
 }
