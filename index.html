@@ -327,6 +327,14 @@ function blobToDataURL(blob){
     r.readAsDataURL(blob);
   });
 }
+// Appwrite meldet "nicht gefunden" (z.B. Tag ohne Eintrag) als Fehler mit Code 404 –
+// das ist normales, erwartetes Verhalten und kein echter Fehler, sollte also nicht im
+// Diagnose-Log als "fehlgeschlagen" auftauchen (nur echte Probleme wie Netzwerk-/
+// Berechtigungsfehler sollen dort sichtbar werden).
+function isNotFoundError(e){
+  return e && (e.code === 404 || /could not be found/i.test(e.message||''));
+}
+
 // Appwrite-IDs: nur a-z, A-Z, 0-9, "_" erlaubt (keine ":", ".", "-"), max. 36 Zeichen,
 // dürfen nicht mit "_" beginnen -> Key entsprechend sanitisieren.
 function toAppwriteId(key){
@@ -385,7 +393,7 @@ async function createStore(){
           let row;
           try {
             row = await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId });
-          } catch(e){ logDebug('get(' + key + ') – Zeile nicht gefunden: ' + (e.message||e)); return null; }
+          } catch(e){ if (!isNotFoundError(e)) logDebug('get(' + key + ') – Zeile nicht gefunden: ' + (e.message||e)); return null; }
           const metaObj = JSON.parse(row.value);
           try {
             const url = storage.getFileDownload({ bucketId: APPWRITE_CONFIG.bucketId, fileId: rowId });
@@ -398,7 +406,7 @@ async function createStore(){
         try {
           const row = await tablesDB.getRow({ databaseId: APPWRITE_CONFIG.databaseId, tableId: APPWRITE_CONFIG.tableId, rowId });
           return { key, value: row.value };
-        } catch(e){ logDebug('get(' + key + ') fehlgeschlagen: ' + (e.message||e)); return null; }
+        } catch(e){ if (!isNotFoundError(e)) logDebug('get(' + key + ') fehlgeschlagen: ' + (e.message||e)); return null; }
       },
       async set(key, value){
         const rowId = toAppwriteId(key);
