@@ -117,6 +117,33 @@ async function main() {
   log(`Feiertag 25.12. erkannt: ${results.holiday25Detected}, 26.12.: ${results.holiday26Detected}`);
 
   const TEST_NOTE = `E2E-Test ${new Date().toISOString()}`;
+
+  // Defensiver Vor-Reset: falls ein vorheriger Testlauf abgebrochen ist und Tag 1/2 nicht
+  // sauber zurückgelassen hat, hier vorsorglich in den Ausgangszustand bringen.
+  async function resetDayToDefault(rowIndex){
+    await dayRows.nth(rowIndex).click();
+    await page.waitForSelector('.sheet', { timeout: 5000 });
+    await page.fill('#f_beschreibung', '');
+    await page.fill('#f_km', '');
+    await page.fill('#f_transport', '');
+    await page.fill('#f_hotel', '').catch(() => {});
+    await page.fill('#f_bewirtung', '').catch(() => {});
+    await page.fill('#f_sonstiges', '').catch(() => {});
+    await page.fill('#f_start', '');
+    await page.fill('#f_ende', '');
+    await page.fill('#f_pause', '');
+    const hoOnNow = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+    if (!hoOnNow) await page.click('#hoSwitch');
+    if (await page.locator('#f_reiseland').isVisible()) {
+      await page.selectOption('#f_reiseland', 'Deutschland');
+      await page.selectOption('#f_reiseart', '');
+    }
+    await page.click('#saveBtn');
+    await page.waitForTimeout(600);
+  }
+  await resetDayToDefault(0);
+  await resetDayToDefault(1);
+
   await dayRows.first().click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
 
@@ -308,6 +335,32 @@ async function main() {
   await page.fill('#f_start', '');
   await page.fill('#f_ende', '');
   await page.fill('#f_pause', '');
+  // Vollständig auf Ausgangszustand zurücksetzen (wichtig für Idempotenz bei wiederholten
+  // Testläufen, sonst würden z.B. "Homeoffice-Default"- oder "Warnung sichtbar"-Prüfungen im
+  // nächsten Lauf fälschlich fehlschlagen, weil der Tag nicht mehr "leer" ist):
+  const hoOnAfter = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+  if (!hoOnAfter) await page.click('#hoSwitch'); // zurück auf Standard: an
+  if (await page.locator('#f_reiseland').isVisible()) {
+    await page.selectOption('#f_reiseland', 'Deutschland');
+    await page.selectOption('#f_reiseart', '');
+  }
+  const fruehstueckActive = await page.locator('.yesno[data-field="fr"] button').evaluate((el) => el.classList.contains('active'));
+  if (fruehstueckActive) await page.click('.yesno[data-field="fr"] button');
+  await page.click('#saveBtn');
+  await page.waitForTimeout(800);
+
+  // Auch den Import-Testtag (Tag 2) wieder vollständig zurücksetzen
+  await dayRows.nth(1).click();
+  await page.waitForSelector('.sheet', { timeout: 5000 });
+  await page.fill('#f_beschreibung', '');
+  await page.fill('#f_km', '');
+  await page.fill('#f_transport', '');
+  if (await page.locator('#f_reiseland').isVisible()) {
+    await page.selectOption('#f_reiseland', 'Deutschland');
+    await page.selectOption('#f_reiseart', '');
+  }
+  const day2HoOn = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+  if (!day2HoOn) await page.click('#hoSwitch');
   await page.click('#saveBtn');
   await page.waitForTimeout(800);
 
