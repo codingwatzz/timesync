@@ -118,6 +118,20 @@ async function main() {
   log(`Persistenz-Test bestanden: ${persistOk}`);
 
   const ok = loaded && syncActive && hoOn && persistOk && pageErrors.length === 0;
+
+  const result = {
+    timestamp: new Date().toISOString(),
+    pass: ok,
+    loaded,
+    syncActive,
+    homeofficeDefaultActive: hoOn,
+    persistenceTestPassed: persistOk,
+    consoleErrors,
+    pageErrors,
+    debugPanelContent: debugText,
+  };
+  fs.writeFileSync(path.join(__dirname, 'last-result.json'), JSON.stringify(result, null, 2));
+
   if (!ok) {
     console.error('FAIL: mindestens eine Prüfung ist fehlgeschlagen, siehe Log oben.');
     process.exit(1);
@@ -126,6 +140,13 @@ async function main() {
 }
 
 main().catch((e) => {
+  const result = {
+    timestamp: new Date().toISOString(),
+    pass: false,
+    crashed: true,
+    error: String(e && e.stack || e),
+  };
+  try { fs.writeFileSync(path.join(__dirname, 'last-result.json'), JSON.stringify(result, null, 2)); } catch(_) {}
   console.error('FAIL (unerwarteter Fehler):', e);
   process.exit(1);
 });
