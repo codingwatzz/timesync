@@ -1,6 +1,45 @@
 {
+  "loaded": true,
+  "syncActive": true,
+  "testMonthIsDecember": true,
+  "weekendTilesFound": 9,
+  "holiday25Detected": true,
+  "holiday26Detected": true,
+  "homeofficeDefaultActive": true,
+  "travelSectionVisible": true,
+  "reiseartWarningVisibleBefore": true,
+  "reiseartWarningVisibleAfter": false,
+  "receiptUploaded": false,
+  "fieldsSurvivedReceiptUpload": true,
+  "persistedValues": {
+    "beschreibung": "E2E-Test 2026-08-30T18:55:13.801Z",
+    "start": "08:00",
+    "ende": "17:00",
+    "pause": "30",
+    "km": "120",
+    "transport": "15.50",
+    "hotel": "90",
+    "bewirtung": "12.30",
+    "sonstiges": "7.50",
+    "reiseland": "Österreich",
+    "reiseart": "Abwesenheitstag (>8h)"
+  },
+  "allFieldsPersisted": true,
+  "receiptPersisted": false,
+  "receiptDeleted": false,
+  "exportShowsEntry": true,
+  "exportDownloadTriggered": true,
+  "importWorked": true,
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788116094918\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[18:54:56] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[18:54:57] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[18:54:57] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788116094918\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[18:55:21] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[18:55:21] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[18:55:21] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "consoleErrors": [],
+  "pageErrors": [],
+  "timestamp": "2026-08-30T18:55:49.048Z",
+  "reiseartWarningVisibleAfterOk": true,
   "pass": false,
-  "crashed": true,
-  "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.receipt-item .del')\n\n    at main (/home/runner/work/timesync/timesync/test/e2e.js:285:14)",
-  "timestamp": "2026-08-30T18:01:50.938Z"
+  "failedChecks": [
+    "receiptUploaded",
+    "receiptPersisted",
+    "receiptDeleted"
+  ]
 }
