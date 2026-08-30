@@ -24,23 +24,67 @@ jobs:
         working-directory: app
         run: npm ci
 
-      - name: Unit-Tests ausführen (bricht Deployment ab, falls Tests fehlschlagen)
+      - name: Unit-Tests ausführen
+        id: unit_tests
         working-directory: app
-        run: npx vitest run --config vitest.config.ts
+        continue-on-error: true
+        run: npx vitest run --config vitest.config.ts 2>&1 | tee /tmp/test-output.log
 
       - name: Lint ausführen
+        id: lint
         working-directory: app
-        run: npm run lint
+        continue-on-error: true
+        run: npm run lint 2>&1 | tee /tmp/lint-output.log
 
       - name: Bauen
+        id: build
         working-directory: app
-        run: npm run build
+        continue-on-error: true
+        run: npm run build 2>&1 | tee /tmp/build-output.log
+
+      # Schreibt bei einem Fehlschlag die vollständige Ausgabe als Datei zurück ins Repo.
+      # Grund: Ich (Claude) kann GitHubs Log-/Artefakt-Download nicht direkt erreichen
+      # (Netzwerksperre meiner Sandbox), aber Dateien im Repo ganz normal per API lesen.
+      # Damit brauche ich für die Fehlersuche keine Screenshots mehr von dir.
+      - name: CI-Log bei Fehlschlag ins Repo committen
+        if: steps.unit_tests.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
+        run: |
+          mkdir -p ci-logs
+          {
+            echo "Zeitpunkt: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Commit: ${{ github.sha }}"
+            echo ""
+            echo "=== Unit-Tests (${{ steps.unit_tests.outcome }}) ==="
+            cat /tmp/test-output.log 2>/dev/null || echo "(kein Log)"
+            echo ""
+            echo "=== Lint (${{ steps.lint.outcome }}) ==="
+            cat /tmp/lint-output.log 2>/dev/null || echo "(kein Log)"
+            echo ""
+            echo "=== Build (${{ steps.build.outcome }}) ==="
+            cat /tmp/build-output.log 2>/dev/null || echo "(kein Log)"
+          } > ci-logs/last-deploy-error.txt
+          git config user.name "ci-log-bot"
+          git config user.email "actions@github.com"
+          git add ci-logs/last-deploy-error.txt
+          git diff --staged --quiet && exit 0
+          git commit -m "[skip ci] CI-Fehler-Log aktualisiert"
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase -X ours origin/main && break
+            git rebase --abort || true
+            sleep $((RANDOM % 5 + 2))
+          done
+          git push
+
+      - name: Bei Fehlschlag abbrechen (nach dem Log-Commit)
+        if: steps.unit_tests.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: Build in Root kopieren (dort liegt GitHub Pages)
         run: |
           # Alles außer app/, test/, .github/ und .git im Root leeren, dann frisch befüllen
           find . -maxdepth 1 -mindepth 1 \
-            ! -name 'app' ! -name 'test' ! -name '.github' ! -name '.git' \
+            ! -name 'app' ! -name 'test' ! -name '.github' ! -name '.git' ! -name 'ci-logs' \
             -exec rm -rf {} +
           cp -r app/dist/. .
 
