@@ -15,8 +15,12 @@ export interface MonthState {
 export function useMonthEntries() {
   const { store } = useStore();
   const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  // year und month als EIN zusammengehöriger State statt zwei separater useState-Aufrufe:
+  // vermeidet die Notwendigkeit, sie synchron zu halten (Ursache eines Lint-Hinweises zuvor).
+  const [{ year, month }, setYearMonth] = useState({
+    year: today.getFullYear(),
+    month: today.getMonth() + 1,
+  });
   const [entries, setEntries] = useState<Record<string, TagesEintrag>>({});
   const [loading, setLoading] = useState(false);
 
@@ -35,20 +39,22 @@ export function useMonthEntries() {
     setLoading(false);
   }, [store, year, month]);
 
+  // Lädt die Monatsdaten neu, sobald sich Jahr/Monat oder der Store ändern. Bewusst als
+  // Effekt belassen (nicht zu "abgeleitetem State" umgebaut): es handelt sich um einen
+  // echten asynchronen Netzwerk-Seiteneffekt (Store-Zugriff), kein reiner Render-Wert.
   useEffect(() => {
     reload();
   }, [reload]);
 
   const changeMonth = useCallback((delta: number) => {
-    setMonth((prevMonth) => {
-      let m = prevMonth + delta;
-      let y = year;
+    setYearMonth((prev) => {
+      let m = prev.month + delta;
+      let y = prev.year;
       if (m > 12) { m = 1; y += 1; }
       if (m < 1) { m = 12; y -= 1; }
-      setYear(y);
-      return m;
+      return { year: y, month: m };
     });
-  }, [year]);
+  }, []);
 
   const saveEntry = useCallback(async (key: string, data: TagesEintrag) => {
     if (!store) return;

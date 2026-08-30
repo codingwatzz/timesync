@@ -1,5 +1,3 @@
-import { jsPDF } from 'jspdf';
-
 export function fileToDataURL(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -11,6 +9,11 @@ export function fileToDataURL(file: File | Blob): Promise<string> {
 
 /** Wandelt ein Foto in ein komprimiertes, druckfertiges PDF (max. Breite 1400px, JPEG 0.72). */
 export async function photoToPdf(file: File): Promise<string> {
+  // jsPDF erst hier bei tatsächlichem Bedarf nachladen (nicht im Hauptbundle) - spart auf
+  // jedem Seitenaufruf ~350 KB (jsPDF zieht intern html2canvas + dompurify mit), obwohl
+  // die allermeisten Aufrufe nie ein Foto hochladen.
+  const { jsPDF } = await import('jspdf');
+
   const dataUrl = await fileToDataURL(file);
   const img = new Image();
   await new Promise<void>((resolve, reject) => {

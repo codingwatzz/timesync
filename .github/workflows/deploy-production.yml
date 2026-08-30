@@ -20,11 +20,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Abhängigkeiten installieren und bauen
+      - name: Abhängigkeiten installieren
         working-directory: app
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
+
+      - name: Unit-Tests ausführen (bricht Deployment ab, falls Tests fehlschlagen)
+        working-directory: app
+        run: npx vitest run --config vitest.config.ts
+
+      - name: Lint ausführen
+        working-directory: app
+        run: npm run lint
+
+      - name: Bauen
+        working-directory: app
+        run: npm run build
 
       - name: Build in Root kopieren (dort liegt GitHub Pages)
         run: |
