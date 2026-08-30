@@ -11,6 +11,11 @@ const path = require('path');
 
 const APP_URL = process.env.APP_URL || 'https://codingwatzz.github.io/timesync/';
 const RESULT_FILE = process.env.RESULT_FILE || 'last-result.json';
+// Wie viele Monate in die Zukunft navigiert wird, bevor der Test beginnt. WICHTIG: Wenn
+// mehrere Test-Suiten (z.B. Produktion + React-Vorschau) dieselbe Appwrite-Datenbank nutzen,
+// MUSS dieser Wert zwischen den Suiten unterschiedlich sein, sonst schreiben sich parallel
+// laufende Testläufe gegenseitig die Testdaten weg (siehe Vorfall vom 30.08.2026).
+const MONTHS_FORWARD = Number(process.env.MONTHS_FORWARD || 24);
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 const MAX_RETRIES = 10;
 const RETRY_DELAY_MS = 10000;
@@ -84,7 +89,7 @@ async function main() {
   log(`Sync aktiv: ${results.syncActive}`);
 
   log('Navigiere in sicheren Testmonat (weit in der Zukunft)…');
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < MONTHS_FORWARD; i++) {
     await page.click('#nextM');
     await page.waitForTimeout(300);
   }
@@ -230,7 +235,7 @@ async function main() {
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
-  for (let i = 0; i < 24; i++) { await page.click('#nextM'); await page.waitForTimeout(300); }
+  for (let i = 0; i < MONTHS_FORWARD; i++) { await page.click('#nextM'); await page.waitForTimeout(300); }
   await page.waitForTimeout(1000);
   for (let i = 0; i < 12; i++) {
     const label = await page.locator('.label').first().innerText();
