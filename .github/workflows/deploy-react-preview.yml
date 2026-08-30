@@ -64,6 +64,7 @@ jobs:
         env:
           APP_URL: https://codingwatzz.github.io/timesync/preview-react/
           RESULT_FILE: last-result-react-preview.json
+          MONTHS_FORWARD: 36
 
       - name: React-Vorschau-Testergebnis committen
         if: always()
