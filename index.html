@@ -1071,7 +1071,10 @@ function downloadExport(){
 // Prüfung erfolgt einmalig bei jedem Öffnen/Neustart der App (reicht für diesen Anwendungsfall).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', ()=> {
-    navigator.serviceWorker.register('./service-worker.js').then((reg)=>{
+    // updateViaCache:'none' zwingt den Browser, die service-worker.js bei jeder Prüfung IMMER frisch
+    // vom Netz zu laden statt aus dem HTTP-Cache – nötig, weil GitHub Pages von sich aus einen
+    // ~10-minütigen Cache-Control-Header setzt, der Updates sonst bis zu 10 Min. verzögern würde.
+    navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).then((reg)=>{
       reg.update().catch(()=>{});
     }).catch(()=>{});
 
