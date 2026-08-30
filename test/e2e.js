@@ -123,6 +123,7 @@ async function main() {
   log(`Feiertag 25.12. erkannt: ${results.holiday25Detected}, 26.12.: ${results.holiday26Detected}`);
 
   const TEST_NOTE = `E2E-Test ${new Date().toISOString()}`;
+  results.debugCounts = {};
 
   // Defensiver Vor-Reset: falls ein vorheriger Testlauf abgebrochen ist und Tag 1/2 nicht
   // sauber zurückgelassen hat, hier vorsorglich in den Ausgangszustand bringen.
@@ -131,13 +132,18 @@ async function main() {
     await page.waitForSelector('.sheet', { timeout: 5000 });
     // Zuerst alle eventuell von abgebrochenen Vorläufen übrig gebliebenen Belege entfernen,
     // sonst zählen spätere Prüfungen ("genau 1 Beleg") wegen alter Leichen falsch.
-    await page.waitForTimeout(500); // kurz warten, bis eventuell vorhandene Belege geladen sind
+    await page.waitForTimeout(1500); // Belege werden asynchron nachgeladen - großzügig warten
+    const beforeCleanup = await page.locator('.receipt-item').count();
     let safety = 0;
     while ((await page.locator('.receipt-item .del').count()) > 0 && safety < 10) {
       await page.click('.receipt-item .del');
-      await page.waitForTimeout(600);
+      await page.waitForTimeout(1200);
       safety++;
     }
+    const afterCleanup = await page.locator('.receipt-item').count();
+    results.debugCounts[`day${rowIndex}_receiptsBeforeCleanup`] = beforeCleanup;
+    results.debugCounts[`day${rowIndex}_receiptsAfterCleanup`] = afterCleanup;
+    results.debugCounts[`day${rowIndex}_cleanupIterations`] = safety;
     // Erst Typ 'A' setzen UND Homeoffice ausschalten, damit der Reiseabschnitt (und damit
     // die km/Transport/etc.-Felder) überhaupt sichtbar sind, BEVOR wir versuchen, sie zu leeren.
     await page.click('#typPick button[data-t="A"]');
@@ -218,7 +224,9 @@ async function main() {
   // Belege werden asynchron nachgeladen (eigener Netzwerk-Roundtrip) - explizit warten,
   // statt sofort zu zählen (.count() wartet anders als .click() nicht auf das Erscheinen).
   await page.waitForSelector('.receipt-item', { timeout: 5000 }).catch(() => {});
-  results.receiptUploaded = (await page.locator('.receipt-item').count()) === 1;
+  const countAfterUpload = await page.locator('.receipt-item').count();
+  results.debugCounts.countAfterUpload = countAfterUpload;
+  results.receiptUploaded = countAfterUpload === 1;
   log(`Beleg erfolgreich hochgeladen: ${results.receiptUploaded}`);
   await shot('03_entry_with_receipt.png');
 
@@ -288,7 +296,9 @@ async function main() {
   // erscheint - da Belege asynchron nachgeladen werden (eigener Netzwerk-Roundtrip), hier
   // explizit kurz warten, um ein verfrühtes "0 gefunden" zu vermeiden.
   await page.waitForSelector('.receipt-item', { timeout: 5000 }).catch(() => {});
-  results.receiptPersisted = (await page.locator('.receipt-item').count()) === 1;
+  const countAfterReload = await page.locator('.receipt-item').count();
+  results.debugCounts.countAfterReload = countAfterReload;
+  results.receiptPersisted = countAfterReload === 1;
   log(`Beleg nach Reload noch vorhanden: ${results.receiptPersisted}`);
 
   await page.click('.receipt-item .del');
@@ -298,7 +308,9 @@ async function main() {
     await dayRows.first().click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
   }
-  results.receiptDeleted = (await page.locator('.receipt-item').count()) === 0;
+  const countAfterDelete = await page.locator('.receipt-item').count();
+  results.debugCounts.countAfterDelete = countAfterDelete;
+  results.receiptDeleted = countAfterDelete === 0;
   log(`Beleg erfolgreich gelöscht: ${results.receiptDeleted}`);
 
   await page.click('#closeBtn').catch(() => {});
