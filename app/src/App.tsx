@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: Sofort-nach-Speichern-Diagnose verifizieren
+// Trigger: direkte Appwrite-Diagnose verifizieren
