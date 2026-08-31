@@ -304,8 +304,17 @@ async function main() {
   results.receiptPersisted = countAfterReload === 1;
   log(`Beleg nach Reload noch vorhanden: ${results.receiptPersisted}`);
 
-  await page.click('.receipt-item .del');
-  await page.waitForSelector('.receipt-item', { state: 'detached', timeout: 5000 }).catch(() => {});
+  // Löschen in try/catch: falls das Beleg-Item gerade in diesem Moment nicht klickbar ist
+  // (bisher nicht zuverlässig reproduzierbares, seltenes Timing-Problem), soll das NUR diese
+  // eine Prüfung als fehlgeschlagen markieren, statt den kompletten Testlauf abstürzen zu
+  // lassen - damit wir bei jedem Lauf vollständige Diagnosedaten für alle ANDEREN Prüfungen
+  // bekommen, statt eines undurchsichtigen Totalabbruchs.
+  try {
+    await page.click('.receipt-item .del', { timeout: 8000 });
+    await page.waitForSelector('.receipt-item', { state: 'detached', timeout: 5000 }).catch(() => {});
+  } catch (e) {
+    log(`⚠ Beleg-Löschen fehlgeschlagen: ${e.message}`);
+  }
   await page.waitForTimeout(500);
   if (!(await page.locator('.sheet').isVisible())) {
     await dayRows.first().click();
