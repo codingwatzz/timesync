@@ -271,8 +271,10 @@ async function attemptRun() {
   };
   log(`Sofort nach Speichern (vor Reload): ${JSON.stringify(results.immediateAfterSave)}`);
 
-  // Direkter Appwrite-Read, KOMPLETT AN APP UND BROWSER-CACHE VORBEI - via Node.js fetch API,
-  // um zweifelsfrei zu klären, was WIRKLICH auf dem Server steht (nicht nur, was die App zeigt).
+  // Direkter Appwrite-Read über einen ZWEITEN, unabhängigen SDK-Client im Browser (nicht über
+  // die App selbst) - klärt zweifelsfrei, was WIRKLICH auf dem Server steht. Über das SDK statt
+  // rohem fetch(), damit die REST-Aufrufsemantik garantiert korrekt ist (der erste rohe
+  // fetch-Versuch hatte einen falschen URL-Pfad geraten und bekam eine HTML-Fehlerseite).
   const APPWRITE_ENDPOINT = 'https://fra.cloud.appwrite.io/v1';
   const APPWRITE_PROJECT = '6a92d8e0002e9b585e39';
   const APPWRITE_DB = '6a92dad20003b47b4a19';
@@ -282,13 +284,25 @@ async function attemptRun() {
   const day1RowId = `entry_${testYearEarly}_12_01`;
   async function directAppwriteRead(label) {
     try {
-      const resp = await fetch(`${APPWRITE_ENDPOINT}/databases/${APPWRITE_DB}/tables/${APPWRITE_TABLE}/rows/${day1RowId}`, {
-        headers: { 'X-Appwrite-Project': APPWRITE_PROJECT },
-      });
-      const data = await resp.json();
-      const parsedValue = data.value ? JSON.parse(data.value) : null;
-      log(`Direkter Appwrite-Read (${label}): HTTP ${resp.status}, beschreibung="${parsedValue?.beschreibung}", km="${parsedValue?.km}"`);
-      return { status: resp.status, beschreibung: parsedValue?.beschreibung, km: parsedValue?.km };
+      const result = await page.evaluate(async ({ endpoint, project, db, table, rowId }) => {
+        const { Client, TablesDB } = await import('https://cdn.jsdelivr.net/npm/appwrite@latest/+esm');
+        const client = new Client().setEndpoint(endpoint).setProject(project);
+        const tablesDB = new TablesDB(client);
+        try {
+          const row = await tablesDB.getRow({ databaseId: db, tableId: table, rowId });
+          return { found: true, rawValue: row.value };
+        } catch (e) {
+          return { found: false, message: e?.message, code: e?.code };
+        }
+      }, { endpoint: APPWRITE_ENDPOINT, project: APPWRITE_PROJECT, db: APPWRITE_DB, table: APPWRITE_TABLE, rowId: day1RowId });
+
+      if (result.found) {
+        const parsed = JSON.parse(result.rawValue);
+        log(`Direkter Appwrite-Read (${label}): gefunden, beschreibung="${parsed.beschreibung}", km="${parsed.km}"`);
+        return { found: true, beschreibung: parsed.beschreibung, km: parsed.km };
+      }
+      log(`Direkter Appwrite-Read (${label}): NICHT gefunden (${result.message}, Code ${result.code})`);
+      return { found: false, message: result.message, code: result.code };
     } catch (e) {
       log(`Direkter Appwrite-Read (${label}) fehlgeschlagen: ${e.message}`);
       return { error: String(e) };
