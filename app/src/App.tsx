@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: Unicode+Import-Retry-Fix verifizieren
+// Trigger: E2E-Robustheits-Plan verifizieren
