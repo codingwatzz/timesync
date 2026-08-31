@@ -23,12 +23,18 @@
   "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-08-31T19:16:10.281Z",
+    "beschreibung": "E2E-Test 2026-08-31T19:23:45.928Z",
     "km": "120"
   },
-  "monthLabelBeforeReload": "Dezember 2033\n31 Tage",
-  "monthLabelAfterReload": "Dezember 2033\n31 Tage",
+  "directReadRightAfterSave": {
+    "error": "SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+  },
+  "monthLabelBeforeReload": "Dezember 2031\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2031\n31 Tage",
   "sameMonthAfterReload": true,
+  "directReadAfterReload": {
+    "error": "SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+  },
   "persistedValues": {
     "beschreibung": "",
     "start": "",
@@ -49,11 +55,11 @@
   "exportDownloadTriggered": false,
   "importWorked": false,
   "importedDescActual": "",
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788203734358\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:15:35] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:15:35] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:15:35] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788203734358\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:16:21] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:16:21] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:16:21] Speicher-Modus: Appwrite Cloud-Sync (aktiv)\n[19:16:56] delete(receipt:r1788203647875d683t) fehlgeschlagen: Row with the requested ID 'receipt_r1788203647875d683t' could not be found.",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788204196548\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:23:17] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:23:17] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:23:17] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788204196548\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:23:57] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:23:58] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:23:58] Speicher-Modus: Appwrite Cloud-Sync (aktiv)\n[19:24:26] delete(receipt:r1788204115790yjj86) fehlgeschlagen: Row with the requested ID 'receipt_r1788204115790yjj86' could not be found.",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-08-31T19:17:38.999Z",
+  "timestamp": "2026-08-31T19:25:09.688Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": false,
   "failedChecks": [
