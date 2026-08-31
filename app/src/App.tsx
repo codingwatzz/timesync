@@ -95,4 +95,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger fuer vollstaendigen Deploy+Test-Zyklus nach Test-Fix
+// Trigger: frischer Testmonat
