@@ -1,9 +1,16 @@
 name: E2E Test (Live App)
 
 on:
-  push:
-    branches: [main]
-    paths-ignore: ['test/last-result.json', 'test/last-result-react-preview.json', 'test/last-result-offline.json', 'preview-react/**']
+  # WICHTIG: reagiert bewusst NICHT direkt auf "push", sondern erst NACHDEM das
+  # Deploy-Workflow vollständig abgeschlossen ist (inkl. dessen eigenem Commit des
+  # gebauten Outputs). Grund: Der Deploy-Workflow committet am Ende seinen Build
+  # zurück ins Repo - das würde bei "push" als Trigger einen ZWEITEN, parallel
+  # laufenden E2E-Testlauf auslösen, der sich mit dem ursprünglichen Lauf um dieselben
+  # Test-Tage in der gemeinsamen Appwrite-Datenbank in die Quere kommt (beobachtet am
+  # 31.08.2026: Felder wurden scheinbar grundlos leer gelesen).
+  workflow_run:
+    workflows: ['Build and Deploy (Production)']
+    types: [completed]
   workflow_dispatch: {}
   schedule:
     # Läuft täglich um 06:00 UTC, unabhängig von Code-Änderungen - fängt "stille"
@@ -17,6 +24,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Bei workflow_run nur weiterlaufen, wenn das Deploy-Workflow auch wirklich erfolgreich war
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
 
@@ -62,6 +71,7 @@ jobs:
 
   offline-test:
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
 
