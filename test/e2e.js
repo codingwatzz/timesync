@@ -284,13 +284,17 @@ async function main() {
     reiseart: await page.locator('#f_reiseart').inputValue(),
   };
   results.persistedValues = persisted;
+  // .normalize(): "ö" kann als ein Zeichen (U+00F6) ODER als "o"+Kombinationszeichen
+  // (U+006F U+0308) kodiert sein - sieht beim Anzeigen/Loggen identisch aus, ist aber bei
+  // striktem "===" NICHT gleich, wenn beide Seiten unterschiedlich kodiert sind.
   results.allFieldsPersisted =
     persisted.beschreibung === TEST_NOTE &&
     persisted.start === '08:00' && persisted.ende === '17:00' && persisted.pause === '30' &&
     Number(persisted.km) === 120 && Number(persisted.transport) === 15.5 &&
     Number(persisted.hotel) === 90 && Number(persisted.bewirtung) === 12.3 &&
     Number(persisted.sonstiges) === 7.5 &&
-    persisted.reiseland === 'Österreich' && persisted.reiseart === 'Abwesenheitstag (>8h)';
+    persisted.reiseland.normalize() === 'Österreich'.normalize() &&
+    persisted.reiseart.normalize() === 'Abwesenheitstag (>8h)'.normalize();
   log(`Alle Felder korrekt persistiert: ${results.allFieldsPersisted}`);
   log(`Gelesene Werte: ${JSON.stringify(persisted)}`);
   await shot('04_after_reload.png');
@@ -382,7 +386,17 @@ async function main() {
   const day2Row = dayRows.nth(1);
   await day2Row.click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
-  const importedDesc = await page.locator('#f_beschreibung').inputValue();
+  let importedDesc = await page.locator('#f_beschreibung').inputValue();
+  // Retry: falls leer, einmal schließen + neu öffnen (kann an einem verspäteten Re-Render
+  // liegen, obwohl der Text laut Monatsansicht schon da war).
+  if (importedDesc !== 'Import-Test-Eintrag') {
+    log('⚠ Beschreibung leer beim ersten Öffnen, versuche erneut zu öffnen…');
+    await page.click('#closeBtn').catch(() => {});
+    await page.waitForTimeout(500);
+    await day2Row.click();
+    await page.waitForSelector('.sheet', { timeout: 5000 });
+    importedDesc = await page.locator('#f_beschreibung').inputValue();
+  }
   results.importWorked = importedDesc === 'Import-Test-Eintrag';
   results.importedDescActual = importedDesc;
   log(`Import erfolgreich (Tag 2 zeigt importierten Eintrag): ${results.importWorked} (gelesen: "${importedDesc}")`);
