@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: Import-Consistency-Fix verifizieren
+// Trigger: modulares Testskript verifizieren
