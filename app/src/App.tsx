@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: frischer Testmonat
+// Trigger: Test-Robustheits-Fix verifizieren
