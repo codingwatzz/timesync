@@ -6,9 +6,9 @@
   "holiday25Detected": true,
   "holiday26Detected": true,
   "debugCounts": {
-    "day0_receiptsBeforeCleanup": 1,
+    "day0_receiptsBeforeCleanup": 0,
     "day0_receiptsAfterCleanup": 0,
-    "day0_cleanupIterations": 1,
+    "day0_cleanupIterations": 0,
     "day1_receiptsBeforeCleanup": 0,
     "day1_receiptsAfterCleanup": 0,
     "day1_cleanupIterations": 0,
@@ -23,48 +23,50 @@
   "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-08-31T19:23:45.928Z",
+    "beschreibung": "E2E-Test 2026-08-31T19:30:35.714Z",
     "km": "120"
   },
   "directReadRightAfterSave": {
-    "error": "SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    "found": true,
+    "beschreibung": "",
+    "km": ""
   },
-  "monthLabelBeforeReload": "Dezember 2031\n31 Tage",
-  "monthLabelAfterReload": "Dezember 2031\n31 Tage",
+  "monthLabelBeforeReload": "Dezember 2033\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2033\n31 Tage",
   "sameMonthAfterReload": true,
   "directReadAfterReload": {
-    "error": "SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    "found": true,
+    "beschreibung": "E2E-Test 2026-08-31T19:30:35.714Z",
+    "km": "120"
   },
   "persistedValues": {
-    "beschreibung": "",
-    "start": "",
-    "ende": "",
-    "pause": "",
-    "km": "",
-    "transport": "",
-    "hotel": "",
-    "bewirtung": "",
-    "sonstiges": "",
-    "reiseland": "Deutschland",
-    "reiseart": ""
+    "beschreibung": "E2E-Test 2026-08-31T19:30:35.714Z",
+    "start": "08:00",
+    "ende": "17:00",
+    "pause": "30",
+    "km": "120",
+    "transport": "15.50",
+    "hotel": "90",
+    "bewirtung": "12.30",
+    "sonstiges": "7.50",
+    "reiseland": "Österreich",
+    "reiseart": "Abwesenheitstag (>8h)"
   },
-  "allFieldsPersisted": false,
+  "allFieldsPersisted": true,
   "receiptPersisted": true,
   "receiptDeleted": true,
   "exportShowsEntry": true,
-  "exportDownloadTriggered": false,
+  "exportDownloadTriggered": true,
   "importWorked": false,
   "importedDescActual": "",
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788204196548\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:23:17] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:23:17] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:23:17] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788204196548\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:23:57] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:23:58] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:23:58] Speicher-Modus: Appwrite Cloud-Sync (aktiv)\n[19:24:26] delete(receipt:r1788204115790yjj86) fehlgeschlagen: Row with the requested ID 'receipt_r1788204115790yjj86' could not be found.",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788204597503\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:29:58] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:29:59] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:29:59] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788204597503\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:30:46] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:30:47] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:30:47] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-08-31T19:25:09.688Z",
+  "timestamp": "2026-08-31T19:32:02.727Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": false,
   "failedChecks": [
-    "allFieldsPersisted",
-    "exportDownloadTriggered",
     "importWorked"
   ]
 }
