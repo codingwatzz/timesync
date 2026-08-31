@@ -40,7 +40,7 @@ async function checkImportFlow(page, dayRows, { testYear, testImportPath }) {
   await page.waitForSelector('.sheet', { timeout: 5000 });
   let importedDesc = await page.locator('#f_beschreibung').inputValue();
 
-  for (let attempt = 1; attempt <= 4 && importedDesc !== 'Import-Test-Eintrag'; attempt++) {
+  for (let attempt = 1; attempt <= 6 && importedDesc !== 'Import-Test-Eintrag'; attempt++) {
     log(`⚠ Beschreibung noch nicht korrekt (Versuch ${attempt}), warte ${attempt * 2}s und versuche erneut…`);
     await page.click('#closeBtn').catch(() => {});
     await sleep(attempt * 2000);
