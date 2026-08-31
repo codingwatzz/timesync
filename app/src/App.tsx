@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: Reload-Wartelogik-Fix verifizieren
+// Trigger: Monats-Vergleichs-Diagnose verifizieren
