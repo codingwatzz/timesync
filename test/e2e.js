@@ -270,6 +270,32 @@ async function attemptRun() {
     km: await page.locator('#f_km').inputValue(),
   };
   log(`Sofort nach Speichern (vor Reload): ${JSON.stringify(results.immediateAfterSave)}`);
+
+  // Direkter Appwrite-Read, KOMPLETT AN APP UND BROWSER-CACHE VORBEI - via Node.js fetch API,
+  // um zweifelsfrei zu klären, was WIRKLICH auf dem Server steht (nicht nur, was die App zeigt).
+  const APPWRITE_ENDPOINT = 'https://fra.cloud.appwrite.io/v1';
+  const APPWRITE_PROJECT = '6a92d8e0002e9b585e39';
+  const APPWRITE_DB = '6a92dad20003b47b4a19';
+  const APPWRITE_TABLE = 'key-value';
+  const yearMatchEarly = monthLabel.match(/(\d{4})/);
+  const testYearEarly = yearMatchEarly ? yearMatchEarly[1] : '';
+  const day1RowId = `entry_${testYearEarly}_12_01`;
+  async function directAppwriteRead(label) {
+    try {
+      const resp = await fetch(`${APPWRITE_ENDPOINT}/databases/${APPWRITE_DB}/tables/${APPWRITE_TABLE}/rows/${day1RowId}`, {
+        headers: { 'X-Appwrite-Project': APPWRITE_PROJECT },
+      });
+      const data = await resp.json();
+      const parsedValue = data.value ? JSON.parse(data.value) : null;
+      log(`Direkter Appwrite-Read (${label}): HTTP ${resp.status}, beschreibung="${parsedValue?.beschreibung}", km="${parsedValue?.km}"`);
+      return { status: resp.status, beschreibung: parsedValue?.beschreibung, km: parsedValue?.km };
+    } catch (e) {
+      log(`Direkter Appwrite-Read (${label}) fehlgeschlagen: ${e.message}`);
+      return { error: String(e) };
+    }
+  }
+  results.directReadRightAfterSave = await directAppwriteRead('sofort nach Speichern');
+
   await page.click('#closeBtn').catch(() => {});
   await page.waitForTimeout(300);
 
@@ -307,6 +333,8 @@ async function attemptRun() {
   log(`Monat vor Reload: "${monthLabel}" / nach Reload: "${monthLabelAfterReload}" -> gleich: ${results.sameMonthAfterReload}`);
   await dayRows.first().click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
+
+  results.directReadAfterReload = await directAppwriteRead('nach Reload, vor Feldprüfung');
 
   const persisted = {
     beschreibung: await page.locator('#f_beschreibung').inputValue(),
