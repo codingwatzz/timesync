@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: direkte Appwrite-Diagnose verifizieren
+// Trigger: SDK-basierte Appwrite-Diagnose verifizieren
