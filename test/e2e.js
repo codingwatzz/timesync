@@ -467,12 +467,14 @@ async function attemptRun() {
   await day2Row.click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
   let importedDesc = await page.locator('#f_beschreibung').inputValue();
-  // Retry: falls leer, einmal schließen + neu öffnen (kann an einem verspäteten Re-Render
-  // liegen, obwohl der Text laut Monatsansicht schon da war).
-  if (importedDesc !== 'Import-Test-Eintrag') {
-    log('⚠ Beschreibung leer beim ersten Öffnen, versuche erneut zu öffnen…');
+  // Retry MIT ECHTER Wartezeit (nicht nur einmal sofort neu öffnen): Appwrite braucht nach
+  // einem Schreibvorgang manchmal ein paar Sekunden, bis Lesezugriffe den neuen Stand
+  // zuverlässig zeigen ("Eventual Consistency" - am 31.08.2026 zweifelsfrei per direktem
+  // SDK-Vergleich nachgewiesen). Bis zu 4 Versuche mit steigender Wartezeit dazwischen.
+  for (let attempt = 1; attempt <= 4 && importedDesc !== 'Import-Test-Eintrag'; attempt++) {
+    log(`⚠ Beschreibung noch nicht korrekt (Versuch ${attempt}), warte ${attempt * 2}s und versuche erneut…`);
     await page.click('#closeBtn').catch(() => {});
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(attempt * 2000);
     await day2Row.click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
     importedDesc = await page.locator('#f_beschreibung').inputValue();
