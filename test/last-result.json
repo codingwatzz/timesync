@@ -23,7 +23,7 @@
   "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-08-31T17:13:07.639Z",
+    "beschreibung": "E2E-Test 2026-08-31T19:16:10.281Z",
     "km": "120"
   },
   "monthLabelBeforeReload": "Dezember 2033\n31 Tage",
@@ -49,11 +49,11 @@
   "exportDownloadTriggered": false,
   "importWorked": false,
   "importedDescActual": "",
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788196349724\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[17:12:30] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[17:12:30] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[17:12:30] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788196349724\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[17:13:19] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[17:13:19] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[17:13:19] Speicher-Modus: Appwrite Cloud-Sync (aktiv)\n[17:13:55] delete(receipt:r17881962623715h5ji) fehlgeschlagen: Row with the requested ID 'receipt_r17881962623715h5ji' could not be found.",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788203734358\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:15:35] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:15:35] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:15:35] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788203734358\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[19:16:21] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[19:16:21] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[19:16:21] Speicher-Modus: Appwrite Cloud-Sync (aktiv)\n[19:16:56] delete(receipt:r1788203647875d683t) fehlgeschlagen: Row with the requested ID 'receipt_r1788203647875d683t' could not be found.",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-08-31T17:14:37.529Z",
+  "timestamp": "2026-08-31T19:17:38.999Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": false,
   "failedChecks": [
