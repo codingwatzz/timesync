@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: modulares Testskript verifizieren
+// Trigger: erhoehtes Import-Wartebudget verifizieren
