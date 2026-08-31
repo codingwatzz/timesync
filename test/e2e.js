@@ -261,7 +261,16 @@ async function attemptRun() {
   await page.waitForTimeout(800);
 
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(1500);
+  // Statt einer festen Wartezeit: explizit auf das "Sync aktiv"-Signal warten. Der Store
+  // (Appwrite-Verbindung) initialisiert sich asynchron nach dem Reload - eine feste Wartezeit
+  // kann bei variabler Netzwerklatenz zu kurz sein, wodurch nachfolgende Prüfungen auf einer
+  // noch nicht vollständig geladenen Seite stattfinden (Verdacht: Ursache mehrerer
+  // gleichzeitig fehlschlagender, inhaltlich unabhängiger Prüfungen am 31.08.2026).
+  await page.waitForFunction(
+    () => document.querySelector('.flag.ho, .flag.warn')?.textContent?.includes('Sync'),
+    { timeout: 15000 },
+  ).catch(() => log('⚠ "Sync"-Statusanzeige nach Reload nicht innerhalb 15s gefunden.'));
+  await page.waitForTimeout(500);
   for (let i = 0; i < MONTHS_FORWARD; i++) { await page.click('#nextM'); await page.waitForTimeout(300); }
   await page.waitForTimeout(1000);
   for (let i = 0; i < 12; i++) {
@@ -522,8 +531,19 @@ async function main() {
 }
 
 main().catch((e) => {
-  const result = { pass: false, crashed: true, error: String((e && e.stack) || e), timestamp: new Date().toISOString() };
-  try { fs.writeFileSync(path.join(__dirname, RESULT_FILE), JSON.stringify(result, null, 2)); } catch (_) {}
+  // WICHTIG: attemptRun() hat in JEDEM Fehlerpfad (nicht geladen, Prüfungen fehlgeschlagen)
+  // bereits die vollständige, detaillierte RESULT_FILE geschrieben, BEVOR es den Fehler wirft.
+  // Hier NICHT nochmal überschreiben, sonst gehen genau die Detaildaten verloren, die für die
+  // Fehlersuche gebraucht werden (das ist uns beim ersten Versuch dieses Retry-Mechanismus
+  // passiert). Nur bei einem wirklich unerwarteten Absturz, bei dem attemptRun selbst noch
+  // gar nichts schreiben konnte, greift dieser Fallback.
+  try {
+    const existing = fs.readFileSync(path.join(__dirname, RESULT_FILE), 'utf8');
+    JSON.parse(existing); // nur prüfen, ob schon eine gültige Datei da ist
+  } catch (_) {
+    const result = { pass: false, crashed: true, error: String((e && e.stack) || e), timestamp: new Date().toISOString() };
+    try { fs.writeFileSync(path.join(__dirname, RESULT_FILE), JSON.stringify(result, null, 2)); } catch (_2) {}
+  }
   console.error('FAIL (nach 2 Versuchen weiterhin fehlgeschlagen):', e);
   process.exit(1);
 });
