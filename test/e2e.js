@@ -283,6 +283,18 @@ async function attemptRun() {
   await dayRows.first().click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
 
+  // NEU: prüfen, ob wir nach dem Reload wirklich im GLEICHEN Monat/Jahr gelandet sind wie
+  // vorher (Verdacht: die Navigation könnte nach dem Reload in einem anderen Dezember landen,
+  // was exakt erklären würde, warum alle datenabhängigen Prüfungen gemeinsam fehlschlagen).
+  await page.click('#closeBtn').catch(() => {});
+  const monthLabelAfterReload = await page.locator('.label').first().innerText();
+  results.monthLabelBeforeReload = monthLabel;
+  results.monthLabelAfterReload = monthLabelAfterReload;
+  results.sameMonthAfterReload = monthLabelAfterReload === monthLabel;
+  log(`Monat vor Reload: "${monthLabel}" / nach Reload: "${monthLabelAfterReload}" -> gleich: ${results.sameMonthAfterReload}`);
+  await dayRows.first().click();
+  await page.waitForSelector('.sheet', { timeout: 5000 });
+
   const persisted = {
     beschreibung: await page.locator('#f_beschreibung').inputValue(),
     start: await page.locator('#f_start').inputValue(),
