@@ -33,6 +33,7 @@ async function navigateToSafeTestMonth(page) {
 async function waitForAppReady(page) {
   await page.waitForFunction(
     () => document.querySelector('.flag.ho, .flag.warn')?.textContent?.includes('Sync'),
+    undefined,
     { timeout: 15000 },
   ).catch(() => log('⚠ "Sync"-Statusanzeige nicht innerhalb 15s gefunden.'));
   await sleep(500);

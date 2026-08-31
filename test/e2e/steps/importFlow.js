@@ -24,6 +24,7 @@ async function checkImportFlow(page, dayRows, { testYear, testImportPath }) {
   await page.setInputFiles('#importFileInput', testImportPath);
   await page.waitForFunction(
     () => document.getElementById('toast')?.textContent?.includes('importiert'),
+    undefined,
     { timeout: 10000 },
   ).catch(() => log('⚠ Import-Toast nicht gesehen.'));
   // Die App zeigt den Toast erst NACH dem reload() der Monatsdaten (siehe App.tsx) - trotzdem
@@ -32,6 +33,7 @@ async function checkImportFlow(page, dayRows, { testYear, testImportPath }) {
   await page.waitForFunction(
     () => Array.from(document.querySelectorAll('.day-mid .desc'))
       .some((el) => el.textContent?.includes('Import-Test-Eintrag')),
+    undefined,
     { timeout: 10000 },
   ).catch(() => log('⚠ Importierter Eintrag nach 10s noch nicht in Monatsansicht sichtbar.'));
 

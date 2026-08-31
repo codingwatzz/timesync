@@ -48,6 +48,7 @@ async function main() {
   // Warten, bis der Service Worker wirklich aktiv ist und alles gecacht hat
   await page.waitForFunction(
     () => navigator.serviceWorker?.controller !== null,
+    undefined,
     { timeout: 15000 },
   ).catch(() => log('⚠ Service Worker war nach 15s noch nicht aktiv (controller null).'));
   await page.waitForTimeout(3000); // Puffer, damit die opportunistische Cache-Befüllung abschließt

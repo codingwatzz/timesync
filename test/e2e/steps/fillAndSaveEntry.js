@@ -50,6 +50,7 @@ async function fillAndSaveTestEntry(page, dayRows, { testPdfPath, day1RowId }) {
   await page.setInputFiles('#pdfInput', testPdfPath);
   await page.waitForFunction(
     () => document.getElementById('toast')?.textContent?.includes('Beleg gespeichert'),
+    undefined,
     { timeout: 10000 },
   ).catch(() => log('⚠ "Beleg gespeichert"-Toast nicht gesehen.'));
   await sleep(1000);
@@ -81,6 +82,7 @@ async function fillAndSaveTestEntry(page, dayRows, { testPdfPath, day1RowId }) {
   await page.click('#saveBtn');
   await page.waitForFunction(
     () => document.getElementById('toast')?.textContent?.includes('Gespeichert'),
+    undefined,
     { timeout: 10000 },
   ).catch(() => log('⚠ "Gespeichert"-Toast nicht gesehen.'));
   await sleep(800);
