@@ -34,10 +34,35 @@ interface BelegMetaShape {
  * Baut den Appwrite-KVStore auf. Wirft, wenn der Verbindungstest fehlschlägt (z.B. falsche
  * Projekt-ID oder fehlende Berechtigungen) - der Aufrufer kann dann auf IndexedDB zurückfallen.
  */
+/**
+ * Verhindert Browser-HTTP-Caching für Appwrite-API-Aufrufe. Verdacht (31.08.2026): Ein
+ * frisches Neuladen der Seite zeigte veraltete Werte (exakt den Stand VOR dem letzten
+ * Speichern) zurück, obwohl das Speichern selbst nachweislich erfolgreich war - ein klassisches
+ * Symptom für eine im Browser gecachte GET-Antwort, die nach einem Reload erneut ausgeliefert
+ * wird, statt den aktuellen Appwrite-Stand neu abzufragen. Das Appwrite-SDK selbst setzt keine
+ * cache-verhindernden Header, daher hier per globalem fetch-Patch nachgerüstet.
+ */
+let httpCachingDisabled = false;
+function disableHttpCachingForAppwrite(endpoint: string): void {
+  if (httpCachingDisabled) return;
+  if (typeof window === 'undefined') return; // z.B. in Node-Testumgebung ohne DOM
+  httpCachingDisabled = true;
+  const endpointHost = new URL(endpoint).host;
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    if (url.includes(endpointHost)) {
+      return originalFetch(input, { ...init, cache: 'no-store' });
+    }
+    return originalFetch(input, init);
+  };
+}
+
 export async function createAppwriteStore(
   config: AppwriteConfig,
   log: StoreLogger,
 ): Promise<KVStore> {
+  disableHttpCachingForAppwrite(config.endpoint);
   const client = new Client().setEndpoint(config.endpoint).setProject(config.projectId);
   const tablesDB = new TablesDB(client);
   const storage = new Storage(client);
