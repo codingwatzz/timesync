@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: Monats-Vergleichs-Diagnose verifizieren
+// Trigger: Sofort-nach-Speichern-Diagnose verifizieren
