@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: E2E-Robustheits-Plan verifizieren
+// Trigger: Reload-Wartelogik-Fix verifizieren
