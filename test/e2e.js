@@ -15,7 +15,10 @@ const RESULT_FILE = process.env.RESULT_FILE || 'last-result.json';
 // mehrere Test-Suiten (z.B. Produktion + React-Vorschau) dieselbe Appwrite-Datenbank nutzen,
 // MUSS dieser Wert zwischen den Suiten unterschiedlich sein, sonst schreiben sich parallel
 // laufende Testläufe gegenseitig die Testdaten weg (siehe Vorfall vom 30.08.2026).
-const MONTHS_FORWARD = Number(process.env.MONTHS_FORWARD || 24);
+// War lange auf 24 - nach sehr vielen (teils abgebrochenen) Testläufen heute im selben
+// Zielmonat auf 60 erhöht, um garantiert einen komplett unberührten, "sauberen" Testmonat
+// zu treffen und angesammelte Altlasten als Fehlerquelle auszuschließen.
+const MONTHS_FORWARD = Number(process.env.MONTHS_FORWARD || 60);
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 const MAX_RETRIES = 10;
 const RETRY_DELAY_MS = 10000;
