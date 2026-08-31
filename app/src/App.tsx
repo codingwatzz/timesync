@@ -97,4 +97,4 @@ export default function App() {
     </div>
   );
 }
-// Trigger: SDK-basierte Appwrite-Diagnose verifizieren
+// Trigger: Import-Consistency-Fix verifizieren
