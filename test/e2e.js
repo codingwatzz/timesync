@@ -260,6 +260,19 @@ async function attemptRun() {
   ).catch(() => log('⚠ "Gespeichert"-Toast nicht gesehen.'));
   await page.waitForTimeout(800);
 
+  // NEU: SOFORT nach dem Speichern (noch OHNE Reload) nachsehen, ob die Werte wenigstens im
+  // Browser-Speicher (React-State) ankommen. Trennt "Speichern hat nie funktioniert" von
+  // "Speichern hat funktioniert, aber das Neuladen zeigt es aus irgendeinem Grund nicht an".
+  await dayRows.first().click();
+  await page.waitForSelector('.sheet', { timeout: 5000 });
+  results.immediateAfterSave = {
+    beschreibung: await page.locator('#f_beschreibung').inputValue(),
+    km: await page.locator('#f_km').inputValue(),
+  };
+  log(`Sofort nach Speichern (vor Reload): ${JSON.stringify(results.immediateAfterSave)}`);
+  await page.click('#closeBtn').catch(() => {});
+  await page.waitForTimeout(300);
+
   await page.reload({ waitUntil: 'networkidle' });
   // Statt einer festen Wartezeit: explizit auf das "Sync aktiv"-Signal warten. Der Store
   // (Appwrite-Verbindung) initialisiert sich asynchron nach dem Reload - eine feste Wartezeit
