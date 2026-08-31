@@ -82,6 +82,7 @@ export async function importFromFile(
         typManuell: true,
         ho: Boolean(raw.ho),
         start: (raw.start as string) || '', ende: (raw.ende as string) || '', pause: String(raw.pause ?? ''),
+        start2: (raw.start2 as string) || '', ende2: (raw.ende2 as string) || '', pause2: String(raw.pause2 ?? ''),
         beschreibung: (raw.beschreibung as string) || '',
         km: String(raw.km ?? ''), transport: String(raw.transport ?? ''), hotel: String(raw.hotel ?? ''),
         bewirtung: String(raw.bewirtung ?? ''), sonstiges: String(raw.sonstiges ?? ''),

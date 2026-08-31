@@ -11,6 +11,13 @@ describe('emptyEntry', () => {
     expect(emptyEntry(2026, 8, 17).typ).toBe('A'); // Montag
     expect(emptyEntry(2026, 12, 25).typ).toBe('F'); // Weihnachten
   });
+
+  it('zweite Schicht ist standardmäßig leer', () => {
+    const e = emptyEntry(2026, 8, 17);
+    expect(e.start2).toBe('');
+    expect(e.ende2).toBe('');
+    expect(e.pause2).toBe('');
+  });
 });
 
 describe('tagesKosten', () => {

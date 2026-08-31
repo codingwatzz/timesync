@@ -8,6 +8,7 @@ export function emptyEntry(year: number, month: number, day: number): TagesEintr
     typManuell: false,
     ho: true,
     start: '', ende: '', pause: '',
+    start2: '', ende2: '', pause2: '',
     beschreibung: '',
     km: '', transport: '', hotel: '', bewirtung: '', sonstiges: '',
     reiseland: 'Deutschland', reiseart: '',

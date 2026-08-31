@@ -19,6 +19,9 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   const { store } = useStore();
   const [entry, setEntry] = useState<TagesEintrag>(initialEntry);
   const [receipts, setReceipts] = useState<BelegMeta[]>([]);
+  const [zweiteSchichtOffen, setZweiteSchichtOffen] = useState(
+    Boolean(initialEntry.start2 || initialEntry.ende2 || initialEntry.pause2),
+  );
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -139,6 +142,42 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             <input id="f_pause" type="number" placeholder="0" value={entry.pause} onChange={(e) => update('pause', e.target.value)} />
           </div>
         </div>
+
+        {zweiteSchichtOffen ? (
+          <>
+            <div className="row3" style={{ marginTop: -6 }}>
+              <div className="field"><label>Start (2. Schicht)</label>
+                <input id="f_start2" type="time" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
+              </div>
+              <div className="field"><label>Ende (2. Schicht)</label>
+                <input id="f_ende2" type="time" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
+              </div>
+              <div className="field"><label>Pause (Min)</label>
+                <input id="f_pause2" type="number" placeholder="0" value={entry.pause2} onChange={(e) => update('pause2', e.target.value)} />
+              </div>
+            </div>
+            <button
+              id="removeSecondShiftBtn"
+              className="close"
+              style={{ width: '100%', marginBottom: 14, padding: '8px' }}
+              onClick={() => {
+                update('start2', ''); update('ende2', ''); update('pause2', '');
+                setZweiteSchichtOffen(false);
+              }}
+            >
+              × Zweite Schicht entfernen
+            </button>
+          </>
+        ) : (
+          <button
+            id="addSecondShiftBtn"
+            className="close"
+            style={{ width: '100%', marginBottom: 14, padding: '8px' }}
+            onClick={() => setZweiteSchichtOffen(true)}
+          >
+            + Zweite Schicht (z. B. abends nochmal gearbeitet)
+          </button>
+        )}
 
         <div className="field">
           <label>Notiz / Beschreibung</label>

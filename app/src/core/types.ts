@@ -20,6 +20,11 @@ export interface TagesEintrag {
   start: string; // "HH:MM"
   ende: string; // "HH:MM"
   pause: string; // Minuten, als String (Formularfeld)
+  // Zweite Schicht (z.B. abends nochmal gearbeitet, nach längerer Pause tagsüber).
+  // Optional: leer, wenn nicht genutzt.
+  start2: string;
+  ende2: string;
+  pause2: string;
   beschreibung: string;
   km: string;
   transport: string;
