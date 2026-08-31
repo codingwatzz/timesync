@@ -360,14 +360,23 @@ async function main() {
     () => document.getElementById('toast')?.textContent?.includes('importiert'),
     { timeout: 10000 }
   ).catch(() => log('⚠ Import-Toast nicht gesehen.'));
-  await page.waitForTimeout(1000);
+  // WICHTIG: Die App zeigt den "importiert"-Toast, BEVOR der anschließende reload() der
+  // Monatsdaten abgeschlossen ist (showToast steht im Code vor dem await reload()).
+  // Eine feste Wartezeit reicht deshalb nicht zuverlässig - stattdessen explizit darauf
+  // warten, dass der importierte Text wirklich in der Monatsansicht auftaucht.
+  await page.waitForFunction(
+    () => Array.from(document.querySelectorAll('.day-mid .desc'))
+      .some((el) => el.textContent?.includes('Import-Test-Eintrag')),
+    { timeout: 10000 }
+  ).catch(() => log('⚠ Importierter Eintrag nach 10s noch nicht in Monatsansicht sichtbar.'));
 
   const day2Row = dayRows.nth(1);
   await day2Row.click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
   const importedDesc = await page.locator('#f_beschreibung').inputValue();
   results.importWorked = importedDesc === 'Import-Test-Eintrag';
-  log(`Import erfolgreich (Tag 2 zeigt importierten Eintrag): ${results.importWorked}`);
+  results.importedDescActual = importedDesc;
+  log(`Import erfolgreich (Tag 2 zeigt importierten Eintrag): ${results.importWorked} (gelesen: "${importedDesc}")`);
   await shot('06_after_import.png');
 
   await page.fill('#f_beschreibung', '');

@@ -52,8 +52,10 @@ export default function App() {
     if (result.error) {
       showToast('Import fehlgeschlagen – siehe Diagnose-Button unten rechts');
     } else {
-      showToast(`${result.count} Einträge importiert`);
+      // Erst neu laden, DANN die Erfolgsmeldung zeigen - sonst könnte der Nutzer (oder ein
+      // Test) auf die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
       await reload();
+      showToast(`${result.count} Einträge importiert`);
     }
   }
 
