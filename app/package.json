@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "vitest run --config vitest.config.ts",
     "lint": "oxlint",
+    "verify": "npm run test && npm run lint && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
