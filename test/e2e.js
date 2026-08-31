@@ -373,21 +373,26 @@ async function main() {
   await dayRows.first().click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
   await page.fill('#f_beschreibung', '');
-  await page.fill('#f_km', '');
-  await page.fill('#f_transport', '');
-  await page.fill('#f_hotel', '');
-  await page.fill('#f_bewirtung', '');
-  await page.fill('#f_sonstiges', '');
   await page.fill('#f_start', '');
   await page.fill('#f_ende', '');
   await page.fill('#f_pause', '');
   // Vollständig auf Ausgangszustand zurücksetzen (wichtig für Idempotenz bei wiederholten
   // Testläufen, sonst würden z.B. "Homeoffice-Default"- oder "Warnung sichtbar"-Prüfungen im
   // nächsten Lauf fälschlich fehlschlagen, weil der Tag nicht mehr "leer" ist):
-  // WICHTIG: Reiseland/Reiseart/Frühstück-Reset MUSS VOR dem Zurückschalten von Homeoffice
-  // passieren, weil der Reiseabschnitt (und damit diese Buttons) verschwindet, sobald
-  // Homeoffice wieder an ist!
-  if (await page.locator('#f_reiseland').isVisible()) {
+  // WICHTIG: Reiseabschnitt-Felder (km/Transport/etc./Reiseland/Reiseart/Frühstück) MÜSSEN
+  // VOR dem Zurückschalten von Homeoffice geleert werden, weil der ganze Abschnitt
+  // verschwindet, sobald Homeoffice wieder an ist - und ERST NACHDEM sichergestellt ist,
+  // dass Typ 'A' + Homeoffice AUS gesetzt sind, damit der Abschnitt überhaupt sichtbar ist.
+  await page.click('#typPick button[data-t="A"]');
+  const hoOnBeforeCleanup = await page.locator('#hoSwitch').evaluate((el) => el.classList.contains('on'));
+  if (hoOnBeforeCleanup) await page.click('#hoSwitch');
+  await page.waitForTimeout(150);
+  if (await page.locator('#f_km').isVisible()) {
+    await page.fill('#f_km', '');
+    await page.fill('#f_transport', '');
+    await page.fill('#f_hotel', '');
+    await page.fill('#f_bewirtung', '');
+    await page.fill('#f_sonstiges', '');
     await page.selectOption('#f_reiseland', 'Deutschland');
     await page.selectOption('#f_reiseart', '');
   }
