@@ -97,4 +97,3 @@ export default function App() {
     </div>
   );
 }
-// Trigger: erhoehtes Import-Wartebudget verifizieren
