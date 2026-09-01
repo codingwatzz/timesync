@@ -2,17 +2,17 @@
   "loaded": true,
   "syncActive": true,
   "testMonthIsDecember": true,
-  "weekendCount": 6,
+  "weekendCount": 9,
   "holiday25Detected": true,
   "holiday26Detected": true,
   "homeofficeDefaultActive": true,
   "travelSectionVisible": true,
   "reiseartWarningVisibleBefore": true,
   "reiseartWarningVisibleAfter": false,
-  "receiptUploaded": false,
+  "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-09-01T21:53:01.721Z",
+    "beschreibung": "E2E-Test 2026-09-01T22:11:30.755Z",
     "km": "120"
   },
   "directReadRightAfterSave": {
@@ -20,16 +20,16 @@
     "beschreibung": "",
     "km": ""
   },
-  "monthLabelBeforeReload": "Dezember 2032\n31 Tage",
-  "monthLabelAfterReload": "Dezember 2032\n31 Tage",
+  "monthLabelBeforeReload": "Dezember 2034\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2034\n31 Tage",
   "sameMonthAfterReload": true,
   "directReadAfterReload": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-09-01T21:53:01.721Z",
+    "beschreibung": "E2E-Test 2026-09-01T22:11:30.755Z",
     "km": "120"
   },
   "persistedValues": {
-    "beschreibung": "E2E-Test 2026-09-01T21:53:01.721Z",
+    "beschreibung": "E2E-Test 2026-09-01T22:11:30.755Z",
     "start": "08:00",
     "ende": "17:00",
     "pause": "30",
@@ -42,23 +42,20 @@
     "reiseart": "Abwesenheitstag (>8h)"
   },
   "allFieldsPersisted": true,
-  "receiptPersisted": false,
-  "receiptDeleted": false,
+  "receiptPersisted": true,
+  "receiptDeleted": true,
   "exportShowsEntry": true,
   "exportDownloadTriggered": true,
   "importWorked": false,
   "importedDescActual": "",
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788299545773\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[21:52:26] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[21:52:27] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[21:52:27] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788299545773\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[21:53:07] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[21:53:08] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[21:53:08] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788300648644\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[22:10:49] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[22:10:49] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[22:10:49] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788300648644\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[22:11:36] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[22:11:36] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[22:11:36] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-09-01T21:54:45.728Z",
+  "timestamp": "2026-09-01T22:13:15.977Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": false,
   "failedChecks": [
-    "receiptUploaded",
-    "receiptPersisted",
-    "receiptDeleted",
     "importWorked"
   ]
 }
