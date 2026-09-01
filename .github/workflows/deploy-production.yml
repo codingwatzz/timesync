@@ -83,9 +83,13 @@ jobs:
 
       - name: Build in Root kopieren (dort liegt GitHub Pages)
         run: |
-          # Alles außer app/, test/, .github/ und .git im Root leeren, dann frisch befüllen
+          # Alles außer app/, test/, .github/, .git, ci-logs UND den Dokumentations-Dateien
+          # im Root leeren, dann frisch befüllen. WICHTIG: README.md/CLAUDE_CHECKLIST.md
+          # liegen bewusst im Root (nicht in app/) und wurden hier bisher bei JEDEM Deploy
+          # versehentlich mitgelöscht (Bug gefunden + behoben am 01.09.2026).
           find . -maxdepth 1 -mindepth 1 \
             ! -name 'app' ! -name 'test' ! -name '.github' ! -name '.git' ! -name 'ci-logs' \
+            ! -name 'README.md' ! -name 'CLAUDE_CHECKLIST.md' \
             -exec rm -rf {} +
           cp -r app/dist/. .
 
