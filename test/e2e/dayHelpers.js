@@ -14,6 +14,15 @@ const { sleep } = require('./utils');
  * @param {number} rowIndex - 0-basiert (0 = Tag 1, 1 = Tag 2, ...)
  */
 async function resetDayToDefault(page, dayRows, rowIndex) {
+  // Defensiv: falls von einem vorherigen Schritt noch ein Sheet offen ist (z.B. durch
+  // mehrfaches Öffnen/Schließen bei der Import-Konsistenz-Wartelogik), erst schließen -
+  // sonst kann ein zweites, gestapeltes Sheet Klicks abfangen ("intercepts pointer events",
+  // beobachtet am 01.09.2026).
+  if (await page.locator('.sheet-backdrop').count() > 0) {
+    await page.click('#closeBtn').catch(() => {});
+    await sleep(400);
+  }
+
   await dayRows.nth(rowIndex).click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
 
