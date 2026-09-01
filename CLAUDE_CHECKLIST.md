@@ -8,6 +8,25 @@ Entstanden am 31.08.2026 nach einer Sitzung, in der Ressourcen unnötig verbrauc
 blieb an mehreren Stellen unbehoben, personenbezogene Daten blieben im öffentlichen Git-
 Verlauf liegen). Konkrete Regeln daraus:
 
+## 0. GitHub-Zugangsdaten (WICHTIG, zuerst prüfen)
+
+Für alles, was über reines Lesen des öffentlichen Repo-Inhalts hinausgeht - Commits pushen,
+Workflows auslösen, per GitHub-API mit vernünftigem Rate-Limit arbeiten, oder über einen
+CI-Lauf einen echten Browser mit Appwrite-Zugriff starten (z.B. um Appwrite Storage direkt zu
+prüfen) - wird ein **GitHub Personal Access Token** gebraucht (Scopes: Contents read/write,
+Workflows read/write).
+
+**Falls kein Token im aktuellen Chat bekannt ist: den Nutzer aktiv danach fragen**, bevor
+größere Arbeit begonnen wird, statt stillschweigend nur mit eingeschränktem (unauthentifiziertem,
+z.B. 60 statt 5000 Anfragen/Stunde) Zugriff weiterzuarbeiten. Das Token gehört NIEMALS in eine
+Projekt-Datei, eine Commit-Message oder sonst einen dauerhaften, geteilten Ort - immer nur
+direkt im Chat vom Nutzer übergeben lassen.
+
+(Dieser Abschnitt existiert, weil genau das am 01.09.2026 vergessen wurde: eine Chat-Sitzung
+hatte ein Token und konnte damit vieles verifizieren; die Übergabe an die nächste Sitzung
+erwähnte nirgends, dass dafür überhaupt ein Token nötig ist - die neue Sitzung stieß dadurch
+unerwartet auf Rate-Limits und konnte Appwrite Storage nicht prüfen.)
+
 ## 1. Lokale Prüfung VOR jedem Live-Zyklus
 
 Bevor irgendetwas gepusht wird, das einen Deploy/E2E-Test auslöst:
