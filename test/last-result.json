@@ -9,10 +9,10 @@
   "travelSectionVisible": true,
   "reiseartWarningVisibleBefore": true,
   "reiseartWarningVisibleAfter": false,
-  "receiptUploaded": true,
+  "receiptUploaded": false,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-09-01T17:52:09.676Z",
+    "beschreibung": "E2E-Test 2026-09-01T21:01:28.254Z",
     "km": "120"
   },
   "directReadRightAfterSave": {
@@ -20,16 +20,16 @@
     "beschreibung": "",
     "km": ""
   },
-  "monthLabelBeforeReload": "Dezember 2033\n31 Tage",
-  "monthLabelAfterReload": "Dezember 2033\n31 Tage",
+  "monthLabelBeforeReload": "Dezember 2031\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2031\n31 Tage",
   "sameMonthAfterReload": true,
   "directReadAfterReload": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-09-01T17:52:09.676Z",
+    "beschreibung": "E2E-Test 2026-09-01T21:01:28.254Z",
     "km": "120"
   },
   "persistedValues": {
-    "beschreibung": "E2E-Test 2026-09-01T17:52:09.676Z",
+    "beschreibung": "E2E-Test 2026-09-01T21:01:28.254Z",
     "start": "08:00",
     "ende": "17:00",
     "pause": "30",
@@ -42,20 +42,23 @@
     "reiseart": "Abwesenheitstag (>8h)"
   },
   "allFieldsPersisted": true,
-  "receiptPersisted": true,
-  "receiptDeleted": true,
+  "receiptPersisted": false,
+  "receiptDeleted": false,
   "exportShowsEntry": true,
   "exportDownloadTriggered": true,
   "importWorked": false,
   "importedDescActual": "",
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788285091387\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[17:51:32] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[17:51:32] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[17:51:32] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788285091387\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[17:52:14] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[17:52:15] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[17:52:15] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788296458604\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[21:00:59] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[21:00:59] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[21:00:59] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788296458604\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[21:01:33] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[21:01:33] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[21:01:33] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-09-01T17:53:50.404Z",
+  "timestamp": "2026-09-01T21:03:04.423Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": false,
   "failedChecks": [
+    "receiptUploaded",
+    "receiptPersisted",
+    "receiptDeleted",
     "importWorked"
   ]
 }
