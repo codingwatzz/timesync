@@ -22,6 +22,12 @@ z.B. 60 statt 5000 Anfragen/Stunde) Zugriff weiterzuarbeiten. Das Token gehört 
 Projekt-Datei, eine Commit-Message oder sonst einen dauerhaften, geteilten Ort - immer nur
 direkt im Chat vom Nutzer übergeben lassen.
 
+**Nach jeder Sitzung, in der ein Token geteilt wurde: dem Nutzer empfehlen, es zu
+rotieren/widerrufen** (GitHub → Settings → Developer settings → Personal access tokens) -
+auch wenn es nie in eine Datei/einen Commit geschrieben wurde. Der Chatverlauf selbst ist
+nicht flüchtig (bleibt bestehen, wie diese Datei hier beweist) - ein einmal im Chat geteiltes
+Token sollte behandelt werden, als wäre es kurzzeitig exponiert gewesen.
+
 (Dieser Abschnitt existiert, weil genau das am 01.09.2026 vergessen wurde: eine Chat-Sitzung
 hatte ein Token und konnte damit vieles verifizieren; die Übergabe an die nächste Sitzung
 erwähnte nirgends, dass dafür überhaupt ein Token nötig ist - die neue Sitzung stieß dadurch
