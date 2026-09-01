@@ -3,6 +3,7 @@ import { createStore } from '../store/createStore';
 import type { AppwriteConfig } from '../store/appwriteStore';
 import { StoreContext, type StoreContextValue } from './storeContextDefinition';
 import type { StorageMode } from '../store/types';
+import { repairPendingReceiptLinks } from '../lib/pendingReceiptLinks';
 
 export function StoreProvider({ config, children }: { config: AppwriteConfig; children: ReactNode }) {
   const [store, setStore] = useState<StoreContextValue['store']>(null);
@@ -22,6 +23,11 @@ export function StoreProvider({ config, children }: { config: AppwriteConfig; ch
     createStore(config, addLog).then((result) => {
       setStore(result.store);
       setMode(result.mode);
+      // Liegen gebliebene Beleg-Verknüpfungen aus einer unterbrochenen vorherigen Sitzung
+      // nachholen (siehe pendingReceiptLinks.ts) - läuft im Hintergrund, blockiert nichts.
+      repairPendingReceiptLinks(result.store, addLog).catch((e) => {
+        addLog(`Reparatur liegen gebliebener Beleg-Verknüpfungen fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      });
     });
   }, [config]);
 

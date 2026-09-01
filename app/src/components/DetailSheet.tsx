@@ -5,6 +5,7 @@ import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
 import { fileToDataURL, photoToPdf } from '../lib/pdf';
+import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
 import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
 
 interface DetailSheetProps {
@@ -61,10 +62,15 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     const dataUrl = await fileToDataURL(file);
     const rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
     const meta: BelegMeta = { id: rid, name: file.name, mime: 'application/pdf', dataUrl, createdAt: Date.now(), date: dateKey };
+    // Absicht VOR den beiden Appwrite-Schreibvorgängen synchron vermerken - falls die Seite
+    // dazwischen unterbrochen wird, kann die Verknüpfung beim nächsten App-Start nachgeholt
+    // werden (siehe pendingReceiptLinks.ts).
+    markPendingReceiptLink(dateKey, rid);
     await saveReceipt(store, rid, meta);
     const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
     setEntry(nextEntry);
     await onSave(dateKey, nextEntry);
+    clearPendingReceiptLink(dateKey, rid);
     showToast('Beleg gespeichert');
   }
 
@@ -76,10 +82,15 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
       const rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
       const name = `Foto-${new Date().toISOString().slice(0, 10)}.pdf`;
       const meta: BelegMeta = { id: rid, name, mime: 'application/pdf', dataUrl: pdfDataUrl, createdAt: Date.now(), date: dateKey };
+      // Absicht VOR den beiden Appwrite-Schreibvorgängen synchron vermerken - genau dieser
+      // Pfad (native Kamera-App via capture="environment") kann die Seite dazwischen
+      // pausieren/neu laden. Siehe pendingReceiptLinks.ts.
+      markPendingReceiptLink(dateKey, rid);
       await saveReceipt(store, rid, meta);
       const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
       setEntry(nextEntry);
       await onSave(dateKey, nextEntry);
+      clearPendingReceiptLink(dateKey, rid);
       showToast('Beleg gespeichert');
     } catch {
       showToast('Fehler bei PDF-Erstellung');
