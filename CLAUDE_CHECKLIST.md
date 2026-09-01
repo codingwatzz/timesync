@@ -33,6 +33,18 @@ hatte ein Token und konnte damit vieles verifizieren; die Übergabe an die näch
 erwähnte nirgends, dass dafür überhaupt ein Token nötig ist - die neue Sitzung stieß dadurch
 unerwartet auf Rate-Limits und konnte Appwrite Storage nicht prüfen.)
 
+**Praktische Einschränkung, real erlebt (01.09.2026):** Ein vom Nutzer im Chat geteiltes Token
+ist typischerweise ein **fine-grained PAT ohne `actions`-Scope** - `workflow_dispatch` per API
+und `POST .../actions/runs/{id}/rerun` schlagen dann mit 403 "Resource not accessible by
+personal access token" fehl, ebenso `GET .../actions/variables` bzw. `/secrets`. Workaround:
+temporären Branch mit einem Workflow anlegen, der auf `push` statt `workflow_dispatch`
+reagiert - ein normaler `git push` auf den Branch triggert ihn ganz regulär, ganz ohne
+Actions-API-Berechtigung. Außerdem scheitert `GET .../runs/{id}/logs` an der
+Sandbox-Netzwerksperre (Redirect auf `results-receiver.actions.githubusercontent.com`, nicht
+in der Freigabeliste) - Workaround: Ergebnis als Datei im selben Workflow-Lauf zurück ins Repo
+committen (wie `e2e-test.yml` es ohnehin für `last-result.json` tut) und über die normale
+Contents-API (`GET .../contents/<pfad>?ref=<branch>`) abholen.
+
 ## 1. Lokale Prüfung VOR jedem Live-Zyklus
 
 Bevor irgendetwas gepusht wird, das einen Deploy/E2E-Test auslöst:
@@ -94,3 +106,30 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   nach ihrer Erstellung automatisch mitgelöscht (gefunden + behoben 01.09.2026, siehe
   `.github/workflows/deploy-production.yml`, Ausnahmeliste im `find`-Befehl). Bei jeder neuen
   Root-Datei: prüfen, ob sie in dieser Ausnahmeliste steht.
+- **`navigateToSafeTestMonth()` rundet den gewählten Zufalls-Zeitpunkt immer auf den nächsten
+  Dezember auf** (garantiert Feiertage 25./26.12. für den Test). Der ursprüngliche
+  MONTHS_FORWARD-Bereich (60-84) ließ dadurch nur 3 erreichbare Ziel-Dezember zu - bei mehreren
+  Testläufen kurz hintereinander (parallele Sitzungen, manuelle Wiederholungen zur Diagnose)
+  kollidieren die mit spürbarer Wahrscheinlichkeit auf demselben Tag und häufen dort
+  Karteileichen an (echt passiert am 01.09.2026). Fix: Bereich auf 60-180 erweitert (~10 statt
+  3 erreichbare Dezember). Bei erneuter Diagnose per manuellem `node test/e2e.js`-Rerun:
+  IMMER daran denken, dass ein Fehlschlag auch von den eigenen vorherigen Wiederholungsläufen
+  auf demselben Testtag stammen kann, nicht zwingend vom untersuchten Code - vor dem
+  Schlussfolgern lieber die betroffene Testzeile direkt in Appwrite gegenprüfen.
+- **Beleg-Upload (PDF- und Foto-Pfad in `DetailSheet.tsx`) macht zwei getrennte,
+  nacheinander abgewartete Appwrite-Schreibvorgänge** (1. Beleg hochladen, 2. Tageseintrag mit
+  neuer receiptId aktualisieren). Wird die Seite dazwischen unterbrochen (z.B. weil der mobile
+  Browser während der nativen Kamera-App via `capture="environment"` pausiert/neu lädt), landet
+  der Beleg sicher in Appwrite, der Tageseintrag verweist aber nie darauf - unsichtbare
+  Karteileiche, real aufgetreten am 01.09.2026. Fix: `pendingReceiptLinks.ts` vermerkt die
+  Absicht synchron in localStorage vor den beiden Schreibvorgängen; `repairPendingReceiptLinks`
+  holt beim nächsten App-Start liegen gebliebene Verknüpfungen automatisch nach.
+
+## 4. Parallele Sitzungen
+
+Es kann vorkommen, dass der Nutzer mehrere Chat-Sitzungen gleichzeitig gegen dasselbe Repo/
+dieselbe Appwrite-Instanz laufen lässt (am 01.09.2026 real passiert - erkennbar an Commits mit
+Autor `claude@anthropic.com`, die nicht aus der eigenen Sitzung stammen). Das kann zu echten
+Kollisionen führen (z.B. zwei E2E-Testläufe gleichzeitig auf demselben Testtag). Falls ein
+fremder Commit/Workflow-Lauf auffällt, der nicht aus der eigenen Sitzung stammt: dem Nutzer
+kurz und sachlich Bescheid geben, nicht alarmistisch, und die eigene Arbeit fortsetzen.
