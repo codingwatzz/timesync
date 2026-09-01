@@ -2,34 +2,34 @@
   "loaded": true,
   "syncActive": true,
   "testMonthIsDecember": true,
-  "weekendCount": 9,
+  "weekendCount": 8,
   "holiday25Detected": true,
   "holiday26Detected": true,
   "homeofficeDefaultActive": true,
   "travelSectionVisible": true,
   "reiseartWarningVisibleBefore": true,
   "reiseartWarningVisibleAfter": false,
-  "receiptUploaded": true,
+  "receiptUploaded": false,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-09-01T22:11:30.755Z",
+    "beschreibung": "E2E-Test 2026-09-01T22:35:33.123Z",
     "km": "120"
   },
   "directReadRightAfterSave": {
     "found": true,
-    "beschreibung": "",
-    "km": ""
+    "beschreibung": "E2E-Test 2026-09-01T22:34:02.394Z",
+    "km": "120"
   },
-  "monthLabelBeforeReload": "Dezember 2034\n31 Tage",
-  "monthLabelAfterReload": "Dezember 2034\n31 Tage",
+  "monthLabelBeforeReload": "Dezember 2035\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2035\n31 Tage",
   "sameMonthAfterReload": true,
   "directReadAfterReload": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-09-01T22:11:30.755Z",
+    "beschreibung": "E2E-Test 2026-09-01T22:35:33.123Z",
     "km": "120"
   },
   "persistedValues": {
-    "beschreibung": "E2E-Test 2026-09-01T22:11:30.755Z",
+    "beschreibung": "E2E-Test 2026-09-01T22:35:33.123Z",
     "start": "08:00",
     "ende": "17:00",
     "pause": "30",
@@ -42,20 +42,23 @@
     "reiseart": "Abwesenheitstag (>8h)"
   },
   "allFieldsPersisted": true,
-  "receiptPersisted": true,
-  "receiptDeleted": true,
+  "receiptPersisted": false,
+  "receiptDeleted": false,
   "exportShowsEntry": true,
   "exportDownloadTriggered": true,
   "importWorked": false,
   "importedDescActual": "",
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788300648644\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[22:10:49] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[22:10:49] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[22:10:49] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788300648644\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[22:11:36] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[22:11:36] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[22:11:36] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788302086258\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[22:34:46] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[22:34:47] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[22:34:47] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788302086258\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[22:35:38] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[22:35:38] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[22:35:38] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [],
   "pageErrors": [],
-  "timestamp": "2026-09-01T22:13:15.977Z",
+  "timestamp": "2026-09-01T22:37:27.418Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": false,
   "failedChecks": [
+    "receiptUploaded",
+    "receiptPersisted",
+    "receiptDeleted",
     "importWorked"
   ]
 }
