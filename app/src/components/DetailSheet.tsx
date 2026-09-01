@@ -35,13 +35,9 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   useEffect(() => {
     if (!store) return;
     let cancelled = false;
-    console.error('DEBUG receiptsEffect: firing for receiptIds=' + entry.receiptIds.join(','));
     Promise.all(entry.receiptIds.map((id) => loadReceipt(store, id))).then((list) => {
-      if (!cancelled) {
-        console.error('DEBUG receiptsEffect: loaded ' + list.filter((r) => r !== null).length + ' of ' + list.length);
-        setReceipts(list.filter((r): r is BelegMeta => r !== null));
-      }
-    }).catch((e) => console.error('DEBUG receiptsEffect: error ' + e));
+      if (!cancelled) setReceipts(list.filter((r): r is BelegMeta => r !== null));
+    });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, entry.receiptIds.join(',')]);
@@ -63,26 +59,19 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   async function handlePdfUpload(file: File) {
     if (file.size > 4.5 * 1024 * 1024) { showToast('PDF zu groß (max ~4,5 MB)'); return; }
     if (!store) return;
-    console.error('DEBUG pdfUpload: start');
     const dataUrl = await fileToDataURL(file);
-    console.error('DEBUG pdfUpload: dataUrl ready');
     const rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
     const meta: BelegMeta = { id: rid, name: file.name, mime: 'application/pdf', dataUrl, createdAt: Date.now(), date: dateKey };
     // Absicht VOR den beiden Appwrite-Schreibvorgängen synchron vermerken - falls die Seite
     // dazwischen unterbrochen wird, kann die Verknüpfung beim nächsten App-Start nachgeholt
     // werden (siehe pendingReceiptLinks.ts).
     markPendingReceiptLink(dateKey, rid);
-    console.error('DEBUG pdfUpload: pending marked');
     await saveReceipt(store, rid, meta);
-    console.error('DEBUG pdfUpload: receipt saved rid=' + rid);
     const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
     setEntry(nextEntry);
-    console.error('DEBUG pdfUpload: setEntry called, receiptIds=' + JSON.stringify(nextEntry.receiptIds));
     await onSave(dateKey, nextEntry);
-    console.error('DEBUG pdfUpload: onSave done');
     clearPendingReceiptLink(dateKey, rid);
     showToast('Beleg gespeichert');
-    console.error('DEBUG pdfUpload: toast shown');
   }
 
   async function handlePhotoUpload(file: File) {
