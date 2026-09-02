@@ -45,7 +45,7 @@ jobs:
 
       - name: Service-Worker-Version stempeln
         if: steps.build.outcome == 'success'
-        run: sed -i "s/__BUILD_ID__/${{ github.sha }}/" app/dist/service-worker.js
+        run: sed -i "s/const CACHE_NAME = 'zeiterfassung-__BUILD_ID__'/const CACHE_NAME = 'zeiterfassung-${{ github.sha }}'/" app/dist/service-worker.js
 
       # Schreibt bei einem Fehlschlag die vollständige Ausgabe als Datei zurück ins Repo.
       # Grund: Ich (Claude) kann GitHubs Log-/Artefakt-Download nicht direkt erreichen
