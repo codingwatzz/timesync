@@ -1,4 +1,10 @@
-const CACHE_NAME = 'zeiterfassung-v15-offline-fix';
+// ea9ee78755b6ed909cc70433bfa11cd660aed731 wird beim Deploy durch den echten Commit-SHA ersetzt (siehe
+// deploy-production.yml) - garantiert, dass service-worker.js bei JEDEM Deploy tatsächlich
+// bytegenau anders ist, damit der Browser eine neue Version zuverlässig erkennt (sonst bleibt
+// eine alte, installierte SW-Version u.U. unbegrenzt aktiv, weil "kein Unterschied" erkannt
+// wird - genau das führte am 02.09.2026 dazu, dass Updates ohne manuelles Cache-Leeren nicht
+// mehr ankamen).
+const CACHE_NAME = 'zeiterfassung-ea9ee78755b6ed909cc70433bfa11cd660aed731';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,25 +36,28 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first für bereits gecachte Ressourcen, sonst Netzwerk - und JEDE erfolgreiche
-// Netzwerk-Antwort wird nachträglich mit in den Cache aufgenommen (nicht nur die feste
-// APP_SHELL-Liste). Das ist nötig, weil Vite bei jedem Build neue Datei-Hashes erzeugt
-// (z.B. assets/index-XYZ.js) - diese stehen nie in der statischen APP_SHELL-Liste, müssen
-// aber trotzdem für echte Offline-Nutzung verfügbar sein.
+// GEÄNDERT (02.09.2026): Network-first statt Cache-first. Vorher: bereits gecachte Anfragen
+// wurden SOFORT aus dem Cache beantwortet, das Netzwerk lief nur im Hintergrund für die
+// NÄCHSTE Anfrage mit - dadurch waren Updates immer einen ganzen Ladevorgang "hinterher" und
+// bei installierten PWAs (Homescreen-App) teils gar nicht mehr sichtbar, ohne den Cache manuell
+// zu leeren. Jetzt: Netzwerk hat immer Vorrang, sobald online - der Cache dient nur noch als
+// Fallback für echten Offline-Betrieb (siehe test/offline-test.js). { cache: 'reload' } umgeht
+// zusätzlich GitHub Pages' eigenen kurzen HTTP-Cache-Header, damit "online" auch wirklich
+// "frisch vom Server" bedeutet. Nur Anfragen an den eigenen Origin werden abgefangen - Anfragen
+// an Appwrite (anderer Origin, z.B. Beleg-Downloads) laufen unverändert direkt durch, statt in
+// diesem Cache zu landen.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(event.request, { cache: 'reload' })
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
