@@ -1,6 +1,7 @@
 const { log, sleep } = require('../utils');
 const { navigateToSafeTestMonth, waitForAppReady } = require('../navigation');
 const { directAppwriteRead } = require('../appwriteDirectCheck');
+const { clearAllReceipts } = require('../dayHelpers');
 
 /**
  * Lädt die Seite komplett neu, navigiert erneut in den Testmonat, und prüft dann, ob alle
@@ -56,11 +57,13 @@ async function reloadAndVerifyEntry(page, dayRows, { TEST_NOTE, day1RowId, month
   results.receiptPersisted = countAfterReload === 1;
   log(`Beleg nach Reload noch vorhanden: ${results.receiptPersisted}`);
 
-  // Löschen in try/catch: ein seltenes Timing-Problem hier soll nur diese eine Prüfung
-  // scheitern lassen, nicht den ganzen Testlauf abstürzen.
+  // clearAllReceipts statt eines einzelnen .click() - ein einzelner Klick auf einen Locator,
+  // der mehrere Elemente trifft (falls doch mal mehr als 1 Beleg vorhanden ist), löst in
+  // Playwright einen "strict mode violation"-Fehler aus und scheiterte dadurch bisher
+  // stillschweigend (siehe Kommentar in dayHelpers.js - Wurzelursache der wiederholt
+  // beobachteten receiptDeleted/receiptPersisted-Fehlschläge am 01.09.2026).
   try {
-    await page.click('.receipt-item .del', { timeout: 8000 });
-    await page.waitForSelector('.receipt-item', { state: 'detached', timeout: 5000 }).catch(() => {});
+    await clearAllReceipts(page);
   } catch (e) {
     log(`⚠ Beleg-Löschen fehlgeschlagen: ${e.message}`);
   }
