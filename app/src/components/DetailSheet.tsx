@@ -156,6 +156,25 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     markSaved(nextEntry);
   }
 
+  async function handleOpenReceipt(r: BelegMeta) {
+    if (!r.dataUrl) { showToast('Beleg konnte nicht geladen werden'); return; }
+    try {
+      // Blob-URL statt roher data:-URL an window.open übergeben - robuster bei größeren PDFs
+      // (manche Browser haben Längenbeschränkungen/Eigenheiten bei sehr langen data:-URLs in
+      // window.open). Öffnet im nativen, rein lesenden Browser-PDF-Viewer - kein Bearbeiten
+      // möglich.
+      const resp = await fetch(r.dataUrl);
+      const blob = await resp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank');
+      // Object-URL erst nach kurzer Verzögerung freigeben, damit der neue Tab noch Zeit hat,
+      // sie zu laden (revokeObjectURL sofort danach könnte den Ladevorgang abbrechen).
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch {
+      showToast('Beleg konnte nicht geöffnet werden');
+    }
+  }
+
   function toggleYesNo(field: 'fr' | 'mi' | 'ab') {
     update(field, !entry[field]);
   }
@@ -315,13 +334,28 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         <div className="section-title">Belege</div>
         <div className="receipt-list">
           {receipts.map((r) => (
-            <div key={r.id} className="receipt-item" data-rid={r.id}>
+            <div
+              key={r.id}
+              className="receipt-item"
+              data-rid={r.id}
+              onClick={() => handleOpenReceipt(r)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenReceipt(r); } }}
+              role="button"
+              tabIndex={0}
+              title="Zum Ansehen antippen"
+            >
               <div className="ic">📄</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="rn">{r.name}</div>
                 <div className="rd">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
               </div>
-              <button className="del" data-rid={r.id} onClick={() => handleDeleteReceipt(r.id)}>×</button>
+              <button
+                className="del"
+                data-rid={r.id}
+                onClick={(e) => { e.stopPropagation(); handleDeleteReceipt(r.id); }}
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>

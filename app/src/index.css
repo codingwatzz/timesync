@@ -143,7 +143,9 @@
   .yesno button.active { background: var(--teal); border-color:var(--teal); color:white; }
 
   .receipt-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
-  .receipt-item { display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:9px 11px; }
+  .receipt-item { display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:9px 11px; cursor:pointer; }
+  .receipt-item:hover { border-color: var(--teal); }
+  .receipt-item:active { background:#f1efe6; }
   .receipt-item .ic { width:30px; height:30px; border-radius:7px; background:var(--amber-soft); color:#8a4c1f; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
   .receipt-item .rn { flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .receipt-item .rd { font-size:10px; color:var(--grey); }

@@ -31,7 +31,7 @@ function renderSheet(props: Partial<React.ComponentProps<typeof DetailSheet>> = 
 }
 
 beforeEach(() => { vi.useFakeTimers(); });
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('DetailSheet Auto-Save', () => {
   it('speichert automatisch ~1s nach einer Eingabe, ohne Klick auf "Speichern"', async () => {
@@ -72,6 +72,64 @@ describe('DetailSheet Auto-Save', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('Schließen'));
     expect(onSave).toHaveBeenCalledTimes(1); // kein zusätzlicher Save ohne neue Änderung
+  });
+});
+
+describe('DetailSheet Beleg-Vorschau', () => {
+  const receiptMeta = {
+    id: 'r1', name: 'test-beleg.pdf', mime: 'application/pdf',
+    dataUrl: 'data:application/pdf;base64,AAAA', createdAt: 1700000000000, date: '2026-09-15',
+  };
+
+  function storeWithReceipt() {
+    return {
+      get: vi.fn().mockImplementation(async (key: string) => {
+        if (key === 'receipt:r1') return { key, value: JSON.stringify(receiptMeta) };
+        return null;
+      }),
+      set: vi.fn().mockResolvedValue({ key: 'x', value: '' }),
+      delete: vi.fn().mockResolvedValue({ key: 'x', deleted: true as const }),
+    };
+  }
+
+  it('öffnet das PDF in einem neuen Tab (Blob-URL), wenn auf den Beleg geklickt wird', async () => {
+    vi.useRealTimers();
+    const store = storeWithReceipt();
+    const entry = { ...emptyEntry(2026, 9, 15), receiptIds: ['r1'] };
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const blob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+    vi.spyOn(window, 'fetch').mockResolvedValue({ blob: async () => blob } as Response);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    const { container } = render(
+      <StoreContext.Provider value={{ store, mode: 'appwrite', log: [] }}>
+        <DetailSheet dateKey="2026-09-15" entry={entry} onSave={vi.fn()} onClose={vi.fn()} showToast={() => {}} />
+      </StoreContext.Provider>,
+    );
+
+    const item = await screen.findByText('test-beleg.pdf');
+    fireEvent.click(item.closest('.receipt-item')!);
+    await vi.waitFor(() => expect(openSpy).toHaveBeenCalledWith('blob:mock-url', '_blank'));
+    expect(container.querySelector('.receipt-item')).toHaveAttribute('role', 'button');
+  });
+
+  it('löscht den Beleg, ohne die Vorschau zu öffnen, wenn auf "×" geklickt wird', async () => {
+    vi.useRealTimers();
+    const store = storeWithReceipt();
+    const entry = { ...emptyEntry(2026, 9, 15), receiptIds: ['r1'] };
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(
+      <StoreContext.Provider value={{ store, mode: 'appwrite', log: [] }}>
+        <DetailSheet dateKey="2026-09-15" entry={entry} onSave={vi.fn().mockResolvedValue(undefined)} onClose={vi.fn()} showToast={() => {}} />
+      </StoreContext.Provider>,
+    );
+
+    await screen.findByText('test-beleg.pdf');
+    fireEvent.click(screen.getByText('×'));
+    expect(store.delete).toHaveBeenCalledWith('receipt:r1');
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });
 
