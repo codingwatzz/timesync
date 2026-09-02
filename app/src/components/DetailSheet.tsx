@@ -26,6 +26,34 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-Save: Änderungen werden ~1s nach der letzten Eingabe automatisch gespeichert, kein
+  // Klick auf "Speichern" mehr nötig (vorher gingen Formularfeld-Änderungen verloren, wenn
+  // man das Sheet ohne diesen Klick schloss - Belege selbst waren davon nie betroffen, die
+  // werden schon seit dem 01.09.-Fix sofort beim Hochladen gespeichert). `entryRef`/`savedRef`
+  // umgehen das React-Closure-Problem in der debounce-Funktion; `hasUnsavedRef` steuert das
+  // finale Flush-Save beim Schließen.
+  const entryRef = useRef(entry);
+  entryRef.current = entry;
+  const savedRef = useRef(initialEntry);
+  const hasUnsavedRef = useRef(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function flushSave() {
+    if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
+    if (!hasUnsavedRef.current) return;
+    const toSave = entryRef.current;
+    hasUnsavedRef.current = false;
+    savedRef.current = toSave;
+    await onSave(dateKey, toSave);
+  }
+
+  useEffect(() => {
+    // Beim Unmount (Sheet wird geschlossen) sofort final speichern, falls noch etwas
+    // Ungesichertes übrig ist - unabhängig vom Debounce-Timer.
+    return () => { flushSave(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [y, m, d] = dateKey.split('-').map(Number);
   const dow = WOCHENTAGE[new Date(y, m - 1, d).getDay()];
   const feiertag = feiertagName(y, m, d);
@@ -43,17 +71,37 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   }, [store, entry.receiptIds.join(',')]);
 
   function update<K extends keyof TagesEintrag>(field: K, value: TagesEintrag[K]) {
-    setEntry((prev) => ({ ...prev, [field]: value }));
+    setEntry((prev) => {
+      const next = { ...prev, [field]: value };
+      hasUnsavedRef.current = true;
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(() => { flushSave(); }, 1000);
+      return next;
+    });
   }
 
   function setTyp(typ: Wochentyp) {
-    setEntry((prev) => ({ ...prev, typ, typManuell: true }));
+    update('typ', typ);
+    update('typManuell', true);
   }
 
   async function handleSave() {
-    await onSave(dateKey, entry);
+    await flushSave();
     showToast('Gespeichert');
     onClose();
+  }
+
+  function handleClose() {
+    flushSave();
+    onClose();
+  }
+
+  // Nach einem direkten (nicht-debounced) Save markieren, damit ein evtl. noch laufender
+  // Debounce-Timer später keinen überflüssigen, redundanten Save mehr auslöst.
+  function markSaved(saved: TagesEintrag) {
+    if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
+    hasUnsavedRef.current = false;
+    savedRef.current = saved;
   }
 
   async function handlePdfUpload(file: File) {
@@ -70,6 +118,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
     setEntry(nextEntry);
     await onSave(dateKey, nextEntry);
+    markSaved(nextEntry);
     clearPendingReceiptLink(dateKey, rid);
     showToast('Beleg gespeichert');
   }
@@ -90,6 +139,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
       const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
       setEntry(nextEntry);
       await onSave(dateKey, nextEntry);
+      markSaved(nextEntry);
       clearPendingReceiptLink(dateKey, rid);
       showToast('Beleg gespeichert');
     } catch {
@@ -103,6 +153,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     const nextEntry = { ...entry, receiptIds: entry.receiptIds.filter((id) => id !== rid) };
     setEntry(nextEntry);
     await onSave(dateKey, nextEntry);
+    markSaved(nextEntry);
   }
 
   function toggleYesNo(field: 'fr' | 'mi' | 'ab') {
@@ -110,7 +161,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   }
 
   return (
-    <div className="sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className="sheet">
         <div className="sheet-handle" />
         <h2>{dow}, {pad(d)}.{pad(m)}.{y}</h2>
@@ -200,6 +251,11 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           />
         </div>
 
+        <div className="field">
+          <label>Sonstiges € <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(z.B. Bahncard, Deutschlandticket - unabhängig vom Tagestyp)</span></label>
+          <input id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
+        </div>
+
         <div id="travelSection" style={{ display: showTravel ? '' : 'none' }}>
           <div className="section-title">Fahrt &amp; Kosten</div>
           <div className="row2">
@@ -214,13 +270,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             <div className="field"><label>Hotel €</label>
               <input id="f_hotel" type="number" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', e.target.value)} />
             </div>
-            <div className="field"><label>Sonstiges €</label>
-              <input id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
+            <div className="field">
+              <label>Bewirtung € <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(+Beleg)</span></label>
+              <input id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
             </div>
-          </div>
-          <div className="field">
-            <label>Bewirtung € <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(zusätzlich Bewirtungsbeleg als Beleg hinzufügen)</span></label>
-            <input id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
           </div>
 
           <div className="section-title">Verpflegungsmehraufwand</div>
@@ -286,7 +339,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         />
 
         <div className="sheet-actions">
-          <button className="close" id="closeBtn" onClick={onClose}>Schließen</button>
+          <button className="close" id="closeBtn" onClick={handleClose}>Schließen</button>
           <button className="save" id="saveBtn" onClick={handleSave}>Speichern</button>
         </div>
       </div>

@@ -1,22 +1,21 @@
 name: E2E Test (Live App)
 
 on:
-  # WICHTIG: reagiert bewusst NICHT direkt auf "push", sondern erst NACHDEM das
-  # Deploy-Workflow vollständig abgeschlossen ist (inkl. dessen eigenem Commit des
-  # gebauten Outputs). Grund: Der Deploy-Workflow committet am Ende seinen Build
-  # zurück ins Repo - das würde bei "push" als Trigger einen ZWEITEN, parallel
-  # laufenden E2E-Testlauf auslösen, der sich mit dem ursprünglichen Lauf um dieselben
-  # Test-Tage in der gemeinsamen Appwrite-Datenbank in die Quere kommt (beobachtet am
-  # 31.08.2026: Felder wurden scheinbar grundlos leer gelesen).
-  workflow_run:
-    workflows: ['Build and Deploy (Production)']
-    types: [completed]
+  # GEÄNDERT (02.09.2026): läuft NICHT mehr automatisch nach jedem Deploy. Grund: Playwright-
+  # Installation + kompletter Klick-Durchlauf (zwei parallele Jobs: test + offline-test) kostet
+  # mehrere Minuten GitHub-Actions-Zeit UND mehrere Minuten Warten pro Chat-Sitzung - bei jedem
+  # einzelnen Push unverhältnismäßig teuer. npm run verify (Unit-Tests+Lint+Build, lokal,
+  # Sekunden, kostenlos) ist die verbindliche Pflichtprüfung vor jedem Push (siehe
+  # CLAUDE_CHECKLIST.md) und fängt die allermeisten Fehler schon ab. E2E läuft jetzt nur noch:
   workflow_dispatch: {}
   schedule:
     # Läuft täglich um 06:00 UTC, unabhängig von Code-Änderungen - fängt "stille"
     # Verschlechterung ab (z.B. Appwrite-API-Änderung, CDN-Ausfall, abgelaufenes Zertifikat),
     # die sonst erst beim nächsten Push oder bei manueller Nutzung auffallen würde.
     - cron: '0 6 * * *'
+  # workflow_run (bei jedem Deploy) bewusst entfernt - bei Bedarf manuell über "Run workflow"
+  # in der GitHub-Actions-UI auslösen, oder Claude explizit fragen, es zu tun (z.B. vor einer
+  # riskanten Storage-/Persistenz-Änderung).
 
 permissions:
   contents: write
@@ -24,8 +23,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Bei workflow_run nur weiterlaufen, wenn das Deploy-Workflow auch wirklich erfolgreich war
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
 
@@ -71,7 +68,6 @@ jobs:
 
   offline-test:
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
 
