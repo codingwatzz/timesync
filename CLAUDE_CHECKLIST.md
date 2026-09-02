@@ -45,6 +45,13 @@ in der Freigabeliste) - Workaround: Ergebnis als Datei im selben Workflow-Lauf z
 committen (wie `e2e-test.yml` es ohnehin für `last-result.json` tut) und über die normale
 Contents-API (`GET .../contents/<pfad>?ref=<branch>`) abholen.
 
+**Contents-API hat ein ~1-MB-Limit für Inline-Inhalte** (real erlebt 02.09.2026 beim
+Abholen heruntergeladener Beleg-PDFs): bei größeren Dateien liefert die Antwort
+`encoding: "none"` und ein leeres `content`-Feld, ohne Fehlermeldung. Workaround: die `sha`
+aus der Contents-Antwort nehmen und stattdessen die Git-Blobs-API verwenden (funktioniert
+bis 100 MB): `GET /repos/<repo>/git/blobs/<sha>` liefert denselben Inhalt zuverlässig
+base64-kodiert.
+
 ## 1. Lokale Prüfung VOR jedem Live-Zyklus
 
 Bevor irgendetwas gepusht wird, das einen Deploy/E2E-Test auslöst:

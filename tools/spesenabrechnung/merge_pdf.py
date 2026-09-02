@@ -57,6 +57,7 @@ def merge(xlsx_path: str, data_path: str, manifest_path: str, output_path: str) 
         data = json.load(f)
     with open(manifest_path, encoding='utf-8') as f:
         manifest = json.load(f)
+    manifest_dir = Path(manifest_path).resolve().parent
 
     zeilen = entries_to_zeilen(data['days'])
     # rid -> receiptIds je Zeile, in derselben Reihenfolge wie die exportierten Zeilen
@@ -84,7 +85,7 @@ def merge(xlsx_path: str, data_path: str, manifest_path: str, output_path: str) 
                     report['fehlende_belege'].append({'date': date_str, 'rid': rid,
                                                        'grund': (m or {}).get('error', 'nicht im Manifest')})
                     continue
-                reader = PdfReader(m['file'])
+                reader = PdfReader(manifest_dir / m['file'])
                 for page in reader.pages:
                     writer.add_page(page)
                 report['eingebundene_belege'].append({'date': date_str, 'rid': rid, 'name': m.get('name')})
