@@ -177,6 +177,29 @@ describe('DetailSheet Sonstiges € an allen Tagen', () => {
   });
 });
 
+describe('DetailSheet Arbeitszeit-Anzeige', () => {
+  it('zeigt die berechnete Arbeitszeit (hh:mm) neben "Zeiten" an', () => {
+    const entry = { ...emptyEntry(2026, 9, 15), start: '08:00', ende: '16:30', pause: '30' };
+    const { container } = renderSheet({ entry });
+    expect(container.querySelector('.arbeitszeit-badge')?.textContent).toBe('08:00');
+  });
+
+  it('berücksichtigt die zweite Schicht in der angezeigten Arbeitszeit', () => {
+    const entry = {
+      ...emptyEntry(2026, 9, 15),
+      start: '08:00', ende: '12:00', pause: '0',
+      start2: '17:00', ende2: '19:00', pause2: '0',
+    };
+    const { container } = renderSheet({ entry });
+    expect(container.querySelector('.arbeitszeit-badge')?.textContent).toBe('06:00');
+  });
+
+  it('zeigt 00:00, wenn keine Zeiten eingetragen sind', () => {
+    const { container } = renderSheet();
+    expect(container.querySelector('.arbeitszeit-badge')?.textContent).toBe('00:00');
+  });
+});
+
 describe('DetailSheet Pausenzeit-Auswahl', () => {
   it('bietet die Pause als Auswahl in 15er-Schritten an (statt Texteingabe)', () => {
     const { container } = renderSheet();

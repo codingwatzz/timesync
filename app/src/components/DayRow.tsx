@@ -23,7 +23,7 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
   const flags: React.ReactNode[] = [];
   if (entry?.ho) flags.push(<span key="ho" className="flag ho">Homeoffice</span>);
   const vorOrt = istVorOrtTag(entry);
-  if (vorOrt) flags.push(<span key="trip" className="flag trip">Vor Ort</span>);
+  if (vorOrt) flags.push(<span key="trip" className="flag trip">extern</span>);
   if (vorOrt && !entry?.reiseart) flags.push(<span key="warn" className="flag warn">⚠ Reiseart fehlt</span>);
   const km = toNumber(entry?.km);
   if (km > 0) flags.push(<span key="km" className="flag km">🚗 {km} km</span>);

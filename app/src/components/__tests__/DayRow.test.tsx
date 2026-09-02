@@ -98,4 +98,13 @@ describe('DayRow', () => {
     );
     expect(container.querySelector('.flag.km')).not.toBeInTheDocument();
   });
+
+  it('zeigt das "extern"-Flag (vormals "Vor Ort") an einem echten Vor-Ort-Arbeitstag', () => {
+    const entry = { ...emptyEntry(2026, 9, 17), typ: 'A' as const, ho: false, km: '50' };
+    render(
+      <DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(screen.getByText('extern')).toBeInTheDocument();
+    expect(screen.queryByText('Vor Ort')).not.toBeInTheDocument();
+  });
 });

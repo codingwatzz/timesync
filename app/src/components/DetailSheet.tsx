@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
-import { pad, pauseOptionsFor } from '../core/formatters';
+import { pad, pauseOptionsFor, fmtHHMM } from '../core/formatters';
+import { arbeitszeitMinuten } from '../core/entry';
 import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
@@ -224,7 +225,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           </div>
         </div>
 
-        <div className="section-title">Zeiten</div>
+        <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Zeiten</span>
+          <span className="arbeitszeit-badge mono">{fmtHHMM(arbeitszeitMinuten(entry))}</span>
+        </div>
         <div className="row3">
           <div className="field"><label>Start</label>
             <input id="f_start" type="time" value={entry.start} onChange={(e) => update('start', e.target.value)} />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, estimateBase64Bytes } from '../formatters';
+import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, estimateBase64Bytes, fmtHHMM } from '../formatters';
 
 describe('pad', () => {
   it('füllt einstellige Zahlen mit führender Null', () => {
@@ -107,5 +107,21 @@ describe('estimateBase64Bytes', () => {
     const short = estimateBase64Bytes('data:image/jpeg;base64,' + 'A'.repeat(100));
     const long = estimateBase64Bytes('data:image/jpeg;base64,' + 'A'.repeat(1000));
     expect(long).toBeCloseTo(short * 10, -1);
+  });
+});
+
+describe('fmtHHMM', () => {
+  it('formatiert Minuten als hh:mm', () => {
+    expect(fmtHHMM(90)).toBe('01:30');
+    expect(fmtHHMM(480)).toBe('08:00');
+    expect(fmtHHMM(0)).toBe('00:00');
+  });
+
+  it('füllt Stunden und Minuten mit führender Null', () => {
+    expect(fmtHHMM(65)).toBe('01:05');
+  });
+
+  it('funktioniert auch über 24 Stunden hinaus (z.B. Summe über zwei Schichten)', () => {
+    expect(fmtHHMM(1500)).toBe('25:00');
   });
 });

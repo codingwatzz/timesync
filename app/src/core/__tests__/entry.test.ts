@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyEntry, tagesKosten, istVorOrtTag } from '../entry';
+import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten } from '../entry';
 
 describe('emptyEntry', () => {
   it('setzt Homeoffice standardmäßig auf true', () => {
@@ -51,5 +51,41 @@ describe('istVorOrtTag', () => {
 
   it('ist false bei Typ A, kein Homeoffice, aber KEIN Reisefeld gesetzt (reiner Bürotag)', () => {
     expect(istVorOrtTag({ ...basis, ho: false, typ: 'A' })).toBe(false);
+  });
+});
+
+describe('arbeitszeitMinuten', () => {
+  const basis = emptyEntry(2026, 8, 17);
+
+  it('berechnet Start-Ende minus Pause für die erste Schicht', () => {
+    // 08:00-16:30 = 8h30min = 510min, minus 30min Pause = 480min
+    expect(arbeitszeitMinuten({ ...basis, start: '08:00', ende: '16:30', pause: '30' })).toBe(480);
+  });
+
+  it('gibt 0 zurück, wenn Start oder Ende fehlt', () => {
+    expect(arbeitszeitMinuten({ ...basis, start: '', ende: '16:00', pause: '0' })).toBe(0);
+    expect(arbeitszeitMinuten({ ...basis, start: '08:00', ende: '', pause: '0' })).toBe(0);
+  });
+
+  it('zählt die zweite Schicht mit, falls befüllt', () => {
+    const e = {
+      ...basis, start: '08:00', ende: '12:00', pause: '0',
+      start2: '17:00', ende2: '19:00', pause2: '0',
+    };
+    // 1. Schicht 4h (240min) + 2. Schicht 2h (120min) = 360min
+    expect(arbeitszeitMinuten(e)).toBe(360);
+  });
+
+  it('ignoriert die zweite Schicht, wenn sie leer ist', () => {
+    const e = { ...basis, start: '08:00', ende: '16:00', pause: '30' };
+    expect(arbeitszeitMinuten(e)).toBe(450); // 8h = 480min, -30 Pause = 450
+  });
+
+  it('klemmt auf 0, wenn Ende vor Start liegt (unplausible Eingabe)', () => {
+    expect(arbeitszeitMinuten({ ...basis, start: '16:00', ende: '08:00', pause: '0' })).toBe(0);
+  });
+
+  it('behandelt eine leere Pause wie 0 Minuten Pause', () => {
+    expect(arbeitszeitMinuten({ ...basis, start: '08:00', ende: '16:00', pause: '' })).toBe(480);
   });
 });

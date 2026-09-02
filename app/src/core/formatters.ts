@@ -4,6 +4,13 @@ export function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+/** Formatiert eine Minutenzahl als "hh:mm" (z.B. 90 -> "01:30"). */
+export function fmtHHMM(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${pad(h)}:${pad(m)}`;
+}
+
 export function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }

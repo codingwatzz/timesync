@@ -138,6 +138,7 @@
 
   .section-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color: var(--teal-dark); margin: 18px 0 10px; padding-top:12px; border-top:1px solid var(--line); }
   .section-title:first-of-type { border-top:none; padding-top:0; margin-top:4px; }
+  .arbeitszeit-badge { font-size:13px; font-weight:700; color: var(--teal-dark); background:#eef5f4; padding:2px 9px; border-radius:20px; letter-spacing:0; text-transform:none; }
 
   .yesno { display:flex; gap:6px; }
   .yesno button { flex:1; border:1.5px solid var(--line); background:var(--card); padding:8px; border-radius:8px; font-size:13px; font-weight:600; color:var(--grey); cursor:pointer; }

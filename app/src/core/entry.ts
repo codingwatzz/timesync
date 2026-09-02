@@ -27,3 +27,23 @@ export function istVorOrtTag(e: TagesEintrag | undefined): boolean {
   if (!e || e.ho || e.typ !== 'A') return false;
   return Boolean(e.transport || e.hotel || e.bewirtung || e.km || e.reiseart);
 }
+
+/**
+ * Berechnet die tatsächliche Arbeitszeit in Minuten: (Ende - Start - Pause) für die erste
+ * Schicht, plus (Ende2 - Start2 - Pause2) für die zweite Schicht, falls befüllt. Unvollständige
+ * (Start oder Ende fehlt) oder unplausible (Ende vor Start) Schichten zählen als 0 Minuten,
+ * statt einen Fehler zu werfen oder eine negative Zeit anzuzeigen.
+ */
+export function arbeitszeitMinuten(
+  e: Pick<TagesEintrag, 'start' | 'ende' | 'pause' | 'start2' | 'ende2' | 'pause2'>,
+): number {
+  function schichtMinuten(start: string, ende: string, pause: string): number {
+    if (!start || !ende) return 0;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = ende.split(':').map(Number);
+    if (![sh, sm, eh, em].every(Number.isFinite)) return 0;
+    const dauer = (eh * 60 + em) - (sh * 60 + sm) - toNumber(pause);
+    return Math.max(0, dauer);
+  }
+  return schichtMinuten(e.start, e.ende, e.pause) + schichtMinuten(e.start2, e.ende2, e.pause2);
+}
