@@ -6,6 +6,7 @@ import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
 import { fileToDataURL, photoToPdf } from '../lib/pdf';
 import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
+import { useSwipe } from '../hooks/useSwipe';
 import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
 
 interface DetailSheetProps {
@@ -14,9 +15,14 @@ interface DetailSheetProps {
   onSave: (key: string, entry: TagesEintrag) => Promise<void>;
   onClose: () => void;
   showToast: (msg: string) => void;
+  // Optional: wird aufgerufen, um zum vorigen (-1) oder nächsten (+1) Tag zu wechseln
+  // (Wisch-Geste). Das Sheet bleibt dabei offen, nur dateKey/entry wechseln (siehe App.tsx -
+  // erzwingt per key={dateKey} einen Remount, der automatisch flushSave() für den alten Tag
+  // auslöst, bevor der neue Tag frisch gerendert wird).
+  onNavigateDay?: (delta: 1 | -1) => void;
 }
 
-export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, showToast }: DetailSheetProps) {
+export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, showToast, onNavigateDay }: DetailSheetProps) {
   const { store } = useStore();
   const [entry, setEntry] = useState<TagesEintrag>(initialEntry);
   const [receipts, setReceipts] = useState<BelegMeta[]>([]);
@@ -95,6 +101,13 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     flushSave();
     onClose();
   }
+
+  // Wischen nach links = nächster Tag, nach rechts = voriger Tag - dasselbe Muster wie beim
+  // Monatswechsel. Nur aktiv, wenn onNavigateDay übergeben wurde.
+  const swipeHandlers = useSwipe(
+    () => onNavigateDay?.(1),
+    () => onNavigateDay?.(-1),
+  );
 
   // Nach einem direkten (nicht-debounced) Save markieren, damit ein evtl. noch laufender
   // Debounce-Timer später keinen überflüssigen, redundanten Save mehr auslöst.
@@ -181,7 +194,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
   return (
     <div className="sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className="sheet">
+      <div className="sheet" {...swipeHandlers}>
         <div className="sheet-handle" />
         <h2>{dow}, {pad(d)}.{pad(m)}.{y}</h2>
         <div className="sheet-sub">Tageseintrag bearbeiten{feiertag ? ' · ' + feiertag : ''}</div>

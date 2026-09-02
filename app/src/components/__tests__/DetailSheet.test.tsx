@@ -133,6 +133,30 @@ describe('DetailSheet Beleg-Vorschau', () => {
   });
 });
 
+describe('DetailSheet Wisch-Navigation', () => {
+  function touch(x: number, y: number) {
+    return { touches: [{ clientX: x, clientY: y }], changedTouches: [{ clientX: x, clientY: y }] };
+  }
+
+  it('ruft onNavigateDay(1) bei einer Wisch-Geste nach links auf (nächster Tag)', () => {
+    const onNavigateDay = vi.fn();
+    const { container } = renderSheet({ onNavigateDay });
+    const sheet = container.querySelector('.sheet')!;
+    fireEvent.touchStart(sheet, touch(300, 200));
+    fireEvent.touchEnd(sheet, touch(150, 200));
+    expect(onNavigateDay).toHaveBeenCalledWith(1);
+  });
+
+  it('ruft onNavigateDay(-1) bei einer Wisch-Geste nach rechts auf (voriger Tag)', () => {
+    const onNavigateDay = vi.fn();
+    const { container } = renderSheet({ onNavigateDay });
+    const sheet = container.querySelector('.sheet')!;
+    fireEvent.touchStart(sheet, touch(100, 200));
+    fireEvent.touchEnd(sheet, touch(250, 200));
+    expect(onNavigateDay).toHaveBeenCalledWith(-1);
+  });
+});
+
 describe('DetailSheet Sonstiges € an allen Tagen', () => {
   it('zeigt "Sonstiges €" auch an einem Homeoffice-Tag (nicht nur bei "vor Ort")', () => {
     const entry = { ...emptyEntry(2026, 9, 15), ho: true };

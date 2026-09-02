@@ -5,6 +5,7 @@ import { dateKey, defaultTyp, feiertagName } from '../core/holidays';
 import { tagesKosten } from '../core/entry';
 import { toNumber } from '../core/formatters';
 import { DayRow } from './DayRow';
+import { useSwipe } from '../hooks/useSwipe';
 import type { TagesEintrag } from '../core/types';
 import type { StorageMode } from '../store/types';
 
@@ -52,6 +53,9 @@ export function MonthView({
 
   const badge = SYNC_BADGE[syncMode];
   const importInputRef = useRef<HTMLInputElement>(null);
+  // Wischen nach links = weiter (nächster Monat), nach rechts = zurück (voriger Monat) -
+  // gängige Konvention aus Kalender-/Foto-Apps.
+  const swipeHandlers = useSwipe(onNextMonth, onPrevMonth);
 
   return (
     <>
@@ -76,7 +80,7 @@ export function MonthView({
         </div>
       </header>
 
-      <main>
+      <main {...swipeHandlers}>
         {days.map((d) => {
           const key = dateKey(year, month, d);
           const e = entries[key];

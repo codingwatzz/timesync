@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MonthView } from '../MonthView';
 import { emptyEntry } from '../../core/entry';
 import type { TagesEintrag } from '../../core/types';
@@ -53,6 +53,34 @@ describe('MonthView Kosten-Summe', () => {
     screen.getByText('›').click();
     screen.getByText('‹').click();
     expect(onNextMonth).toHaveBeenCalledOnce();
+    expect(onPrevMonth).toHaveBeenCalledOnce();
+  });
+
+  it('wechselt per Wisch-Geste nach links zum nächsten Monat', () => {
+    const onNextMonth = vi.fn();
+    const { container } = render(
+      <MonthView
+        year={2026} month={8} entries={{}} syncMode="appwrite"
+        onPrevMonth={noop} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop}
+      />,
+    );
+    const main = container.querySelector('main')!;
+    fireEvent.touchStart(main, { touches: [{ clientX: 300, clientY: 200 }] });
+    fireEvent.touchEnd(main, { changedTouches: [{ clientX: 150, clientY: 200 }] });
+    expect(onNextMonth).toHaveBeenCalledOnce();
+  });
+
+  it('wechselt per Wisch-Geste nach rechts zum vorigen Monat', () => {
+    const onPrevMonth = vi.fn();
+    const { container } = render(
+      <MonthView
+        year={2026} month={8} entries={{}} syncMode="appwrite"
+        onPrevMonth={onPrevMonth} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
+      />,
+    );
+    const main = container.querySelector('main')!;
+    fireEvent.touchStart(main, { touches: [{ clientX: 100, clientY: 200 }] });
+    fireEvent.touchEnd(main, { changedTouches: [{ clientX: 250, clientY: 200 }] });
     expect(onPrevMonth).toHaveBeenCalledOnce();
   });
 });
