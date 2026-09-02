@@ -24,6 +24,15 @@ export function toNumber(v: string | number | undefined | null): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Graustufen-Helligkeit nach ITU-R BT.601 (gängige Gewichtung fürs menschliche Auge) - wird
+ * beim Foto-Beleg-Upload verwendet, um Farbfotos platzsparend in Schwarz-Weiß umzuwandeln
+ * (siehe lib/pdf.ts::photoToPdf).
+ */
+export function rgbToGray(r: number, g: number, b: number): number {
+  return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+}
+
 /** Feste Auswahl für die Pausenzeit-Eingabemaske: 0-180 Minuten in 15er-Schritten. */
 export const PAUSE_MINUTEN_SCHRITTE: string[] = Array.from({ length: 13 }, (_, i) => String(i * 15));
 

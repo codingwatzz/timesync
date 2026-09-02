@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE } from '../formatters';
+import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray } from '../formatters';
 
 describe('pad', () => {
   it('füllt einstellige Zahlen mit führender Null', () => {
@@ -73,5 +73,26 @@ describe('PAUSE_MINUTEN_SCHRITTE / pauseOptionsFor', () => {
 
   it('ignoriert einen nicht-numerischen Altwert (fällt auf Standard-Schritte zurück)', () => {
     expect(pauseOptionsFor('abc')).toBe(PAUSE_MINUTEN_SCHRITTE);
+  });
+});
+
+describe('rgbToGray', () => {
+  it('gibt für reines Weiß 255 zurück', () => {
+    expect(rgbToGray(255, 255, 255)).toBe(255);
+  });
+
+  it('gibt für reines Schwarz 0 zurück', () => {
+    expect(rgbToGray(0, 0, 0)).toBe(0);
+  });
+
+  it('gewichtet Grün am stärksten (ITU-R BT.601)', () => {
+    // Gleich helles Rot/Grün/Blau ergeben unterschiedliche Graustufen, Grün wird am hellsten.
+    const gray = rgbToGray(0, 200, 0);
+    expect(rgbToGray(200, 0, 0)).toBeLessThan(gray);
+    expect(rgbToGray(0, 0, 200)).toBeLessThan(gray);
+  });
+
+  it('rundet auf ganze Zahlen', () => {
+    expect(Number.isInteger(rgbToGray(123, 45, 200))).toBe(true);
   });
 });

@@ -1,3 +1,5 @@
+import { rgbToGray } from '../core/formatters';
+
 export function fileToDataURL(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -7,7 +9,12 @@ export function fileToDataURL(file: File | Blob): Promise<string> {
   });
 }
 
-/** Wandelt ein Foto in ein komprimiertes, druckfertiges PDF (max. Breite 1400px, JPEG 0.72). */
+/**
+ * Wandelt ein Foto in ein möglichst platzsparendes PDF um (nur so hochaufgelöst und farbig
+ * wie für einen Zahlungsnachweis nötig): max. Breite 1100px, Schwarz-Weiß (Graustufen statt
+ * Farbe - Zahlen/Text bleiben dadurch weiterhin gut lesbar, aber ohne die für die reine
+ * Lesbarkeit unnötigen Farbinformationen), JPEG-Qualität 0.65.
+ */
 export async function photoToPdf(file: File): Promise<string> {
   // jsPDF erst hier bei tatsächlichem Bedarf nachladen (nicht im Hauptbundle) - spart auf
   // jedem Seitenaufruf ~350 KB (jsPDF zieht intern html2canvas + dompurify mit), obwohl
@@ -22,7 +29,7 @@ export async function photoToPdf(file: File): Promise<string> {
     img.src = dataUrl;
   });
 
-  const maxW = 1400;
+  const maxW = 1100;
   const scale = Math.min(1, maxW / img.width);
   const canvas = document.createElement('canvas');
   canvas.width = img.width * scale;
@@ -30,7 +37,20 @@ export async function photoToPdf(file: File): Promise<string> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas-Kontext nicht verfügbar');
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  const jpeg = canvas.toDataURL('image/jpeg', 0.72);
+
+  // Manuelle Pixel-Umwandlung statt ctx.filter='grayscale(1)' - funktioniert zuverlässig auch
+  // auf älteren mobilen Browsern ohne Canvas-Filter-Unterstützung.
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const px = imageData.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const gray = rgbToGray(px[i], px[i + 1], px[i + 2]);
+    px[i] = gray;
+    px[i + 1] = gray;
+    px[i + 2] = gray;
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const jpeg = canvas.toDataURL('image/jpeg', 0.65);
 
   const isLandscape = canvas.width > canvas.height;
   const pdf = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
