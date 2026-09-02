@@ -23,13 +23,19 @@ export interface MahlzeitenFlags {
 /**
  * Berechnet den Verpflegungsmehraufwand in Euro für einen Tag.
  * Gibt 0 zurück, wenn keine Reiseart gesetzt ist (kein Anspruch).
+ *
+ * 'Abwesenheitstag (<8h)' ist eine rein interne Markierung (kein Wert aus der echten
+ * Excel-Vorlage) - dient nur als Erinnerungshilfe im UI, damit die Warnungen "Reiseart
+ * fehlt"/"kein Verpflegungsmehraufwand" nicht mehr auftauchen, obwohl bewusst (noch) keine
+ * echte Reiseart gewählt wurde. Muss beim Übertrag in die Spesenabrechnung wie leer/kein
+ * Anspruch behandelt werden - deshalb hier identisch zu '' behandelt.
  */
 export function verpflegungsmehraufwand(
   reiseland: Reiseland,
   reiseart: Reiseart,
   mahlzeiten: MahlzeitenFlags,
 ): number {
-  if (!reiseart) return 0;
+  if (!reiseart || reiseart === 'Abwesenheitstag (<8h)') return 0;
   const saetze = SAETZE[reiseland] ?? SAETZE.Deutschland;
   const basis = reiseart === 'Abwesenheitstag (24h)' ? saetze.ganztags : saetze.teiltags;
 

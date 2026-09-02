@@ -12,7 +12,7 @@ export const TYP_LABEL: Record<Wochentyp, string> = {
 };
 
 export const REISEARTEN: Reiseart[] = [
-  '', 'Anreisetag', 'Abreisetag', 'Abwesenheitstag (>8h)', 'Abwesenheitstag (24h)',
+  '', 'Anreisetag', 'Abreisetag', 'Abwesenheitstag (<8h)', 'Abwesenheitstag (>8h)', 'Abwesenheitstag (24h)',
 ];
 
 export const LAENDER: Reiseland[] = ['Deutschland', 'Österreich', 'Schweiz'];

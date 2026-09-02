@@ -9,6 +9,7 @@ export type Reiseart =
   | ''
   | 'Anreisetag'
   | 'Abreisetag'
+  | 'Abwesenheitstag (<8h)'
   | 'Abwesenheitstag (>8h)'
   | 'Abwesenheitstag (24h)';
 

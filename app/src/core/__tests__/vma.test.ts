@@ -62,4 +62,13 @@ describe('verpflegungsmehraufwand', () => {
       verpflegungsmehraufwand('Deutschland', 'Abreisetag', { fr: false, mi: false, ab: false }),
     ).toBe(14);
   });
+
+  it('Abwesenheitstag (<8h) ist eine rein interne Markierung und gibt 0 zurück (wie leer)', () => {
+    expect(
+      verpflegungsmehraufwand('Deutschland', 'Abwesenheitstag (<8h)', { fr: false, mi: false, ab: false }),
+    ).toBe(0);
+    expect(
+      verpflegungsmehraufwand('Österreich', 'Abwesenheitstag (<8h)', { fr: true, mi: true, ab: true }),
+    ).toBe(0);
+  });
 });
