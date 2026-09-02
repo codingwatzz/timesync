@@ -27,9 +27,42 @@ import tempfile
 from pathlib import Path
 
 from pypdf import PdfWriter, PdfReader
+from pdf2image import convert_from_path
+from PIL import Image
+import io
 
 sys.path.insert(0, str(Path(__file__).parent))
 from export_xlsx import entries_to_zeilen  # noqa: E402
+
+SCAN_ENHANCE_SCRIPT = Path(__file__).parent / 'scan_enhance.mjs'
+SCAN_DPI = 200  # fuer Text auf einer A4-Seite noch gut lesbar bei 1-Bit-Schwarz-Weiss
+
+
+def receipt_page_to_bw_image(page_image: Image.Image, tmp_dir: str, idx: int) -> Image.Image:
+    """Schickt EINE rasterisierte Beleg-Seite durch scan_enhance.mjs (Scanic-Zuschnitt +
+    Beleuchtungskorrektur + Schwellenwert, siehe Docstring dort) und laedt das Ergebnis
+    zurueck. Node-Aufruf pro Seite, da Scanic ein JS/WASM-Werkzeug ist, der Rest der
+    Pipeline aber Python ist."""
+    in_path = Path(tmp_dir) / f'page_{idx}_in.png'
+    out_path = Path(tmp_dir) / f'page_{idx}_out.png'
+    page_image.save(in_path)
+    result = subprocess.run(
+        ['node', str(SCAN_ENHANCE_SCRIPT), str(in_path), str(out_path)],
+        capture_output=True, text=True, timeout=60,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f'scan_enhance.mjs fehlgeschlagen fuer Seite {idx}: {result.stderr}')
+    return Image.open(out_path).convert('1')
+
+
+def receipt_to_bw_pdf_bytes(pdf_path: str, tmp_dir: str) -> bytes:
+    """Rasterisiert jede Seite eines Beleg-PDFs und wandelt sie via scan_enhance.mjs in
+    zugeschnittenes, beleuchtungskorrigiertes Schwarz-Weiss um (siehe Docstring dort)."""
+    images = convert_from_path(pdf_path, dpi=SCAN_DPI)
+    bw_images = [receipt_page_to_bw_image(img, tmp_dir, i) for i, img in enumerate(images)]
+    buf = io.BytesIO()
+    bw_images[0].save(buf, format='PDF', save_all=True, append_images=bw_images[1:])
+    return buf.getvalue()
 
 
 def xlsx_to_pdf(xlsx_path: str, out_dir: str) -> str:
@@ -85,7 +118,8 @@ def merge(xlsx_path: str, data_path: str, manifest_path: str, output_path: str) 
                     report['fehlende_belege'].append({'date': date_str, 'rid': rid,
                                                        'grund': (m or {}).get('error', 'nicht im Manifest')})
                     continue
-                reader = PdfReader(manifest_dir / m['file'])
+                bw_pdf_bytes = receipt_to_bw_pdf_bytes(str(manifest_dir / m['file']), tmp)
+                reader = PdfReader(io.BytesIO(bw_pdf_bytes))
                 for page in reader.pages:
                     writer.add_page(page)
                 report['eingebundene_belege'].append({'date': date_str, 'rid': rid, 'name': m.get('name')})

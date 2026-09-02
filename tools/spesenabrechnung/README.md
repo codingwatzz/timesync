@@ -60,6 +60,7 @@ curl -s -H "Authorization: Bearer $GH_TOKEN" \
 **5. Alles zu einem Gesamt-PDF zusammenführen:**
 
 ```bash
+npm install   # einmalig, installiert scanic/canvas/jsdom/sharp fuer scan_enhance.mjs
 python3 merge_pdf.py \
   --xlsx Spesenabrechnung_2026-09_Raoul-Huebner.xlsx \
   --data monatsdaten.json \
@@ -67,13 +68,34 @@ python3 merge_pdf.py \
   --output Spesenabrechnung_2026-09_Raoul-Huebner_komplett.pdf
 ```
 
-Rendert die `.xlsx` per LibreOffice zu PDF (Seite 1) und hängt die Beleg-PDFs in derselben
-Reihenfolge wie die Zeilen der Abrechnung an (Datum aufsteigend) - so kann der Prüfende
-Zeile für Zeile mitgehen. Meldet **Zeilen ohne Beleg** (informativ) und **fehlende Belege**
-(Fehler, Exit-Code 1) getrennt.
+Rendert die `.xlsx` per LibreOffice zu PDF (Seite 1) und schickt jede Beleg-Seite durch
+`scan_enhance.mjs` (Scanic-Zuschnitt + Beleuchtungskorrektur + Schwarz-Weiß, siehe unten),
+bevor sie angehängt wird - in Datumsreihenfolge wie die Zeilen der Abrechnung. Meldet
+**Zeilen ohne Beleg** (informativ) und **fehlende Belege** (Fehler, Exit-Code 1) getrennt.
+
+### Beleg-Aufbereitung (`scan_enhance.mjs`)
+
+Jede Beleg-Seite durchläuft (Erkenntnisse vom 02.09.2026, nach mehreren Fehlversuchen):
+
+1. **Scanic** (`npmjs.com/package/scanic`, MIT-Lizenz, ~100 KB) erkennt den Papierrand im
+   Foto und schneidet perspektivkorrigiert zu. Erkennt Scanic **nichts Plausibles** (Fläche
+   der erkannten Kontur unter 40 % des Originalbilds - getestet an allen 6 echten
+   August-Belegen: echte Treffer lagen bei 55-80 %, Fehlerkennungen wie ein zufälliger
+   Schattenwurf oder eine kleine interne Box in einer randlosen Rechnung bei unter 8 %),
+   wird das **Originalbild unverändert weiterverwendet** statt eines falschen Zuschnitts.
+   Das betraf real 3 von 6 August-Belegen sowie randlose PDFs (z.B. eine direkt
+   hochgeladene Rechnung ohne sichtbaren Hintergrund).
+2. **Beleuchtungskorrektur** ("Flat-Field"): eine stark weichgezeichnete Kopie schätzt den
+   Beleuchtungsverlauf; das Bild wird durch diese Schätzung geteilt. Behebt einen echten
+   Fehler vom 02.09.2026, bei dem ein einzelner fester Schwellenwert den Schattenwurf eines
+   Handyfotos zu einer schwarzen Fläche zusammenfraß und Beträge unlesbar machte.
+3. Fester Schwellenwert auf dem beleuchtungskorrigierten Bild ergibt sauberes,
+   gleichmäßiges Schwarz-Weiß (keine Graustufen - spart deutlich mehr Speicher).
 
 **6. Trotzdem stichprobenartig selbst gegenprüfen** (die Skripte verhindern die bekannten
-Fehlerklassen, sind aber kein Ersatz für einen kurzen Blick auf das Ergebnis-PDF).
+Fehlerklassen, sind aber kein Ersatz für einen kurzen Blick auf das Ergebnis-PDF - insb. ob
+die auf den Belegen aufgedruckten Beträge mit den in der App eingetragenen übereinstimmen;
+das prüft keines der Skripte automatisch).
 
 ## Was die Skripte NICHT prüfen können
 

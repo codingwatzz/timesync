@@ -4,3 +4,6 @@ __pycache__/
 
 # Node
 node_modules/
+
+# Node deps in tools/
+tools/**/node_modules/

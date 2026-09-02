@@ -1,0 +1,18 @@
+{
+  "name": "spesenabrechnung",
+  "version": "1.0.0",
+  "description": "Bef\u00fcllt `SpesenabrechnungVorlage_neu_ab_012026.xltx` automatisiert mit den Monatsdaten aus der Zeiterfassungs-App und f\u00fchrt das Ergebnis mit den Beleg-PDFs zu einem einzigen, direkt einreichbaren Gesamt-PDF zusammen. Entstanden am 02.09.2026 nach einem manuellen Export mit drei Fehlschl\u00e4gen (siehe `PROJEKT_UEBERSICHT.md` f\u00fcr die volle Fehlergeschichte) - alle damals gefundenen Fallstricke sind hier als automatische Pr\u00fcfschritte eingebaut, nicht nur im Ged\u00e4chtnis.",
+  "main": "fetch_month.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^3.2.3",
+    "jsdom": "^30.0.1",
+    "scanic": "^1.6.0",
+    "sharp": "^0.35.4"
+  }
+}
