@@ -43,6 +43,10 @@ jobs:
         continue-on-error: true
         run: npm run build 2>&1 | tee /tmp/build-output.log
 
+      - name: Service-Worker-Version stempeln
+        if: steps.build.outcome == 'success'
+        run: sed -i "s/__BUILD_ID__/${{ github.sha }}/" app/dist/service-worker.js
+
       # Schreibt bei einem Fehlschlag die vollständige Ausgabe als Datei zurück ins Repo.
       # Grund: Ich (Claude) kann GitHubs Log-/Artefakt-Download nicht direkt erreichen
       # (Netzwerksperre meiner Sandbox), aber Dateien im Repo ganz normal per API lesen.
