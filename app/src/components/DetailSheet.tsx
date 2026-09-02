@@ -245,11 +245,12 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
         {zweiteSchichtOffen ? (
           <>
+            <div className="row3-subheading">2. Schicht</div>
             <div className="row3" style={{ marginTop: -6 }}>
-              <div className="field"><label>Start (2. Schicht)</label>
+              <div className="field"><label>Start</label>
                 <input id="f_start2" type="time" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
               </div>
-              <div className="field"><label>Ende (2. Schicht)</label>
+              <div className="field"><label>Ende</label>
                 <input id="f_ende2" type="time" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
               </div>
               <div className="field"><label>Pause (Min)</label>

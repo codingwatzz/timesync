@@ -120,6 +120,7 @@
   .row2 > .field { flex:1; }
   .row3 { display:flex; gap:8px; }
   .row3 > .field { flex:1; }
+  .row3-subheading { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--grey); margin: 10px 0 5px; }
 
   .typ-pick { display:flex; gap:6px; flex-wrap:wrap; }
   .typ-pick button { border:1.5px solid var(--line); background:var(--card); padding:7px 12px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; color: var(--grey); }
