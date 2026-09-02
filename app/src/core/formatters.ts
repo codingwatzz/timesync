@@ -23,3 +23,20 @@ export function toNumber(v: string | number | undefined | null): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
+
+/** Feste Auswahl für die Pausenzeit-Eingabemaske: 0-180 Minuten in 15er-Schritten. */
+export const PAUSE_MINUTEN_SCHRITTE: string[] = Array.from({ length: 13 }, (_, i) => String(i * 15));
+
+/**
+ * Baut die Options-Liste für die Pausenzeit-Auswahl: die festen 15er-Schritte, plus - falls
+ * der aktuell gespeicherte Wert (z.B. aus einem älteren, per Texteingabe erfassten Eintrag)
+ * kein Vielfaches von 15 ist - diesen Wert zusätzlich an der richtigen Stelle einsortiert,
+ * damit er nicht stillschweigend falsch/verschwunden dargestellt wird.
+ */
+export function pauseOptionsFor(current: string): string[] {
+  const normalized = current || '0';
+  if (PAUSE_MINUTEN_SCHRITTE.includes(normalized)) return PAUSE_MINUTEN_SCHRITTE;
+  const n = Number(normalized);
+  if (!Number.isFinite(n)) return PAUSE_MINUTEN_SCHRITTE;
+  return [...PAUSE_MINUTEN_SCHRITTE, normalized].sort((a, b) => Number(a) - Number(b));
+}

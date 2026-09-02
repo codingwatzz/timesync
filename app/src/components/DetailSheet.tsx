@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
-import { pad } from '../core/formatters';
+import { pad, pauseOptionsFor } from '../core/formatters';
 import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
@@ -233,7 +233,9 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             <input id="f_ende" type="time" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
           </div>
           <div className="field"><label>Pause (Min)</label>
-            <input id="f_pause" type="number" placeholder="0" value={entry.pause} onChange={(e) => update('pause', e.target.value)} />
+            <select id="f_pause" value={entry.pause || '0'} onChange={(e) => update('pause', e.target.value)}>
+              {pauseOptionsFor(entry.pause).map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
           </div>
         </div>
 
@@ -247,7 +249,9 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                 <input id="f_ende2" type="time" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
               </div>
               <div className="field"><label>Pause (Min)</label>
-                <input id="f_pause2" type="number" placeholder="0" value={entry.pause2} onChange={(e) => update('pause2', e.target.value)} />
+                <select id="f_pause2" value={entry.pause2 || '0'} onChange={(e) => update('pause2', e.target.value)}>
+                  {pauseOptionsFor(entry.pause2).map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
               </div>
             </div>
             <button

@@ -176,3 +176,29 @@ describe('DetailSheet Sonstiges € an allen Tagen', () => {
     expect(km()).not.toBeVisible();
   });
 });
+
+describe('DetailSheet Pausenzeit-Auswahl', () => {
+  it('bietet die Pause als Auswahl in 15er-Schritten an (statt Texteingabe)', () => {
+    const { container } = renderSheet();
+    const select = container.querySelector<HTMLSelectElement>('#f_pause')!;
+    expect(select.tagName).toBe('SELECT');
+    const values = Array.from(select.options).map((o) => o.value);
+    expect(values).toEqual(['0', '15', '30', '45', '60', '75', '90', '105', '120', '135', '150', '165', '180']);
+  });
+
+  it('zeigt einen ungewöhnlichen Altwert (z.B. 20 Minuten) korrekt einsortiert an', () => {
+    const entry = { ...emptyEntry(2026, 9, 15), pause: '20' };
+    const { container } = renderSheet({ entry });
+    const select = container.querySelector<HTMLSelectElement>('#f_pause')!;
+    expect(select.value).toBe('20');
+    const values = Array.from(select.options).map((o) => o.value);
+    expect(values).toContain('20');
+  });
+
+  it('speichert den gewählten Pausenwert bei Auswahl', () => {
+    const { container } = renderSheet();
+    const select = container.querySelector<HTMLSelectElement>('#f_pause')!;
+    fireEvent.change(select, { target: { value: '45' } });
+    expect(select.value).toBe('45');
+  });
+});
