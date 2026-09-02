@@ -87,15 +87,19 @@ jobs:
 
       - name: Build in Root kopieren (dort liegt GitHub Pages)
         run: |
-          # Alles außer app/, test/, .github/, .git, ci-logs UND den Dokumentations-Dateien
-          # im Root leeren, dann frisch befüllen. WICHTIG: README.md/CLAUDE_CHECKLIST.md/
-          # PROJEKT_UEBERSICHT.md liegen bewusst im Root (nicht in app/) und wurden hier
-          # bisher bei JEDEM Deploy versehentlich mitgelöscht (Bug gefunden + behoben am
-          # 01.09.2026). PROJEKT_UEBERSICHT.md kam am 01.09. abends dazu - bei jeder neuen
-          # Root-Dokumentationsdatei: hier in die Ausnahmeliste aufnehmen.
+          # Alles außer app/, test/, tools/, .github/, .git, ci-logs UND den Dokumentations-
+          # Dateien im Root leeren, dann frisch befüllen. WICHTIG: README.md/
+          # CLAUDE_CHECKLIST.md/PROJEKT_UEBERSICHT.md liegen bewusst im Root (nicht in app/)
+          # und wurden hier bisher bei JEDEM Deploy versehentlich mitgelöscht (Bug gefunden +
+          # behoben am 01.09.2026). PROJEKT_UEBERSICHT.md kam am 01.09. abends dazu.
+          # tools/ (Spesenabrechnung-Export-Werkzeuge) kam am 02.09. dazu und wurde durch
+          # denselben Bug ebenfalls versehentlich geloescht (samt .gitignore) - hier ebenso
+          # ergaenzt. Bei jedem neuen Root-Verzeichnis/jeder neuen Root-Datei: hier in die
+          # Ausnahmeliste aufnehmen.
           find . -maxdepth 1 -mindepth 1 \
-            ! -name 'app' ! -name 'test' ! -name '.github' ! -name '.git' ! -name 'ci-logs' \
+            ! -name 'app' ! -name 'test' ! -name 'tools' ! -name '.github' ! -name '.git' ! -name 'ci-logs' \
             ! -name 'README.md' ! -name 'CLAUDE_CHECKLIST.md' ! -name 'PROJEKT_UEBERSICHT.md' \
+            ! -name '.gitignore' \
             -exec rm -rf {} +
           cp -r app/dist/. .
 

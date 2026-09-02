@@ -111,8 +111,14 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   Ausnahmeliste, dann kopiert er den frischen Build rein.** Root-Dateien wie `README.md`/
   `CLAUDE_CHECKLIST.md`, die NICHT Teil des App-Builds sind, wurden dadurch beim ersten Deploy
   nach ihrer Erstellung automatisch mitgelöscht (gefunden + behoben 01.09.2026, siehe
-  `.github/workflows/deploy-production.yml`, Ausnahmeliste im `find`-Befehl). Bei jeder neuen
-  Root-Datei: prüfen, ob sie in dieser Ausnahmeliste steht.
+  `.github/workflows/deploy-production.yml`, Ausnahmeliste im `find`-Befehl).
+  **Derselbe Bug ist am 02.09.2026 ERNEUT aufgetreten**, diesmal mit einem ganzen
+  Root-VERZEICHNIS (`tools/spesenabrechnung/` samt `.gitignore`) - ein `app/**`-Push loeste
+  einen Deploy aus, der `tools/` komplett geloescht hat (ueber Git-History wiederhergestellt,
+  keine dauerhaften Daten verloren, aber vermeidbar gewesen). **Bei JEDER neuen Root-Datei
+  ODER JEDEM neuen Root-Verzeichnis, das nicht Teil des App-Builds ist: SOFORT in die
+  Ausnahmeliste in `deploy-production.yml` eintragen, nicht erst wenn es zum zweiten Mal
+  weh tut.** Am besten direkt beim Anlegen des neuen Root-Eintrags, nicht als Nachgedanke.
 - **`navigateToSafeTestMonth()` rundet den gewählten Zufalls-Zeitpunkt immer auf den nächsten
   Dezember auf** (garantiert Feiertage 25./26.12. für den Test). Der ursprüngliche
   MONTHS_FORWARD-Bereich (60-84) ließ dadurch nur 3 erreichbare Ziel-Dezember zu - bei mehreren

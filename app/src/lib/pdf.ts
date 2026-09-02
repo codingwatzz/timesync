@@ -17,11 +17,33 @@ const JPEG_QUALITAETSSTUFEN = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2];
 
 // Mindestanteil der Originalflaeche, den Scanics erkannte Kontur einnehmen muss, damit der
 // Zuschnitt uebernommen wird. Am 02.09.2026 an allen 6 echten Beleg-Fotos eines Monats
-// getestet: echte Treffer lagen bei 55-80% Flaechenanteil, Fehlerkennungen (z.B. ein
-// zufaelliger Schattenwurf) bei unter 8% - 40% liegt mit deutlichem Abstand dazwischen.
-// Scanics eigener minDocumentCoverageRatio-Parameter griff im selben Test nicht zuverlaessig,
-// daher diese zusaetzliche eigene Pruefung.
+// getestet: echte Treffer lagen bei 54-55% Flaechenanteil, Fehlerkennungen (z.B. ein
+// zufaelliger Schattenwurf oder eine entartete/verzerrte Kontur) bei unter 19% - 40% liegt
+// mit deutlichem Abstand dazwischen. Scanics eigener minDocumentCoverageRatio-Parameter
+// griff im selben Test nicht zuverlaessig, daher diese zusaetzliche eigene Pruefung.
 const SCANIC_MIN_FLAECHENANTEIL = 0.4;
+
+interface Punkt { x: number; y: number; }
+interface Eckpunkte { topLeft: Punkt; topRight: Punkt; bottomRight: Punkt; bottomLeft: Punkt; }
+
+/** Reine, ohne Canvas-Abhaengigkeit testbare Funktion: Flaeche eines Vierecks aus seinen
+ * Eckpunkten (Shoelace-Formel). WICHTIG: die Flaeche der von Scanic zurueckgegebenen
+ * perspektivkorrigierten AUSGABE (output.width*height) kann bei einer entarteten/verzerrten
+ * erkannten Kontur taeuschend gross wirken, obwohl die Eckpunkte im Originalbild eine
+ * winzige, unplausible Flaeche einnehmen (real aufgetreten am 02.09.2026: eine fast
+ * diagonale Linie im Foto wurde als Dokumentrand erkannt und auf 79.6% "aufgeblasen"
+ * ausgegeben, obwohl die echte Flaeche der Eckpunkte nur 18.5% betrug). Deshalb IMMER diese
+ * Funktion auf den rohen `corners` verwenden, nie `output.width*height`. */
+export function shoelaceFlaeche(corners: Eckpunkte): number {
+  const pts = [corners.topLeft, corners.topRight, corners.bottomRight, corners.bottomLeft];
+  let flaeche = 0;
+  for (let i = 0; i < 4; i++) {
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % 4];
+    flaeche += p1.x * p2.y - p2.x * p1.y;
+  }
+  return Math.abs(flaeche) / 2;
+}
 
 /** Reine Entscheidungsfunktion (ohne Canvas-Abhaengigkeit, daher leicht testbar): ist die von
  * Scanic erkannte Flaeche plausibel genug, um den Zuschnitt zu uebernehmen? */
@@ -49,10 +71,11 @@ export function fileToDataURL(file: File | Blob): Promise<string> {
  *
  * Gibt `null` zurueck (Aufrufer verwendet dann das Originalfoto unveraendert weiter), wenn:
  * - Scanic selbst keinen Kandidaten findet, ODER
- * - die erkannte Flaeche unplausibel klein ist (siehe SCANIC_MIN_FLAECHENANTEIL) - das betraf
- *   real 3 von 6 getesteten Fotos sowie randlose, direkt hochgeladene Dokumente ohne
+ * - die erkannte Flaeche unplausibel klein ist (siehe SCANIC_MIN_FLAECHENANTEIL, berechnet
+ *   aus den rohen Eckpunkten - NICHT aus der Ausgabegroesse, siehe shoelaceFlaeche) - das
+ *   betraf real 4 von 6 getesteten Fotos sowie randlose, direkt hochgeladene Dokumente ohne
  *   sichtbaren Hintergrund, bei denen Scanic sonst faelschlich eine kleine interne
- *   Bildstruktur (z.B. eine umrandete Box) als "das Dokument" erkennt.
+ *   Bildstruktur oder eine entartete Kontur als "das Dokument" erkennt.
  * - Scanic aus irgendeinem Grund nicht laedt (z.B. Netzwerkproblem beim erstmaligen Nachladen)
  *   - ein fehlschlagender Zuschnitt darf den Foto-Upload nie verhindern.
  */
@@ -61,8 +84,9 @@ async function versucheBelegZuschnitt(img: HTMLImageElement): Promise<HTMLCanvas
     const { scanDocument } = await import('scanic');
     const result = await scanDocument(img, { mode: 'extract', output: 'canvas' });
     if (!result.success) return null;
+    const echteFlaeche = shoelaceFlaeche(result.corners as Eckpunkte);
+    if (!istZuschnittPlausibel(echteFlaeche, img.width * img.height)) return null;
     const output = result.output as HTMLCanvasElement;
-    if (!istZuschnittPlausibel(output.width * output.height, img.width * img.height)) return null;
     return output;
   } catch {
     return null;
