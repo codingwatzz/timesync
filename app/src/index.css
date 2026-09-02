@@ -90,6 +90,7 @@
   .flag.trip { background: var(--amber-soft); color: #8a4c1f; }
   .flag.receipt { background:#eee4d0; color:#7a6a3f; }
   .flag.warn { background:#f7dede; color:#8a2f2f; }
+  .flag.km { background:#e3ecf5; color:#2f5a8a; }
   .warn-banner { background:#f7dede; color:#8a2f2f; border:1px solid #e0b3b3; border-radius:9px; padding:9px 12px; font-size:12px; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
   .day-right { text-align:right; flex-shrink:0; font-size:12px; color:var(--grey); }
   .day-right .sum { font-family:"SF Mono",monospace; font-weight:700; color: var(--ink); font-size:13px; }

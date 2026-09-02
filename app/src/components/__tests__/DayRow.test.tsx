@@ -82,4 +82,20 @@ describe('DayRow', () => {
       vi.useRealTimers();
     }
   });
+
+  it('zeigt ein km-Flag, wenn gefahrene Kilometer eingetragen sind', () => {
+    const entry = { ...emptyEntry(2026, 9, 17), typ: 'A' as const, ho: false, km: '85' };
+    render(
+      <DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(screen.getByText('🚗 85 km')).toBeInTheDocument();
+  });
+
+  it('zeigt KEIN km-Flag, wenn keine Kilometer eingetragen sind', () => {
+    const entry = { ...emptyEntry(2026, 9, 17), typ: 'A' as const, ho: false };
+    const { container } = render(
+      <DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(container.querySelector('.flag.km')).not.toBeInTheDocument();
+  });
 });

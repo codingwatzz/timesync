@@ -1,5 +1,5 @@
 import { WOCHENTAGE, TYP_LABEL } from '../core/constants';
-import { pad } from '../core/formatters';
+import { pad, toNumber } from '../core/formatters';
 import { tagesKosten, istVorOrtTag } from '../core/entry';
 import { fmtEUR } from '../core/formatters';
 import type { TagesEintrag } from '../core/types';
@@ -25,6 +25,8 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
   const vorOrt = istVorOrtTag(entry);
   if (vorOrt) flags.push(<span key="trip" className="flag trip">Vor Ort</span>);
   if (vorOrt && !entry?.reiseart) flags.push(<span key="warn" className="flag warn">⚠ Reiseart fehlt</span>);
+  const km = toNumber(entry?.km);
+  if (km > 0) flags.push(<span key="km" className="flag km">🚗 {km} km</span>);
   if (entry?.receiptIds?.length) {
     flags.push(
       <span key="receipt" className="flag receipt">
