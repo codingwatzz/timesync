@@ -26,7 +26,7 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
   if (vorOrt) flags.push(<span key="trip" className="flag trip">extern</span>);
   if (vorOrt && !entry?.reiseart) flags.push(<span key="warn" className="flag warn">⚠ Reiseart fehlt</span>);
   const km = toNumber(entry?.km);
-  if (km > 0) flags.push(<span key="km" className="flag km">🚗 {km} km</span>);
+  if (km > 0) flags.push(<span key="km" className="flag km">{km} km</span>);
   if (entry?.receiptIds?.length) {
     flags.push(
       <span key="receipt" className="flag receipt">

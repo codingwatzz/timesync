@@ -88,7 +88,7 @@ describe('DayRow', () => {
     render(
       <DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
     );
-    expect(screen.getByText('🚗 85 km')).toBeInTheDocument();
+    expect(screen.getByText('85 km')).toBeInTheDocument();
   });
 
   it('zeigt KEIN km-Flag, wenn keine Kilometer eingetragen sind', () => {
