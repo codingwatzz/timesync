@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray } from '../formatters';
+import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, estimateBase64Bytes } from '../formatters';
 
 describe('pad', () => {
   it('füllt einstellige Zahlen mit führender Null', () => {
@@ -94,5 +94,18 @@ describe('rgbToGray', () => {
 
   it('rundet auf ganze Zahlen', () => {
     expect(Number.isInteger(rgbToGray(123, 45, 200))).toBe(true);
+  });
+});
+
+describe('estimateBase64Bytes', () => {
+  it('schätzt die Bytegröße einer data:-URL korrekt (3/4-Faktor)', () => {
+    // 'AAAA' (4 Base64-Zeichen) kodiert exakt 3 Rohbytes
+    expect(estimateBase64Bytes('data:image/jpeg;base64,AAAA')).toBe(3);
+  });
+
+  it('skaliert linear mit der Base64-Länge', () => {
+    const short = estimateBase64Bytes('data:image/jpeg;base64,' + 'A'.repeat(100));
+    const long = estimateBase64Bytes('data:image/jpeg;base64,' + 'A'.repeat(1000));
+    expect(long).toBeCloseTo(short * 10, -1);
   });
 });

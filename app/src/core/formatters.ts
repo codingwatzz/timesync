@@ -33,6 +33,16 @@ export function rgbToGray(r: number, g: number, b: number): number {
   return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 }
 
+/**
+ * Schätzt die Bytegröße der Base64-Nutzdaten einer data:-URL (ohne den "data:...;base64,"-
+ * Präfix). Base64 kodiert 3 Rohbytes in 4 Zeichen, daher der Faktor 3/4. Wird beim Foto-
+ * Beleg-Upload genutzt, um die Ziel-Dateigröße einzuhalten (siehe lib/pdf.ts::photoToPdf).
+ */
+export function estimateBase64Bytes(dataUrl: string): number {
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  return Math.floor((base64.length * 3) / 4);
+}
+
 /** Feste Auswahl für die Pausenzeit-Eingabemaske: 0-180 Minuten in 15er-Schritten. */
 export const PAUSE_MINUTEN_SCHRITTE: string[] = Array.from({ length: 13 }, (_, i) => String(i * 15));
 

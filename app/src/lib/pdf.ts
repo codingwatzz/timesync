@@ -1,4 +1,19 @@
-import { rgbToGray } from '../core/formatters';
+import { rgbToGray, estimateBase64Bytes } from '../core/formatters';
+
+// Ziel: ~300dpi bei A4-Breite (8,27" × 300 ≈ 2481px) - der übliche Richtwert für gut lesbare
+// Dokumenten-Scans. Echte DPI lassen sich aus einem Handyfoto nicht exakt bestimmen (wir
+// kennen die tatsächliche physische Größe des fotografierten Belegs nicht), das ist die
+// gängige Annäherung: den Beleg so behandeln, als würde er eine A4-Seite ausfüllen.
+const ZIEL_BREITE_PX = 2480;
+// Harte Obergrenze für die PDF-Zielgröße. Ein paar KB Puffer für den PDF-Container selbst
+// (Struktur, keine große Datenmenge) - das eigentliche Foto muss etwas darunter bleiben.
+const MAX_PDF_BYTES = 2 * 1024 * 1024;
+const PDF_CONTAINER_OVERHEAD_BYTES = 20 * 1024;
+// Von hoch nach niedrig absteigende Qualitätsstufen - die erste Stufe, die die Zielgröße
+// einhält, wird verwendet. Reine Textbelege (viel weißer Hintergrund) komprimieren i.d.R.
+// schon bei der ersten Stufe weit unter das Limit; nur sehr detailreiche/dunkle Fotos
+// brauchen die niedrigeren Stufen.
+const JPEG_QUALITAETSSTUFEN = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2];
 
 export function fileToDataURL(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -11,9 +26,11 @@ export function fileToDataURL(file: File | Blob): Promise<string> {
 
 /**
  * Wandelt ein Foto in ein möglichst platzsparendes PDF um (nur so hochaufgelöst und farbig
- * wie für einen Zahlungsnachweis nötig): max. Breite 1100px, Schwarz-Weiß (Graustufen statt
+ * wie für einen Zahlungsnachweis nötig): ~300dpi bei A4-Breite, Schwarz-Weiß (Graustufen statt
  * Farbe - Zahlen/Text bleiben dadurch weiterhin gut lesbar, aber ohne die für die reine
- * Lesbarkeit unnötigen Farbinformationen), JPEG-Qualität 0.65.
+ * Lesbarkeit unnötigen Farbinformationen). JPEG-Qualität wird automatisch so weit abgesenkt,
+ * bis das PDF die 2-MB-Obergrenze einhält (typischerweise bleibt ein normaler, textlastiger
+ * Beleg deutlich darunter - die Grenze greift nur bei sehr detailreichen/dunklen Fotos).
  */
 export async function photoToPdf(file: File): Promise<string> {
   // jsPDF erst hier bei tatsächlichem Bedarf nachladen (nicht im Hauptbundle) - spart auf
@@ -29,8 +46,7 @@ export async function photoToPdf(file: File): Promise<string> {
     img.src = dataUrl;
   });
 
-  const maxW = 1100;
-  const scale = Math.min(1, maxW / img.width);
+  const scale = Math.min(1, ZIEL_BREITE_PX / img.width);
   const canvas = document.createElement('canvas');
   canvas.width = img.width * scale;
   canvas.height = img.height * scale;
@@ -50,7 +66,16 @@ export async function photoToPdf(file: File): Promise<string> {
   }
   ctx.putImageData(imageData, 0, 0);
 
-  const jpeg = canvas.toDataURL('image/jpeg', 0.65);
+  // Qualitätsstufe wählen: die höchste Stufe nehmen, deren JPEG-Größe die Zielgröße einhält.
+  // Bleibt selbst die niedrigste Stufe darüber (sehr seltener Fall), wird trotzdem diese
+  // niedrigste Stufe verwendet - besser ein etwas zu großes PDF als eines, das gar nicht
+  // erst entsteht.
+  const zielBytes = MAX_PDF_BYTES - PDF_CONTAINER_OVERHEAD_BYTES;
+  let jpeg = canvas.toDataURL('image/jpeg', JPEG_QUALITAETSSTUFEN[0]);
+  for (const q of JPEG_QUALITAETSSTUFEN) {
+    jpeg = canvas.toDataURL('image/jpeg', q);
+    if (estimateBase64Bytes(jpeg) <= zielBytes) break;
+  }
 
   const isLandscape = canvas.width > canvas.height;
   const pdf = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
