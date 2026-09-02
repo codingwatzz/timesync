@@ -54,4 +54,32 @@ describe('DayRow', () => {
     );
     expect(container.querySelector('.day-row.weekend')).toBeInTheDocument();
   });
+
+  it('markiert den heutigen Tag (Datum stimmt mit Systemzeit überein)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 17)); // 17.09.2026 (Monat 0-indiziert)
+    try {
+      const { container } = render(
+        <DayRow year={2026} month={9} day={17} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
+      );
+      expect(container.querySelector('.day-row.today')).toBeInTheDocument();
+      expect(container.querySelector('.num.today')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('markiert einen anderen Tag NICHT als heute', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 17));
+    try {
+      const { container } = render(
+        <DayRow year={2026} month={9} day={18} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
+      );
+      expect(container.querySelector('.day-row.today')).not.toBeInTheDocument();
+      expect(container.querySelector('.num.today')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

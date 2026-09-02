@@ -61,6 +61,17 @@
   .day-row.weekend .day-date { display:flex; align-items:baseline; gap:5px; width:auto; }
   .day-row.weekend .day-date .dow { font-size:9px; }
   .day-row.weekend .day-date .num { font-size:13px; }
+
+  /* Heutiges Datum: dezenter Rahmen ums ganze Kärtchen (kein Layout-Versatz durch box-shadow
+     statt border) + gefüllter Kreis um die Tageszahl, angelehnt an gängige Kalender-Apps
+     (Google/Apple Calendar). */
+  .day-row.today { box-shadow: 0 0 0 2px var(--teal); }
+  .day-date .num.today {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:24px; height:24px; border-radius:50%;
+    background: var(--teal); color:#fff;
+  }
+  .day-row.weekend .day-date .num.today { min-width:20px; height:20px; }
   .day-row.weekend .day-mid .desc { font-size:11px; }
   .tab { width: 6px; flex-shrink:0; }
   .tab.A { background: var(--tab-a); } .tab.W { background: var(--tab-w); }

@@ -17,6 +17,8 @@ interface DayRowProps {
 export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayRowProps) {
   const dow = WOCHENTAGE[new Date(year, month - 1, day).getDay()];
   const isWeekend = typ === 'W';
+  const heute = new Date();
+  const isToday = year === heute.getFullYear() && month === heute.getMonth() + 1 && day === heute.getDate();
 
   const flags: React.ReactNode[] = [];
   if (entry?.ho) flags.push(<span key="ho" className="flag ho">Homeoffice</span>);
@@ -35,12 +37,12 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
   const sum = entry ? tagesKosten(entry) : 0;
 
   return (
-    <div className={`day-row${isWeekend ? ' weekend' : ''}`} onClick={onClick}>
+    <div className={`day-row${isWeekend ? ' weekend' : ''}${isToday ? ' today' : ''}`} onClick={onClick}>
       <div className={`tab ${typ}`} />
       <div className="day-body">
         <div className="day-date">
           <div className="dow">{dow}</div>
-          <div className="num">{pad(day)}</div>
+          <div className={`num${isToday ? ' today' : ''}`}>{pad(day)}</div>
         </div>
         <div className="day-mid">
           <div className={`desc${desc ? '' : ' empty'}`}>{desc || TYP_LABEL[typ]}</div>
