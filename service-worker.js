@@ -1,10 +1,10 @@
-// ea9ee78755b6ed909cc70433bfa11cd660aed731 wird beim Deploy durch den echten Commit-SHA ersetzt (siehe
+// __BUILD_ID__ wird beim Deploy durch den echten Commit-SHA ersetzt (siehe
 // deploy-production.yml) - garantiert, dass service-worker.js bei JEDEM Deploy tatsächlich
 // bytegenau anders ist, damit der Browser eine neue Version zuverlässig erkennt (sonst bleibt
 // eine alte, installierte SW-Version u.U. unbegrenzt aktiv, weil "kein Unterschied" erkannt
 // wird - genau das führte am 02.09.2026 dazu, dass Updates ohne manuelles Cache-Leeren nicht
 // mehr ankamen).
-const CACHE_NAME = 'zeiterfassung-ea9ee78755b6ed909cc70433bfa11cd660aed731';
+const CACHE_NAME = 'zeiterfassung-e4a066ed0dcddebb8eeb4ccb8bc5573299d00432';
 const APP_SHELL = [
   './',
   './index.html',
