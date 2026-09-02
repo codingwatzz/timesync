@@ -38,10 +38,15 @@ export function MonthView({
   let kostenSum = 0;
   for (const d of days) {
     const e = entries[dateKey(year, month, d)];
-    if (e && e.typ === 'A' && !e.ho) {
+    if (!e) continue;
+    // Kosten (inkl. "Sonstiges €") an JEDEM Tag mitzählen - seit der Erweiterung vom 02.09.2026
+    // kann "Sonstiges €" unabhängig von Tagestyp/Homeoffice eingegeben werden (z.B.
+    // Bahncard/Deutschlandticket am 1. eines Monats, auch an einem Wochenendtag). "Vor Ort"-
+    // Tage-Zähler und gefahrene km bleiben bewusst nur an echten Arbeitstagen vor Ort gezählt.
+    kostenSum += tagesKosten(e);
+    if (e.typ === 'A' && !e.ho) {
       nonHoCount++;
       kmSum += toNumber(e.km);
-      kostenSum += tagesKosten(e);
     }
   }
 
