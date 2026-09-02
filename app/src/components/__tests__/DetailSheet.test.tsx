@@ -18,16 +18,17 @@ function renderSheet(props: Partial<React.ComponentProps<typeof DetailSheet>> = 
   const store = makeStore();
   const onSave = vi.fn().mockResolvedValue(undefined);
   const onClose = vi.fn();
+  const showToast = vi.fn();
   const entry = emptyEntry(2026, 9, 15);
   const utils = render(
     <StoreContext.Provider value={{ store, mode: 'appwrite', log: [] }}>
-      <DetailSheet dateKey="2026-09-15" entry={entry} onSave={onSave} onClose={onClose} showToast={() => {}} {...props} />
+      <DetailSheet dateKey="2026-09-15" entry={entry} onSave={onSave} onClose={onClose} showToast={showToast} {...props} />
     </StoreContext.Provider>,
   );
   const beschreibung = () => utils.container.querySelector<HTMLTextAreaElement>('#f_beschreibung')!;
   const sonstiges = () => utils.container.querySelector<HTMLInputElement>('#f_sonstiges');
   const km = () => utils.container.querySelector<HTMLInputElement>('#f_km');
-  return { ...utils, onSave, onClose, beschreibung, sonstiges, km };
+  return { ...utils, onSave, onClose, showToast, beschreibung, sonstiges, km };
 }
 
 beforeEach(() => { vi.useFakeTimers(); });
@@ -72,6 +73,29 @@ describe('DetailSheet Auto-Save', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('Schließen'));
     expect(onSave).toHaveBeenCalledTimes(1); // kein zusätzlicher Save ohne neue Änderung
+  });
+
+  it('zeigt einen "Gespeichert"-Toast, wenn der Auto-Save im Hintergrund (Debounce) speichert', async () => {
+    const { showToast, beschreibung } = renderSheet();
+    fireEvent.change(beschreibung(), { target: { value: 'Kundentermin' } });
+    expect(showToast).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(showToast).toHaveBeenCalledWith('Gespeichert');
+  });
+
+  it('zeigt einen "Gespeichert"-Toast bei explizitem Klick auf "Speichern"', async () => {
+    const { showToast, beschreibung } = renderSheet();
+    fireEvent.change(beschreibung(), { target: { value: 'Kundentermin' } });
+    fireEvent.click(screen.getByText('Speichern'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(showToast).toHaveBeenCalledWith('Gespeichert');
+  });
+
+  it('zeigt KEINEN Toast beim Schließen (stiller Flush, kein Doppel-Feedback beim Wegnavigieren)', () => {
+    const { showToast, beschreibung } = renderSheet();
+    fireEvent.change(beschreibung(), { target: { value: 'Kundentermin' } });
+    fireEvent.click(screen.getByText('Schließen'));
+    expect(showToast).not.toHaveBeenCalled();
   });
 });
 

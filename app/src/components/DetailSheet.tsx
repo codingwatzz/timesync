@@ -45,19 +45,25 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   const hasUnsavedRef = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function flushSave() {
+  async function flushSave(opts: { silent?: boolean } = {}) {
     if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
     if (!hasUnsavedRef.current) return;
     const toSave = entryRef.current;
     hasUnsavedRef.current = false;
     savedRef.current = toSave;
     await onSave(dateKey, toSave);
+    // Rückmeldung bei jedem ECHTEN Speichern (Auto-Save nach Tippen ODER expliziter Klick) -
+    // vorher speicherte Auto-Save komplett unsichtbar im Hintergrund, was laut UI-Review
+    // (02.09.2026) Unsicherheit erzeugen kann ("hat sich das jetzt wirklich gespeichert?").
+    // Beim stillen Schließen/Unmount (silent:true) KEIN Toast - der wäre ohnehin kaum noch
+    // sichtbar und beim Wegnavigieren nicht hilfreich.
+    if (!opts.silent) showToast('Gespeichert');
   }
 
   useEffect(() => {
     // Beim Unmount (Sheet wird geschlossen) sofort final speichern, falls noch etwas
     // Ungesichertes übrig ist - unabhängig vom Debounce-Timer.
-    return () => { flushSave(); };
+    return () => { flushSave({ silent: true }); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -94,12 +100,11 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
   async function handleSave() {
     await flushSave();
-    showToast('Gespeichert');
     onClose();
   }
 
   function handleClose() {
-    flushSave();
+    flushSave({ silent: true });
     onClose();
   }
 

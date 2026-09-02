@@ -120,7 +120,8 @@
   .row2 > .field { flex:1; }
   .row3 { display:flex; gap:8px; }
   .row3 > .field { flex:1; }
-  .row3-subheading { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--grey); margin: 10px 0 5px; }
+  .row3-subheading { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--teal-dark); margin: 14px 0 8px; padding-top:10px; border-top:1px dashed var(--line); }
 
   .typ-pick { display:flex; gap:6px; flex-wrap:wrap; }
   .typ-pick button { border:1.5px solid var(--line); background:var(--card); padding:7px 12px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; color: var(--grey); }
@@ -156,7 +157,8 @@
   .add-receipt-row { display:flex; gap:8px; }
   .add-receipt-row button { flex:1; border:1.5px dashed var(--line); background:transparent; border-radius:9px; padding:12px; font-size:13px; font-weight:600; color:var(--teal-dark); cursor:pointer; }
 
-  .sheet-actions { display:flex; gap:10px; margin-top: 22px; }
+  .sheet-actions { display:flex; gap:10px; margin-top: 22px; position: sticky; bottom: 0;
+    background: var(--paper); padding-top: 12px; box-shadow: 0 -8px 12px -6px rgba(0,0,0,0.08); }
   .sheet-actions button { flex:1; border:none; border-radius:10px; padding:13px; font-size:14px; font-weight:700; cursor:pointer; }
   .sheet-actions .save { background: var(--teal); color:white; }
   .sheet-actions .close { background: var(--card); border:1px solid var(--line); color:var(--ink); }
@@ -176,7 +178,7 @@
   .empty-state { text-align:center; padding: 40px 20px; color:var(--grey); }
   .empty-state .big { font-size:34px; margin-bottom:8px; }
 
-  #debugBtn { position:fixed; bottom:14px; right:14px; z-index:90; width:34px; height:34px; border-radius:50%;
+  #debugBtn { position:fixed; bottom:78px; right:14px; z-index:90; width:34px; height:34px; border-radius:50%;
     background: var(--card); border:1px solid var(--line); color:var(--teal-dark); font-size:17px; cursor:pointer;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; }
   #debugOverlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(20,24,20,0.55); align-items:center; justify-content:center; }
