@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Fuehrt die Spesenabrechnungs-Uebersichtsseite (direkt sauber gerendert, siehe render_pdf.py)
-und die einzelnen Beleg-PDFs zu einem einzigen, direkt einreichbaren Gesamt-PDF zusammen -
-wie der Nutzer es fuer Juli 2026 manuell gemacht hat.
+Fuehrt die tatsaechliche, ausgefuellte Spesenabrechnung (.xlsx, echt gerendert - siehe
+xlsx_to_pdf.py) und die einzelnen Beleg-PDFs zu einem einzigen, direkt einreichbaren
+Gesamt-PDF zusammen - wie der Nutzer es fuer Juli 2026 manuell gemacht hat.
 
 Reihenfolge im Ergebnis: zuerst die Spesenabrechnung-Uebersicht, danach die Belege in
 derselben Reihenfolge wie die Zeilen der Abrechnung (Datum aufsteigend) - so kann der
@@ -10,6 +10,7 @@ Pruefende Zeile fuer Zeile mit den Belegen mitgehen.
 
 Nutzung:
     python3 merge_pdf.py \\
+        --template SpesenabrechnungVorlage_neu_ab_012026.xltx \\
         --data monatsdaten.json \\
         --manifest manifest.json \\
         --name "Raoul Hübner" \\
@@ -17,13 +18,9 @@ Nutzung:
 
 `manifest.json` kommt von fetch_receipts.js (rid -> {file, name, date, ok}).
 
-WICHTIG (03.09.2026): Braucht KEINE .xlsx mehr als Eingabe. Die Uebersichtsseite wird
-direkt aus den Monatsdaten als PDF gebaut (render_pdf.py), nicht mehr durch Rendern einer
-.xlsx per LibreOffice - das verlor Tabellenrahmen und zeigte "#NAME?" in der
-VERPFLEGUNGSMEHRAUFWAND-Spalte, reproduzierbar auch mit der komplett unveraenderten
-Original-Vorlage (also eine LibreOffice-Einschraenkung, kein von uns verursachter Fehler).
-Wer die eigentliche .xlsx zum Bearbeiten/Archivieren braucht, nutzt weiterhin
-export_xlsx.py separat - fuer das reine Einreichungs-PDF ist das nicht mehr noetig.
+WICHTIG (03.09.2026): Seite 1 ist die ECHTE, per export_xlsx.py ausgefuellte .xlsx-Vorlage
+- keine Nachbildung. Siehe xlsx_to_pdf.py fuer die Details, wie das zuverlaessig (inkl.
+Tabellenrahmen und korrekten Werten) zu PDF gerendert wird.
 """
 from __future__ import annotations
 
@@ -38,8 +35,8 @@ from pdf2image import convert_from_path
 import io
 
 sys.path.insert(0, str(Path(__file__).parent))
-from export_xlsx import entries_to_zeilen  # noqa: E402
-from render_pdf import render_summary_pdf  # noqa: E402
+from export_xlsx import entries_to_zeilen, export, ERSTE_DATENZEILE  # noqa: E402
+from xlsx_to_pdf import xlsx_to_faithful_pdf  # noqa: E402
 
 SCAN_DPI = 200  # fuer Text auf einer A4-Seite gut lesbar
 
@@ -68,7 +65,7 @@ def receipt_to_bw_pdf_bytes(pdf_path, tmp_dir):
     return buf.getvalue()
 
 
-def merge(data_path: str, manifest_path: str, name: str, output_path: str) -> dict:
+def merge(template_path: str, data_path: str, manifest_path: str, name: str, output_path: str) -> dict:
     with open(data_path, encoding='utf-8') as f:
         data = json.load(f)
     with open(manifest_path, encoding='utf-8') as f:
@@ -81,8 +78,11 @@ def merge(data_path: str, manifest_path: str, name: str, output_path: str) -> di
     report = {'zeilen_ohne_beleg': [], 'fehlende_belege': [], 'eingebundene_belege': []}
 
     with tempfile.TemporaryDirectory() as tmp:
-        sheet_pdf = str(Path(tmp) / 'summary.pdf')
-        render_summary_pdf(sheet_pdf, name, data['year'], data['month'], zeilen)
+        echte_xlsx = str(Path(tmp) / 'spesenabrechnung.xlsx')
+        export(template_path, data_path, name, echte_xlsx)
+
+        i_zellen = [f'I{ERSTE_DATENZEILE + i}' for i in range(len(zeilen))] + ['I41']
+        sheet_pdf = xlsx_to_faithful_pdf(echte_xlsx, tmp, i_zellen)
 
         writer = PdfWriter()
         for page in PdfReader(sheet_pdf).pages:
@@ -115,13 +115,14 @@ def merge(data_path: str, manifest_path: str, name: str, output_path: str) -> di
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument('--template', required=True, help='Pfad zur SpesenabrechnungVorlage_*.xltx')
     p.add_argument('--data', required=True)
     p.add_argument('--manifest', required=True)
     p.add_argument('--name', required=True, help='Name des Mitarbeiters fuer die Uebersichtsseite')
     p.add_argument('--output', required=True)
     args = p.parse_args()
 
-    report = merge(args.data, args.manifest, args.name, args.output)
+    report = merge(args.template, args.data, args.manifest, args.name, args.output)
 
     print(f'{len(report["eingebundene_belege"])} Beleg-Seite(n) eingebunden:')
     for e in report['eingebundene_belege']:

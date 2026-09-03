@@ -57,34 +57,51 @@ curl -s -H "Authorization: Bearer $GH_TOKEN" \
   python3 -c "import json,sys,base64; d=json.load(sys.stdin); open('out','wb').write(base64.b64decode(d['content']))"
 ```
 
-**5. Alles zu einem Gesamt-PDF zusammenführen (braucht KEINE .xlsx mehr):**
+**5. Alles zu einem Gesamt-PDF zusammenführen (rendert die ECHTE .xlsx, keine Nachbildung):**
 
 ```bash
 pip install -r requirements.txt   # einmalig
 python3 merge_pdf.py \
+  --template SpesenabrechnungVorlage_neu_ab_012026.xltx \
   --data monatsdaten.json \
   --manifest manifest.json \
   --name "Raoul Hübner" \
   --output Spesenabrechnung_2026-09_Raoul-Huebner_komplett.pdf
 ```
 
-Baut die Übersichtsseite (Seite 1) direkt als sauberes PDF via `render_pdf.py`
-(reportlab) - **kein Umweg mehr über das Rendern einer .xlsx durch LibreOffice** (siehe
-"Wichtig" unten). Wandelt jede Beleg-Seite in Graustufen um (kein Zuschnitt), bevor sie
-angehängt wird - in Datumsreihenfolge wie die Zeilen der Abrechnung. Meldet **Zeilen ohne
-Beleg** (informativ) und **fehlende Belege** (Fehler, Exit-Code 1) getrennt.
+Baut zuerst die echte `.xlsx` (wie `export_xlsx.py` allein), rendert sie dann per
+`xlsx_to_pdf.py` zu einer einzelnen PDF-Seite - **die tatsächliche Excel-Tabelle, keine
+Nachbildung** (siehe "Wichtig" unten). Wandelt jede Beleg-Seite in Graustufen um (kein
+Zuschnitt), bevor sie angehängt wird - in Datumsreihenfolge wie die Zeilen der Abrechnung.
+Meldet **Zeilen ohne Beleg** (informativ) und **fehlende Belege** (Fehler, Exit-Code 1)
+getrennt.
 
-**Wichtig (03.09.2026):** Ursprünglich wurde Seite 1 durch Rendern der `.xlsx` per
-LibreOffice erzeugt (Schritt 3, `export_xlsx.py`). Das verlor dabei Tabellenrahmen und
-zeigte "#NAME?" in der VERPFLEGUNGSMEHRAUFWAND-Spalte (`_xlfn.LET`-Formel, die LibreOffice
-nicht auswerten kann). Test mit der komplett UNVERÄNDERTEN Original-Vorlage zeigte
-dieselben Probleme - also eine grundsätzliche LibreOffice-Rendering-Einschränkung, keine
-Folge unserer Datenbearbeitung. Da wir die korrekten Werte ohnehin in Python berechnen
-(`export_xlsx.py::ExportZeile`), baut `render_pdf.py` die Seite jetzt direkt und
-zuverlässig selbst, mit echten Rahmen und korrekten Werten. `export_xlsx.py` bleibt
-weiterhin separat nutzbar, falls die echte `.xlsx` zum Bearbeiten/Archivieren gebraucht
-wird - für das reine Einreichungs-PDF ist sie nicht mehr nötig (Nutzerwunsch: "das Excel
-benötige ich nicht, nur Gesamt-PDF").
+**Wichtig (03.09.2026):** Zwei Zwischenversuche sind gescheitert, bevor diese Lösung
+gefunden wurde:
+1. Direktes `soffice --convert-to pdf` auf die `.xlsx` verliert Tabellenrahmen komplett
+   (reproduziert auch an der VÖLLIG UNVERÄNDERTEN Original-Vorlage - Theme-Farbe+Tint-
+   kodierte Rahmenfarben werden von LibreOffice beim direkten XLSX→PDF-Export offenbar
+   nicht aufgelöst).
+2. Ein Nachbau der Seite von Grund auf (reportlab) wurde vom Nutzer zurecht abgelehnt -
+   "soll GENAU wie die Vorlage aussehen, nur mit anderen Inhalten", nicht nur ähnlich.
+
+Die tatsächliche Lösung (`xlsx_to_pdf.py`): XLSX → ODS → PDF (der ODS-Zwischenschritt
+behebt die fehlenden Rahmen zuverlässig), plus zwei gezielte Fixes NUR in der
+Rendering-Kopie (die echte `.xlsx` bleibt unangetastet):
+- Das Buchhaltungs-Zahlenformat der Vorlage wird von LibreOffices ODS-Export nicht sauber
+  übersetzt (zeigte den rohen Formatcode als Text, z.B. "_(€ 14.00_)") - ersetzt durch ein
+  einfaches, optisch sehr ähnliches Format.
+- Die VERPFLEGUNGSMEHRAUFWAND-Formel (`_xlfn.LET`) wird von LibreOffice IMMER auszuwerten
+  versucht (auch ohne fullCalcOnLoad) und zeigt "#NAME?" - ersetzt durch ihren eigenen,
+  bereits korrekt vorberechneten Cache-Wert (keine Formel mehr, die ausgewertet werden
+  müsste).
+
+**Bekannte verbleibende Abweichung:** Datumswerte erscheinen im Format M/D/YYYY (z.B.
+"8/1/2026") statt DD.MM.YYYY - LibreOffice ignoriert bei diesem Konvertierungsweg das
+explizite Datumsformat der Vorlage und nutzt eine gebietsschema-abhängige Kurzform;
+Behebungsversuch über Installation der deutschen Locale ist in dieser Umgebung an einer
+nicht erreichbaren Paketquelle gescheitert. Die Werte selbst sind korrekt, nur die
+Reihenfolge Tag/Monat vs. Monat/Tag weicht ab.
 
 ### Beleg-Aufbereitung
 
