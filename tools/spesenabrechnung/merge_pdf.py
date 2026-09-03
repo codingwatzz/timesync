@@ -28,6 +28,7 @@ import argparse
 import json
 import sys
 import tempfile
+from datetime import date
 from pathlib import Path
 
 from pypdf import PdfWriter, PdfReader
@@ -82,7 +83,13 @@ def merge(template_path: str, data_path: str, manifest_path: str, name: str, out
         export(template_path, data_path, name, echte_xlsx)
 
         i_zellen = [f'I{ERSTE_DATENZEILE + i}' for i in range(len(zeilen))] + ['I41']
-        sheet_pdf = xlsx_to_faithful_pdf(echte_xlsx, tmp, i_zellen)
+        datum_zellen = {f'B{ERSTE_DATENZEILE + i}': z.datum.strftime('%d.%m.%Y') for i, z in enumerate(zeilen)}
+        von = date(data['year'], data['month'], 1)
+        bis_naechster = date(data['year'], data['month'] + 1, 1) if data['month'] < 12 else date(data['year'] + 1, 1, 1)
+        bis = date.fromordinal(bis_naechster.toordinal() - 1)
+        datum_zellen['H5'] = von.strftime('%d.%m.%Y')
+        datum_zellen['H6'] = bis.strftime('%d.%m.%Y')
+        sheet_pdf = xlsx_to_faithful_pdf(echte_xlsx, tmp, i_zellen, datum_zellen)
 
         writer = PdfWriter()
         for page in PdfReader(sheet_pdf).pages:

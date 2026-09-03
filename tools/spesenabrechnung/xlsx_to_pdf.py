@@ -61,6 +61,71 @@ def _strip_formula_keep_value(xml: str, ref: str) -> str:
     return xml[:m.start()] + new_cell + xml[m.end():]
 
 
+def _add_table_grid_borders(styles_xml: str) -> str:
+    """Die Haupttabelle (das Excel-Tabellenobjekt 'Spesen') nutzt fuer ihr sichtbares Gitter
+    einen BENUTZERDEFINIERTEN TABELLENSTIL ('Spesenabrechnung', wholeTable-Element dxfId=25),
+    NICHT echte Rahmen an den einzelnen Zellen (alle betroffenen Zellstile haben
+    borderId="0"). Echtes Excel rendert diesen Tabellenstil automatisch; LibreOffice tut
+    das nicht (weder direkt noch ueber ODS) - deshalb fehlt das Gitter dort, waehrend die
+    Nebentabelle (Reiseland/Art des Reisetages), die echte Zellrahmen nutzt, korrekt
+    erscheint. Fix: dieselbe Rahmen-Definition wie im Tabellenstil (per Hand aus dxfId=25
+    uebernommen) wird als echter, benannter Rahmen ergaenzt und den betroffenen Zellstilen
+    zugewiesen - NUR in dieser Rendering-Kopie."""
+    # Neue Rahmen-Definition anhaengen (identisch zum wholeTable-Element des Tabellenstils)
+    neuer_rahmen = ('<border diagonalUp="0" diagonalDown="0">'
+                     '<left style="thin"><color theme="0" tint="-0.499984740745262"/></left>'
+                     '<right style="thin"><color theme="0" tint="-0.499984740745262"/></right>'
+                     '<top style="thin"><color theme="0" tint="-0.499984740745262"/></top>'
+                     '<bottom style="thin"><color theme="0" tint="-0.499984740745262"/></bottom>'
+                     '<diagonal/></border>')
+    m = re.search(r'<borders count="(\d+)">', styles_xml)
+    if not m:
+        raise ValueError('<borders>-Element nicht gefunden - Vorlage geaendert?')
+    alte_anzahl = int(m.group(1))
+    neue_border_id = alte_anzahl
+    styles_xml = styles_xml.replace(f'<borders count="{alte_anzahl}">', f'<borders count="{alte_anzahl + 1}">')
+    styles_xml = styles_xml.replace('</borders>', neuer_rahmen + '</borders>')
+
+    # Betroffene Zellstile: alle Stilindizes, die in der Haupttabelle (B10:K41) tatsaechlich
+    # verwendet werden UND aktuell borderId="0" (kein Rahmen) haben - siehe Docstring.
+    betroffene_stile = [20, 21, 26, 27, 28, 29, 30, 31, 32, 35, 37]
+    cellxfs_match = re.search(r'(<cellXfs count="\d+">)(.*?)(</cellXfs>)', styles_xml, re.DOTALL)
+    if not cellxfs_match:
+        raise ValueError('<cellXfs>-Element nicht gefunden - Vorlage geaendert?')
+    xf_liste = re.findall(r'<xf[^>]*(?:/>|>.*?</xf>)', cellxfs_match.group(2), re.DOTALL)
+    for idx in betroffene_stile:
+        alt = xf_liste[idx]
+        if 'borderId="0"' not in alt:
+            raise ValueError(f'Zellstil {idx}: erwartetes borderId="0" nicht gefunden - Vorlage geaendert?')
+        xf_liste[idx] = alt.replace('borderId="0"', f'borderId="{neue_border_id}"')
+    neuer_cellxfs_inhalt = ''.join(xf_liste)
+    styles_xml = (styles_xml[:cellxfs_match.start()] + cellxfs_match.group(1) + neuer_cellxfs_inhalt
+                  + cellxfs_match.group(3) + styles_xml[cellxfs_match.end():])
+    return styles_xml
+
+
+def _dates_as_text(sheet_xml: str, datum_zellen: dict) -> str:
+    """LibreOffice ignoriert ueber den XLSX->ODS->PDF-Konvertierungsweg JEDES numFmt fuer
+    Datumszellen (getestet mit mehreren expliziten Formatcodes, inkl. Gebietsschema-Praefix
+    [$-407] - keine Wirkung, immer M/D/YYYY-Kurzform) - vermutlich weil die Umgebung keine
+    deutsche Locale installiert hat und LibreOffice intern auf einen Gebietsschema-
+    abhaengigen Kurzform-Fallback zurueckfaellt, der das Zellformat ignoriert. Einzig
+    zuverlaessiger Fix: die Datumszellen NICHT als Zahl+Format, sondern direkt als
+    vorformatierter Text ausgeben - das umgeht jede Formatinterpretation komplett.
+    datum_zellen: {zellreferenz: vorformatierter Text, z.B. {'B11': '01.08.2026'}}."""
+    from xml.sax.saxutils import escape
+    for ref, text in datum_zellen.items():
+        m = re.search(rf'<c r="{ref}"([^>]*)>.*?</c>|<c r="{ref}"([^>]*)/>', sheet_xml, re.DOTALL)
+        if not m:
+            raise ValueError(f'Datumszelle {ref} nicht gefunden')
+        attrs = m.group(1) or m.group(2)
+        s_match = re.search(r's="(\d+)"', attrs)
+        s_attr = f' s="{s_match.group(1)}"' if s_match else ''
+        neue_zelle = f'<c r="{ref}"{s_attr} t="inlineStr"><is><t xml:space="preserve">{escape(text)}</t></is></c>'
+        sheet_xml = sheet_xml[:m.start()] + neue_zelle + sheet_xml[m.end():]
+    return sheet_xml
+
+
 def _fix_accounting_number_format(styles_xml: str) -> str:
     """Das Buchhaltungsformat mit `_(`/`* `-Ausrichtungstricks wird von LibreOffices
     ODS-Export nicht sauber uebersetzt (roher Formatcode erscheint als Text). Ersetzt durch
@@ -79,12 +144,15 @@ def _fix_accounting_number_format(styles_xml: str) -> str:
     return styles_xml
 
 
-def xlsx_to_faithful_pdf(xlsx_path: str, out_dir: str, formel_zellen_i_spalte: list[str]) -> str:
+def xlsx_to_faithful_pdf(xlsx_path: str, out_dir: str, formel_zellen_i_spalte: list[str],
+                         datum_zellen: dict) -> str:
     """Erzeugt aus der echten .xlsx eine einzelne PDF-Seite, mit den oben beschriebenen
     gezielten Fixes NUR in dieser Rendering-Kopie (Original-.xlsx bleibt unangetastet).
 
     formel_zellen_i_spalte: Zellreferenzen der VERPFLEGUNGSMEHRAUFWAND-Formelzellen
     (z.B. ['I11','I12',...,'I41']), deren Formel durch den Cache-Wert ersetzt werden soll.
+    datum_zellen: {zellreferenz: vorformatierter Text} fuer die DATUM-Spalte, z.B.
+    {'B11': '01.08.2026', ...} - siehe _dates_as_text().
     """
     out_dir_p = Path(out_dir)
     render_xlsx = out_dir_p / 'render_copy.xlsx'
@@ -96,10 +164,12 @@ def xlsx_to_faithful_pdf(xlsx_path: str, out_dir: str, formel_zellen_i_spalte: l
     sheet_xml = inhalte['xl/worksheets/sheet1.xml'].decode('utf-8')
     for ref in formel_zellen_i_spalte:
         sheet_xml = _strip_formula_keep_value(sheet_xml, ref)
+    sheet_xml = _dates_as_text(sheet_xml, datum_zellen)
     inhalte['xl/worksheets/sheet1.xml'] = sheet_xml.encode('utf-8')
 
     styles_xml = inhalte['xl/styles.xml'].decode('utf-8')
     styles_xml = _fix_accounting_number_format(styles_xml)
+    styles_xml = _add_table_grid_borders(styles_xml)
     inhalte['xl/styles.xml'] = styles_xml.encode('utf-8')
 
     with zipfile.ZipFile(render_xlsx, 'w', zipfile.ZIP_DEFLATED) as zout:
