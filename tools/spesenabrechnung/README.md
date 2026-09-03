@@ -57,20 +57,34 @@ curl -s -H "Authorization: Bearer $GH_TOKEN" \
   python3 -c "import json,sys,base64; d=json.load(sys.stdin); open('out','wb').write(base64.b64decode(d['content']))"
 ```
 
-**5. Alles zu einem Gesamt-PDF zusammenführen:**
+**5. Alles zu einem Gesamt-PDF zusammenführen (braucht KEINE .xlsx mehr):**
 
 ```bash
+pip install -r requirements.txt   # einmalig
 python3 merge_pdf.py \
-  --xlsx Spesenabrechnung_2026-09_Raoul-Huebner.xlsx \
   --data monatsdaten.json \
   --manifest manifest.json \
+  --name "Raoul Hübner" \
   --output Spesenabrechnung_2026-09_Raoul-Huebner_komplett.pdf
 ```
 
-Rendert die `.xlsx` per LibreOffice zu PDF (Seite 1) und wandelt jede Beleg-Seite in
-Graustufen um (kein Zuschnitt), bevor sie angehängt wird - in Datumsreihenfolge wie die
-Zeilen der Abrechnung. Meldet **Zeilen ohne Beleg** (informativ) und **fehlende Belege**
-(Fehler, Exit-Code 1) getrennt.
+Baut die Übersichtsseite (Seite 1) direkt als sauberes PDF via `render_pdf.py`
+(reportlab) - **kein Umweg mehr über das Rendern einer .xlsx durch LibreOffice** (siehe
+"Wichtig" unten). Wandelt jede Beleg-Seite in Graustufen um (kein Zuschnitt), bevor sie
+angehängt wird - in Datumsreihenfolge wie die Zeilen der Abrechnung. Meldet **Zeilen ohne
+Beleg** (informativ) und **fehlende Belege** (Fehler, Exit-Code 1) getrennt.
+
+**Wichtig (03.09.2026):** Ursprünglich wurde Seite 1 durch Rendern der `.xlsx` per
+LibreOffice erzeugt (Schritt 3, `export_xlsx.py`). Das verlor dabei Tabellenrahmen und
+zeigte "#NAME?" in der VERPFLEGUNGSMEHRAUFWAND-Spalte (`_xlfn.LET`-Formel, die LibreOffice
+nicht auswerten kann). Test mit der komplett UNVERÄNDERTEN Original-Vorlage zeigte
+dieselben Probleme - also eine grundsätzliche LibreOffice-Rendering-Einschränkung, keine
+Folge unserer Datenbearbeitung. Da wir die korrekten Werte ohnehin in Python berechnen
+(`export_xlsx.py::ExportZeile`), baut `render_pdf.py` die Seite jetzt direkt und
+zuverlässig selbst, mit echten Rahmen und korrekten Werten. `export_xlsx.py` bleibt
+weiterhin separat nutzbar, falls die echte `.xlsx` zum Bearbeiten/Archivieren gebraucht
+wird - für das reine Einreichungs-PDF ist sie nicht mehr nötig (Nutzerwunsch: "das Excel
+benötige ich nicht, nur Gesamt-PDF").
 
 ### Beleg-Aufbereitung
 

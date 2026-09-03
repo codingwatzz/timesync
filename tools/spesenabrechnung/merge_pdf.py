@@ -1,38 +1,45 @@
 #!/usr/bin/env python3
 """
-Fuehrt die ausgefuellte Spesenabrechnung (.xlsx, als PDF gerendert) und die einzelnen
-Beleg-PDFs zu einem einzigen, direkt einreichbaren Gesamt-PDF zusammen - wie der Nutzer es
-fuer Juli 2026 manuell gemacht hat.
+Fuehrt die Spesenabrechnungs-Uebersichtsseite (direkt sauber gerendert, siehe render_pdf.py)
+und die einzelnen Beleg-PDFs zu einem einzigen, direkt einreichbaren Gesamt-PDF zusammen -
+wie der Nutzer es fuer Juli 2026 manuell gemacht hat.
 
-Reihenfolge im Ergebnis: zuerst die Spesenabrechnung-Seite, danach die Belege in derselben
-Reihenfolge wie die Zeilen der Abrechnung (Datum aufsteigend) - so kann der Pruefende Zeile
-fuer Zeile mit den Belegen mitgehen.
+Reihenfolge im Ergebnis: zuerst die Spesenabrechnung-Uebersicht, danach die Belege in
+derselben Reihenfolge wie die Zeilen der Abrechnung (Datum aufsteigend) - so kann der
+Pruefende Zeile fuer Zeile mit den Belegen mitgehen.
 
 Nutzung:
     python3 merge_pdf.py \\
-        --xlsx Spesenabrechnung_2026-08_Raoul-Huebner.xlsx \\
         --data monatsdaten.json \\
         --manifest manifest.json \\
+        --name "Raoul Hübner" \\
         --output Spesenabrechnung_2026-08_Raoul-Huebner_komplett.pdf
 
 `manifest.json` kommt von fetch_receipts.js (rid -> {file, name, date, ok}).
+
+WICHTIG (03.09.2026): Braucht KEINE .xlsx mehr als Eingabe. Die Uebersichtsseite wird
+direkt aus den Monatsdaten als PDF gebaut (render_pdf.py), nicht mehr durch Rendern einer
+.xlsx per LibreOffice - das verlor Tabellenrahmen und zeigte "#NAME?" in der
+VERPFLEGUNGSMEHRAUFWAND-Spalte, reproduzierbar auch mit der komplett unveraenderten
+Original-Vorlage (also eine LibreOffice-Einschraenkung, kein von uns verursachter Fehler).
+Wer die eigentliche .xlsx zum Bearbeiten/Archivieren braucht, nutzt weiterhin
+export_xlsx.py separat - fuer das reine Einreichungs-PDF ist das nicht mehr noetig.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 from pypdf import PdfWriter, PdfReader
 from pdf2image import convert_from_path
-from PIL import Image
 import io
 
 sys.path.insert(0, str(Path(__file__).parent))
 from export_xlsx import entries_to_zeilen  # noqa: E402
+from render_pdf import render_summary_pdf  # noqa: E402
 
 SCAN_DPI = 200  # fuer Text auf einer A4-Seite gut lesbar
 
@@ -61,27 +68,7 @@ def receipt_to_bw_pdf_bytes(pdf_path, tmp_dir):
     return buf.getvalue()
 
 
-def xlsx_to_pdf(xlsx_path: str, out_dir: str) -> str:
-    """Rendert die .xlsx per LibreOffice zu PDF (dieselbe Methode wie zur Verifikation in
-    export_xlsx.py/README.md - bekannte Einschraenkung: die VERPFLEGUNGS-MEHRAUFWAND-Spalte
-    zeigt dabei "#NAME?", weil LibreOffice die `_xlfn.LET`-Formel nicht auswerten kann. Das
-    ist eine reine Rendering-Einschraenkung dieses Werkzeugs - im Original bleiben die
-    korrekt vorberechneten Cache-Werte erhalten, nur die LIVE-NEUBERECHNUNG beim Rendern
-    schlaegt fehl. Wer eine exakte Vorschau inkl. korrekter VMA-Spalte braucht, sollte die
-    .xlsx stattdessen einmal in echtem Excel oeffnen und von dort als PDF exportieren."""
-    result = subprocess.run(
-        ['soffice', '--headless', '--norestore', '--convert-to', 'pdf', '--outdir', out_dir, xlsx_path],
-        capture_output=True, text=True, timeout=90,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f'LibreOffice-Konvertierung fehlgeschlagen: {result.stderr}')
-    pdf_path = Path(out_dir) / (Path(xlsx_path).stem + '.pdf')
-    if not pdf_path.exists():
-        raise RuntimeError(f'Erwartete PDF-Datei {pdf_path} wurde nicht erzeugt')
-    return str(pdf_path)
-
-
-def merge(xlsx_path: str, data_path: str, manifest_path: str, output_path: str) -> dict:
+def merge(data_path: str, manifest_path: str, name: str, output_path: str) -> dict:
     with open(data_path, encoding='utf-8') as f:
         data = json.load(f)
     with open(manifest_path, encoding='utf-8') as f:
@@ -89,13 +76,13 @@ def merge(xlsx_path: str, data_path: str, manifest_path: str, output_path: str) 
     manifest_dir = Path(manifest_path).resolve().parent
 
     zeilen = entries_to_zeilen(data['days'])
-    # rid -> receiptIds je Zeile, in derselben Reihenfolge wie die exportierten Zeilen
     entries_by_date = {d['date']: d['entry'] for d in data['days'] if d.get('exists')}
 
     report = {'zeilen_ohne_beleg': [], 'fehlende_belege': [], 'eingebundene_belege': []}
 
     with tempfile.TemporaryDirectory() as tmp:
-        sheet_pdf = xlsx_to_pdf(xlsx_path, tmp)
+        sheet_pdf = str(Path(tmp) / 'summary.pdf')
+        render_summary_pdf(sheet_pdf, name, data['year'], data['month'], zeilen)
 
         writer = PdfWriter()
         for page in PdfReader(sheet_pdf).pages:
@@ -128,13 +115,13 @@ def merge(xlsx_path: str, data_path: str, manifest_path: str, output_path: str) 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('--xlsx', required=True)
     p.add_argument('--data', required=True)
     p.add_argument('--manifest', required=True)
+    p.add_argument('--name', required=True, help='Name des Mitarbeiters fuer die Uebersichtsseite')
     p.add_argument('--output', required=True)
     args = p.parse_args()
 
-    report = merge(args.xlsx, args.data, args.manifest, args.output)
+    report = merge(args.data, args.manifest, args.name, args.output)
 
     print(f'{len(report["eingebundene_belege"])} Beleg-Seite(n) eingebunden:')
     for e in report['eingebundene_belege']:
