@@ -60,7 +60,6 @@ curl -s -H "Authorization: Bearer $GH_TOKEN" \
 **5. Alles zu einem Gesamt-PDF zusammenführen:**
 
 ```bash
-npm install   # einmalig, installiert scanic/canvas/jsdom/sharp fuer scan_enhance.mjs
 python3 merge_pdf.py \
   --xlsx Spesenabrechnung_2026-09_Raoul-Huebner.xlsx \
   --data monatsdaten.json \
@@ -68,32 +67,26 @@ python3 merge_pdf.py \
   --output Spesenabrechnung_2026-09_Raoul-Huebner_komplett.pdf
 ```
 
-Rendert die `.xlsx` per LibreOffice zu PDF (Seite 1) und schickt jede Beleg-Seite durch
-`scan_enhance.mjs` (Scanic-Zuschnitt + Beleuchtungskorrektur + Schwarz-Weiß, siehe unten),
-bevor sie angehängt wird - in Datumsreihenfolge wie die Zeilen der Abrechnung. Meldet
-**Zeilen ohne Beleg** (informativ) und **fehlende Belege** (Fehler, Exit-Code 1) getrennt.
+Rendert die `.xlsx` per LibreOffice zu PDF (Seite 1) und wandelt jede Beleg-Seite in
+Graustufen um (kein Zuschnitt), bevor sie angehängt wird - in Datumsreihenfolge wie die
+Zeilen der Abrechnung. Meldet **Zeilen ohne Beleg** (informativ) und **fehlende Belege**
+(Fehler, Exit-Code 1) getrennt.
 
-### Beleg-Aufbereitung (`scan_enhance.mjs`)
+### Beleg-Aufbereitung
 
-Jede Beleg-Seite durchläuft:
+Jede Beleg-Seite wird in Graustufen umgewandelt (kein Zuschnitt, kein Schwellenwert) und mit
+JPEG-Kompression (quality=85) eingebettet.
 
-1. **Scanic** (`npmjs.com/package/scanic`, MIT-Lizenz, ~100 KB) erkennt den Papierrand im
-   Foto und schneidet perspektivkorrigiert zu. Erkennt Scanic **nichts Plausibles** (Fläche
-   der erkannten Kontur unter 40 % des Originalbilds, per Shoelace-Formel aus den rohen
-   Eckpunkten berechnet - NICHT aus der Ausgabegröße, die bei einer entarteten Kontur
-   täuschend groß wirken kann, siehe Kommentare im Code), wird das **Originalbild
-   unverändert weiterverwendet** statt eines falschen Zuschnitts.
-2. Umwandlung in Graustufen.
-
-**Wichtig (03.09.2026):** Es gab hier zwischenzeitlich einen zusätzlichen Schritt
-(Beleuchtungsausgleich + harter Schwellenwert auf echtes 1-Bit-Schwarz-Weiß, um Speicher zu
-sparen). Das wurde **wieder entfernt**: ein fester Schwellenwert verfälschte einzelne
-Ziffern der Kassenbon-Schriftart (z.B. wurde "0" zu "3") - reproduzierbar auch bei einem
-sauberen, gut ausgeleuchteten Foto, lag also nicht an Scanic oder an schlechter Beleuchtung,
-sondern am harten Schwellenwert selbst. Bei einem Finanzbeleg darf keine Ziffer optisch
-verfälscht aussehen, auch nicht für zusätzliche Speicherersparnis - Verlässlichkeit geht vor
-Dateigröße. Reine Graustufen (ohne Schwellenwert) zeigten im selben Test alle Ziffern
-korrekt.
+**Wichtig (03.09.2026):** Es gab hier zwei zwischenzeitliche, wieder entfernte Zusatzschritte:
+- **Automatischer Randzuschnitt** (Scanic, github.com/marquaye/scanic): in der echten Nutzung
+  (mehrere Testfotos unter guten Lichtverhältnissen) nicht zuverlässig genug - der Nutzer hat
+  auf eigenen Wunsch die Entfernung veranlasst ("zu kompliziert, funktioniert nicht").
+- **Harter Schwarz-Weiß-Schwellenwert** (um Speicher zu sparen): verfälschte einzelne Ziffern
+  der Kassenbon-Schriftart (z.B. wurde "0" zu "3") - reproduzierbar auch bei einem sauberen,
+  gut ausgeleuchteten Foto. Bei einem Finanzbeleg darf keine Ziffer optisch verfälscht
+  aussehen, auch nicht für zusätzliche Speicherersparnis - Verlässlichkeit geht vor
+  Dateigröße/Komplexität. Zurück zum einfachen, seit Monaten bewährten Stand: nur
+  Graustufen, keine externe Bibliothek nötig.
 
 **6. Trotzdem stichprobenartig selbst gegenprüfen** (die Skripte verhindern die bekannten
 Fehlerklassen, sind aber kein Ersatz für einen kurzen Blick auf das Ergebnis-PDF - insb. ob

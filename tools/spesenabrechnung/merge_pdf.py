@@ -34,34 +34,26 @@ import io
 sys.path.insert(0, str(Path(__file__).parent))
 from export_xlsx import entries_to_zeilen  # noqa: E402
 
-SCAN_ENHANCE_SCRIPT = Path(__file__).parent / 'scan_enhance.mjs'
-SCAN_DPI = 200  # fuer Text auf einer A4-Seite noch gut lesbar bei 1-Bit-Schwarz-Weiss
+SCAN_DPI = 200  # fuer Text auf einer A4-Seite gut lesbar
 
 
-def receipt_page_to_bw_image(page_image: Image.Image, tmp_dir: str, idx: int) -> Image.Image:
-    """Schickt EINE rasterisierte Beleg-Seite durch scan_enhance.mjs (Scanic-Zuschnitt +
-    Beleuchtungskorrektur + Schwellenwert, siehe Docstring dort) und laedt das Ergebnis
-    zurueck. Node-Aufruf pro Seite, da Scanic ein JS/WASM-Werkzeug ist, der Rest der
-    Pipeline aber Python ist."""
-    in_path = Path(tmp_dir) / f'page_{idx}_in.png'
-    out_path = Path(tmp_dir) / f'page_{idx}_out.png'
-    page_image.save(in_path)
-    result = subprocess.run(
-        ['node', str(SCAN_ENHANCE_SCRIPT), str(in_path), str(out_path)],
-        capture_output=True, text=True, timeout=60,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f'scan_enhance.mjs fehlgeschlagen fuer Seite {idx}: {result.stderr}')
-    return Image.open(out_path).convert('L')
+def receipt_page_to_bw_image(page_image, tmp_dir, idx):
+    """Wandelt EINE rasterisierte Beleg-Seite in Graustufen um.
+
+    WICHTIG (03.09.2026): Es gab hier zwischenzeitlich einen Node/Scanic-Zwischenschritt
+    (scan_enhance.mjs) fuer automatischen Randzuschnitt + Beleuchtungskorrektur. Auf
+    Nutzerwunsch wieder entfernt ("zu kompliziert, funktioniert nicht zuverlaessig genug") -
+    zurueck zum einfachen, direkten Ansatz: nur Graustufen, kein Zuschnitt, keine externe
+    Bibliothek noetig. tmp_dir/idx-Parameter bleiben fuer eine gleichbleibende
+    Funktionssignatur erhalten, werden aber nicht mehr gebraucht.
+    """
+    return page_image.convert('L')
 
 
-def receipt_to_bw_pdf_bytes(pdf_path: str, tmp_dir: str) -> bytes:
-    """Rasterisiert jede Seite eines Beleg-PDFs und wandelt sie via scan_enhance.mjs in
-    zugeschnittene Graustufen um (siehe Docstring dort). JPEG-Kompression beim Einbetten
-    (quality=85) haelt die Dateigroesse vernuenftig, ohne die Lesbarkeit zu gefaehrden -
-    anders als der harte Schwarz-Weiss-Schwellenwert (entfernt am 03.09.2026, siehe
-    scan_enhance.mjs) ist verlustbehaftete JPEG-Kompression von Graustufenbildern kein
-    bekanntes Risiko fuer Ziffernverfaelschung."""
+def receipt_to_bw_pdf_bytes(pdf_path, tmp_dir):
+    """Rasterisiert jede Seite eines Beleg-PDFs und wandelt sie in Graustufen um. JPEG-
+    Kompression beim Einbetten (quality=85) haelt die Dateigroesse vernuenftig, ohne die
+    Lesbarkeit zu gefaehrden."""
     images = convert_from_path(pdf_path, dpi=SCAN_DPI)
     bw_images = [receipt_page_to_bw_image(img, tmp_dir, i) for i, img in enumerate(images)]
     buf = io.BytesIO()

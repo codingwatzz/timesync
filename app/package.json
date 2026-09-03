@@ -15,8 +15,7 @@
     "appwrite": "^26.2.0",
     "jspdf": "^4.2.1",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "scanic": "^1.6.0"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
