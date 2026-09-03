@@ -146,3 +146,15 @@ Autor `claude@anthropic.com`, die nicht aus der eigenen Sitzung stammen). Das ka
 Kollisionen führen (z.B. zwei E2E-Testläufe gleichzeitig auf demselben Testtag). Falls ein
 fremder Commit/Workflow-Lauf auffällt, der nicht aus der eigenen Sitzung stammt: dem Nutzer
 kurz und sachlich Bescheid geben, nicht alarmistisch, und die eigene Arbeit fortsetzen.
+
+## 5. Spesenabrechnung-Export: verbindlicher Standard (bestätigt 03.09.2026)
+
+`tools/spesenabrechnung/` (siehe dortige README.md) erzeugt das monatliche Einreichungs-PDF.
+Der Nutzer hat den aktuellen Stand (`xlsx_to_pdf.py`, Commit `cb2cf87`) ausdrücklich als "sieht
+jetzt gut aus, das soll ab jetzt immer so aussehen" bestätigt: echte Zellrahmen (beide
+Tabellen), echte Farben aus der Vorlage, deutsches Datumsformat, korrekte
+Verpflegungsmehraufwand-Werte. **Diesen Stand nicht ohne neuen, konkreten Anlass verändern**
+(z.B. nicht "verbessern" oder vereinfachen, nur weil es umständlich aussieht - der Umweg über
+ODS + die vier gezielten Fixes sind das Ergebnis mehrerer gescheiterter Versuche, siehe
+README.md dort). Bei einem neuen Monat: einfach `merge_pdf.py` wie dokumentiert aufrufen, kein
+Nachbau/keine Vereinfachung der Pipeline von Neuem versuchen.

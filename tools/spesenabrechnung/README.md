@@ -86,22 +86,27 @@ gefunden wurde:
    "soll GENAU wie die Vorlage aussehen, nur mit anderen Inhalten", nicht nur ähnlich.
 
 Die tatsächliche Lösung (`xlsx_to_pdf.py`): XLSX → ODS → PDF (der ODS-Zwischenschritt
-behebt die fehlenden Rahmen zuverlässig), plus zwei gezielte Fixes NUR in der
-Rendering-Kopie (die echte `.xlsx` bleibt unangetastet):
+behebt die fehlenden Rahmen der NEBENTABELLE zuverlässig), plus vier gezielte Fixes NUR in
+der Rendering-Kopie (die echte `.xlsx` bleibt unangetastet):
 - Das Buchhaltungs-Zahlenformat der Vorlage wird von LibreOffices ODS-Export nicht sauber
   übersetzt (zeigte den rohen Formatcode als Text, z.B. "_(€ 14.00_)") - ersetzt durch ein
-  einfaches, optisch sehr ähnliches Format.
+  einfaches, optisch sehr ähnliches Format (`_fix_accounting_number_format`).
 - Die VERPFLEGUNGSMEHRAUFWAND-Formel (`_xlfn.LET`) wird von LibreOffice IMMER auszuwerten
   versucht (auch ohne fullCalcOnLoad) und zeigt "#NAME?" - ersetzt durch ihren eigenen,
-  bereits korrekt vorberechneten Cache-Wert (keine Formel mehr, die ausgewertet werden
-  müsste).
+  bereits korrekt vorberechneten Cache-Wert (`_strip_formula_keep_value`).
+- Die HAUPTTABELLE (Datum/Beschreibung/...) ist ein Excel-Tabellenobjekt, das sein Gitter
+  über einen benutzerdefinierten Tabellenstil bezieht (nicht über echte Zellrahmen) - Excel
+  rendert diesen Stil automatisch, LibreOffice nicht. Die Rahmen-Definition aus dem
+  Tabellenstil wird als echte Zellrahmen auf die betroffenen Zellstile übertragen
+  (`_add_table_grid_borders`).
+- LibreOffice ignoriert über diesen Konvertierungsweg jedes Zahlenformat für Datumszellen
+  (zeigt M/D/YYYY statt DD.MM.YYYY, unabhängig vom Formatcode) - Datumszellen werden durch
+  bereits korrekt vorformatierten Text ersetzt (`_dates_as_text`), betrifft Spalte B und die
+  von/bis-Felder (H5/H6).
 
-**Bekannte verbleibende Abweichung:** Datumswerte erscheinen im Format M/D/YYYY (z.B.
-"8/1/2026") statt DD.MM.YYYY - LibreOffice ignoriert bei diesem Konvertierungsweg das
-explizite Datumsformat der Vorlage und nutzt eine gebietsschema-abhängige Kurzform;
-Behebungsversuch über Installation der deutschen Locale ist in dieser Umgebung an einer
-nicht erreichbaren Paketquelle gescheitert. Die Werte selbst sind korrekt, nur die
-Reihenfolge Tag/Monat vs. Monat/Tag weicht ab.
+**Vom Nutzer am 03.09.2026 bestätigt: entspricht jetzt 1:1 der echten Vorlage (Rahmen,
+Farben, Datumsformat, Werte) - das ist der verbindliche Standard für alle künftigen
+Monate, nicht weiter verändern ohne erneuten Anlass.**
 
 ### Beleg-Aufbereitung
 
