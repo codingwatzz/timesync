@@ -75,22 +75,25 @@ bevor sie angehängt wird - in Datumsreihenfolge wie die Zeilen der Abrechnung. 
 
 ### Beleg-Aufbereitung (`scan_enhance.mjs`)
 
-Jede Beleg-Seite durchläuft (Erkenntnisse vom 02.09.2026, nach mehreren Fehlversuchen):
+Jede Beleg-Seite durchläuft:
 
 1. **Scanic** (`npmjs.com/package/scanic`, MIT-Lizenz, ~100 KB) erkennt den Papierrand im
    Foto und schneidet perspektivkorrigiert zu. Erkennt Scanic **nichts Plausibles** (Fläche
-   der erkannten Kontur unter 40 % des Originalbilds - getestet an allen 6 echten
-   August-Belegen: echte Treffer lagen bei 55-80 %, Fehlerkennungen wie ein zufälliger
-   Schattenwurf oder eine kleine interne Box in einer randlosen Rechnung bei unter 8 %),
-   wird das **Originalbild unverändert weiterverwendet** statt eines falschen Zuschnitts.
-   Das betraf real 3 von 6 August-Belegen sowie randlose PDFs (z.B. eine direkt
-   hochgeladene Rechnung ohne sichtbaren Hintergrund).
-2. **Beleuchtungskorrektur** ("Flat-Field"): eine stark weichgezeichnete Kopie schätzt den
-   Beleuchtungsverlauf; das Bild wird durch diese Schätzung geteilt. Behebt einen echten
-   Fehler vom 02.09.2026, bei dem ein einzelner fester Schwellenwert den Schattenwurf eines
-   Handyfotos zu einer schwarzen Fläche zusammenfraß und Beträge unlesbar machte.
-3. Fester Schwellenwert auf dem beleuchtungskorrigierten Bild ergibt sauberes,
-   gleichmäßiges Schwarz-Weiß (keine Graustufen - spart deutlich mehr Speicher).
+   der erkannten Kontur unter 40 % des Originalbilds, per Shoelace-Formel aus den rohen
+   Eckpunkten berechnet - NICHT aus der Ausgabegröße, die bei einer entarteten Kontur
+   täuschend groß wirken kann, siehe Kommentare im Code), wird das **Originalbild
+   unverändert weiterverwendet** statt eines falschen Zuschnitts.
+2. Umwandlung in Graustufen.
+
+**Wichtig (03.09.2026):** Es gab hier zwischenzeitlich einen zusätzlichen Schritt
+(Beleuchtungsausgleich + harter Schwellenwert auf echtes 1-Bit-Schwarz-Weiß, um Speicher zu
+sparen). Das wurde **wieder entfernt**: ein fester Schwellenwert verfälschte einzelne
+Ziffern der Kassenbon-Schriftart (z.B. wurde "0" zu "3") - reproduzierbar auch bei einem
+sauberen, gut ausgeleuchteten Foto, lag also nicht an Scanic oder an schlechter Beleuchtung,
+sondern am harten Schwellenwert selbst. Bei einem Finanzbeleg darf keine Ziffer optisch
+verfälscht aussehen, auch nicht für zusätzliche Speicherersparnis - Verlässlichkeit geht vor
+Dateigröße. Reine Graustufen (ohne Schwellenwert) zeigten im selben Test alle Ziffern
+korrekt.
 
 **6. Trotzdem stichprobenartig selbst gegenprüfen** (die Skripte verhindern die bekannten
 Fehlerklassen, sind aber kein Ersatz für einen kurzen Blick auf das Ergebnis-PDF - insb. ob

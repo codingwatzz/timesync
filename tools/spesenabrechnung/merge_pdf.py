@@ -52,16 +52,20 @@ def receipt_page_to_bw_image(page_image: Image.Image, tmp_dir: str, idx: int) ->
     )
     if result.returncode != 0:
         raise RuntimeError(f'scan_enhance.mjs fehlgeschlagen fuer Seite {idx}: {result.stderr}')
-    return Image.open(out_path).convert('1')
+    return Image.open(out_path).convert('L')
 
 
 def receipt_to_bw_pdf_bytes(pdf_path: str, tmp_dir: str) -> bytes:
     """Rasterisiert jede Seite eines Beleg-PDFs und wandelt sie via scan_enhance.mjs in
-    zugeschnittenes, beleuchtungskorrigiertes Schwarz-Weiss um (siehe Docstring dort)."""
+    zugeschnittene Graustufen um (siehe Docstring dort). JPEG-Kompression beim Einbetten
+    (quality=85) haelt die Dateigroesse vernuenftig, ohne die Lesbarkeit zu gefaehrden -
+    anders als der harte Schwarz-Weiss-Schwellenwert (entfernt am 03.09.2026, siehe
+    scan_enhance.mjs) ist verlustbehaftete JPEG-Kompression von Graustufenbildern kein
+    bekanntes Risiko fuer Ziffernverfaelschung."""
     images = convert_from_path(pdf_path, dpi=SCAN_DPI)
     bw_images = [receipt_page_to_bw_image(img, tmp_dir, i) for i, img in enumerate(images)]
     buf = io.BytesIO()
-    bw_images[0].save(buf, format='PDF', save_all=True, append_images=bw_images[1:])
+    bw_images[0].save(buf, format='PDF', save_all=True, append_images=bw_images[1:], quality=85)
     return buf.getvalue()
 
 

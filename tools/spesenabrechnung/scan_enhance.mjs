@@ -1,23 +1,19 @@
 #!/usr/bin/env node
 /**
- * Verarbeitet EIN Beleg-Bild: erkennt Papierränder und schneidet zu (Scanic), gleicht dann
- * ungleichmäßige Beleuchtung/Schatten aus und wandelt in echtes, hochkontrastiges
- * Schwarz-Weiß um ("Adobe Scan"-Optik, siehe Anfrage vom 02.09.2026).
+ * Verarbeitet EIN Beleg-Bild: erkennt Papierränder und schneidet zu (Scanic), wandelt in
+ * Graustufen um.
  *
  * Nutzung: node scan_enhance.js <input.png> <output.png>
  *
- * Ablauf:
- * 1) Scanic erkennt das Papier im Foto und schneidet es perspektivkorrigiert zu. Schlägt die
- *    Erkennung fehl (z.B. bei einem bereits randlosen, direkt hochgeladenen PDF wie einer
- *    Rechnung ohne sichtbaren Hintergrund), wird einfach das Originalbild unveraendert
- *    weiterverwendet - kein Abbruch.
- * 2) Ausgleich ungleichmäßiger Beleuchtung ("Flat-Field-Korrektur"): eine stark
- *    weichgezeichnete Kopie dient als Schätzung des Beleuchtungsverlaufs; das Originalbild
- *    wird durch diese Schätzung geteilt. Das behebt genau den Fehler vom 02.09.2026, bei dem
- *    ein einzelner fester Schwellenwert den Schattenwurf eines Handyfotos zu einer
- *    schwarzen Flaeche zusammenfrass und die Betrags-Zahlen unlesbar machte.
- * 3) Fester Schwellenwert auf dem beleuchtungskorrigierten Bild ergibt sauberes,
- *    gleichmaessiges Schwarz-Weiss.
+ * WICHTIG (03.09.2026): Es gab hier zwischenzeitlich einen zusätzlichen Schritt
+ * (Beleuchtungsausgleich + harter Schwellenwert auf echtes Schwarz-Weiß, um Speicher zu
+ * sparen). Das wurde wieder entfernt: ein fester Schwellenwert verfälschte einzelne Ziffern
+ * dieser Kassenbon-Schriftart (z.B. wurde "0" zu "3", reproduzierbar auch bei einem
+ * sauberen, gut ausgeleuchteten Foto - lag NICHT an Scanic oder an schlechter Beleuchtung,
+ * sondern am harten Schwellenwert selbst, siehe Vergleichsbilder in der Diskussion). Bei
+ * einem Finanzbeleg darf keine Ziffer optisch verfälscht aussehen, auch nicht für
+ * zusätzliche Speicherersparnis - Verlässlichkeit geht vor. Reine Graustufen (ohne
+ * Schwellenwert) zeigten im selben Test alle Ziffern korrekt.
  */
 import { scanDocument } from 'scanic';
 import { loadImage, createCanvas, ImageData as NodeImageData } from 'canvas';
@@ -31,14 +27,11 @@ global.document = dom.window.document;
 global.ImageData = dom.window.ImageData;
 global.window = dom.window;
 
-const BLUR_SIGMA = 41; // grobe Beleuchtungsschätzung - deutlich groesser als einzelne Buchstaben
-const ZIEL_HINTERGRUND = 205; // Hintergrund wird auf diesen Grauwert normalisiert (nahe Weiss)
-const SCHWELLENWERT = 150;
 // Mindestanteil der Originalflaeche, den die erkannte Kontur einnehmen muss, damit sie als
 // echter Zuschnitt akzeptiert wird. Getestet an allen 6 echten August-Belegen (02.09.2026):
-// echte Treffer lagen bei 55-80% Flaechenanteil, Fehlerkennungen (z.B. ein zufaelliger
-// Schattenwurf oder eine kleine interne Box in einer randlosen Rechnung) bei unter 8% -
-// 40% liegt mit deutlichem Abstand dazwischen.
+// echte Treffer lagen bei 54-55% Flaechenanteil, Fehlerkennungen (z.B. ein zufaelliger
+// Schattenwurf, eine kleine interne Box in einer randlosen Rechnung, oder eine entartete
+// Kontur) bei unter 19% - 40% liegt mit deutlichem Abstand dazwischen.
 const MIN_FLAECHENANTEIL = 0.4;
 
 function shoelaceFlaeche(corners) {
@@ -85,26 +78,8 @@ async function scanicCrop(inputPath) {
   return nodeCanvas.toBuffer('image/png');
 }
 
-async function illuminationCorrectAndThreshold(imageBufferOrPath) {
-  const gray = sharp(imageBufferOrPath).grayscale();
-  const { data, info } = await gray.raw().toBuffer({ resolveWithObject: true });
-  const { width, height } = info;
-
-  const blurred = await sharp(data, { raw: { width, height, channels: 1 } })
-    .blur(BLUR_SIGMA)
-    .raw()
-    .toBuffer();
-
-  const corrected = Buffer.alloc(data.length);
-  for (let i = 0; i < data.length; i++) {
-    const bg = blurred[i] || 1;
-    corrected[i] = Math.max(0, Math.min(255, Math.round((data[i] / bg) * ZIEL_HINTERGRUND)));
-  }
-
-  return sharp(corrected, { raw: { width, height, channels: 1 } })
-    .threshold(SCHWELLENWERT)
-    .png()
-    .toBuffer();
+async function toGrayscale(imageBufferOrPath) {
+  return sharp(imageBufferOrPath).grayscale().png().toBuffer();
 }
 
 async function main() {
@@ -116,7 +91,7 @@ async function main() {
 
   const cropped = await scanicCrop(inputPath);
   const source = cropped ?? fs.readFileSync(inputPath);
-  const final = await illuminationCorrectAndThreshold(source);
+  const final = await toGrayscale(source);
   fs.writeFileSync(outputPath, final);
   console.log(JSON.stringify({ cropped: cropped !== null, output: outputPath }));
 }

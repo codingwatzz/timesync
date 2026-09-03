@@ -52,9 +52,6 @@ export function istZuschnittPlausibel(erkannteFlaeche: number, originalFlaeche: 
   return erkannteFlaeche / originalFlaeche >= SCANIC_MIN_FLAECHENANTEIL;
 }
 // Zielwert, auf den der geschaetzte Beleuchtungshintergrund normalisiert wird (nahe Weiss).
-const BELEUCHTUNG_ZIEL = 205;
-const SCHWARZWEISS_SCHWELLENWERT = 150;
-
 export function fileToDataURL(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -116,60 +113,17 @@ function zuGraustufenCanvas(quelle: CanvasImageSource, breite: number, hoehe: nu
 }
 
 /**
- * Gleicht ungleichmäßige Beleuchtung/Schatten aus ("Flat-Field-Korrektur") und wandelt
- * anschließend in echtes, hochkontrastiges Schwarz-Weiß um (kein Graustufen-Zwischending -
- * spart deutlich mehr Speicher). Verändert `grauCanvas` direkt (in-place).
+ * Wandelt ein Foto in ein platzsparendes PDF um: Papierrand erkennen und zuschneiden
+ * (Scanic), Graustufen statt Farbe (~300dpi bei A4-Breite). JPEG-Qualität wird automatisch
+ * so weit abgesenkt, bis das PDF die 2-MB-Obergrenze einhält.
  *
- * Ohne diesen Ausgleich frisst ein einzelner fester Schwellenwert den Schattenwurf eines
- * Handyfotos zu einer schwarzen Fläche zusammen und macht Zahlen/Text darin unlesbar (real
- * aufgetreten am 02.09.2026 beim serverseitigen Pendant dieser Funktion). Die Technik: eine
- * stark verkleinerte und wieder hochskalierte Kopie dient als günstige Näherung einer starken
- * Weichzeichnung (Skalieren glättet automatisch, keine eigene Faltungs-Implementierung
- * nötig) und damit als Schätzung des Beleuchtungsverlaufs; das Originalbild wird durch diese
- * Schätzung geteilt, bevor der Schwellenwert angewendet wird.
- */
-function beleuchtungAusgleichenUndSchwarzWeiss(grauCanvas: HTMLCanvasElement): void {
-  const { width: w, height: h } = grauCanvas;
-  const ctx = grauCanvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas-Kontext nicht verfügbar');
-
-  const kleinBreite = 50;
-  const kleinHoehe = Math.max(1, Math.round(h * (kleinBreite / w)));
-  const kleinCanvas = document.createElement('canvas');
-  kleinCanvas.width = kleinBreite;
-  kleinCanvas.height = kleinHoehe;
-  const kleinCtx = kleinCanvas.getContext('2d');
-  if (!kleinCtx) throw new Error('Canvas-Kontext nicht verfügbar');
-  kleinCtx.drawImage(grauCanvas, 0, 0, kleinBreite, kleinHoehe);
-
-  const hintergrundCanvas = document.createElement('canvas');
-  hintergrundCanvas.width = w;
-  hintergrundCanvas.height = h;
-  const hintergrundCtx = hintergrundCanvas.getContext('2d');
-  if (!hintergrundCtx) throw new Error('Canvas-Kontext nicht verfügbar');
-  hintergrundCtx.imageSmoothingEnabled = true;
-  hintergrundCtx.drawImage(kleinCanvas, 0, 0, w, h);
-
-  const original = ctx.getImageData(0, 0, w, h);
-  const hintergrund = hintergrundCtx.getImageData(0, 0, w, h);
-  const px = original.data;
-  const bg = hintergrund.data;
-  for (let i = 0; i < px.length; i += 4) {
-    const bgWert = bg[i] || 1;
-    const normalisiert = (px[i] / bgWert) * BELEUCHTUNG_ZIEL;
-    const wert = normalisiert > SCHWARZWEISS_SCHWELLENWERT ? 255 : 0;
-    px[i] = wert;
-    px[i + 1] = wert;
-    px[i + 2] = wert;
-  }
-  ctx.putImageData(original, 0, 0);
-}
-
-/**
- * Wandelt ein Foto in ein möglichst platzsparendes PDF um: Papierrand erkennen und
- * zuschneiden (Scanic), Beleuchtung ausgleichen, in echtes Schwarz-Weiß wandeln (~300dpi bei
- * A4-Breite). JPEG-Qualität wird automatisch so weit abgesenkt, bis das PDF die 2-MB-
- * Obergrenze einhält (ein schwarz-weißer Beleg bleibt i.d.R. weit darunter).
+ * WICHTIG (03.09.2026): Es gab hier zwischenzeitlich einen zusätzlichen Schritt, der auf
+ * echtes, hartes Schwarz-Weiß (statt Graustufen) reduziert hat, um Speicher zu sparen. Das
+ * wurde wieder entfernt: ein fester Schwellenwert verfälschte einzelne Ziffern dieser
+ * Kassenbon-Schriftart (z.B. wurde "0" zu "3", reproduzierbar auch bei einem sauberen,
+ * gut ausgeleuchteten Foto - lag NICHT an Scanic oder an schlechter Beleuchtung, sondern am
+ * harten Schwellenwert selbst). Bei einem Finanzbeleg darf keine Ziffer optisch verfälscht
+ * aussehen, auch nicht für zusätzliche Speicherersparnis - Verlässlichkeit geht vor.
  */
 export async function photoToPdf(file: File): Promise<string> {
   // jsPDF erst hier bei tatsächlichem Bedarf nachladen (nicht im Hauptbundle) - spart auf
@@ -192,7 +146,6 @@ export async function photoToPdf(file: File): Promise<string> {
 
   const scale = Math.min(1, ZIEL_BREITE_PX / quellBreite);
   const canvas = zuGraustufenCanvas(quelle, quellBreite * scale, quellHoehe * scale);
-  beleuchtungAusgleichenUndSchwarzWeiss(canvas);
 
   // Qualitätsstufe wählen: die höchste Stufe nehmen, deren JPEG-Größe die Zielgröße einhält.
   // Bleibt selbst die niedrigste Stufe darüber (sehr seltener Fall), wird trotzdem diese
