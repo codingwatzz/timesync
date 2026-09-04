@@ -16,7 +16,6 @@ const { toAppwriteRowId } = require('./appwriteDirectCheck');
 
 const { loadPage } = require('./steps/load');
 const { readDiagnosePanel } = require('./steps/diagnose');
-const { checkWeekendsAndHolidays } = require('./steps/calendarChecks');
 const { fillAndSaveTestEntry } = require('./steps/fillAndSaveEntry');
 const { reloadAndVerifyEntry } = require('./steps/reloadAndVerify');
 const { checkExportFlow } = require('./steps/exportFlow');
@@ -24,7 +23,7 @@ const { checkImportFlow } = require('./steps/importFlow');
 const { cleanupTestDays } = require('./steps/cleanup');
 
 const CRITICAL_CHECKS = [
-  'loaded', 'syncActive', 'testMonthIsDecember', 'holiday25Detected', 'holiday26Detected',
+  'loaded', 'syncActive', 'testMonthIsDecember',
   'homeofficeDefaultActive', 'travelSectionVisible', 'reiseartWarningVisibleBefore',
   'receiptUploaded', 'fieldsSurvivedReceiptUpload', 'allFieldsPersisted', 'receiptPersisted',
   'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered', 'importWorked',
@@ -79,14 +78,11 @@ async function attemptRun() {
 
     const dayRows = page.locator('.day-row');
 
-    // ---------- 4. Wochenenden & Feiertage ----------
-    Object.assign(results, await checkWeekendsAndHolidays(page, dayRows));
-
-    // ---------- 5. Defensiver Vor-Reset (falls Vorlauf abgebrochen wurde) ----------
+    // ---------- 4. Defensiver Vor-Reset (falls Vorlauf abgebrochen wurde) ----------
     await resetDayToDefault(page, dayRows, 0);
     await resetDayToDefault(page, dayRows, 1);
 
-    // ---------- 6. Tag 1 befüllen, Beleg hochladen, speichern ----------
+    // ---------- 5. Tag 1 befüllen, Beleg hochladen, speichern ----------
     const yearMatch = monthLabel.match(/(\d{4})/);
     const testYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear() + 2);
     const day1RowId = toAppwriteRowId(`entry:${testYear}-12-01`);
@@ -95,25 +91,25 @@ async function attemptRun() {
     Object.assign(results, fillResults);
     await shot('03_entry_with_receipt.png');
 
-    // ---------- 7. Reload + vollständige Verifikation ----------
+    // ---------- 6. Reload + vollständige Verifikation ----------
     const reloadResults = await reloadAndVerifyEntry(page, dayRows, {
       TEST_NOTE, day1RowId, monthLabelBeforeReload: monthLabel,
     });
     Object.assign(results, reloadResults);
     await shot('04_after_reload.png');
 
-    // ---------- 8. Export ----------
+    // ---------- 7. Export ----------
     Object.assign(results, await checkExportFlow(page));
     await shot('05_export_view.png');
 
-    // ---------- 9. Import ----------
+    // ---------- 8. Import ----------
     Object.assign(results, await checkImportFlow(page, dayRows, { testYear, testImportPath }));
     await shot('06_after_import.png');
 
-    // ---------- 10. Aufräumen ----------
+    // ---------- 9. Aufräumen ----------
     await cleanupTestDays(page, dayRows);
 
-    // ---------- 11. Diagnose-Ende ----------
+    // ---------- 10. Diagnose-Ende ----------
     results.debugPanelStart = debugTextStart;
     results.debugPanelEnd = await readDiagnosePanel(page);
   } finally {

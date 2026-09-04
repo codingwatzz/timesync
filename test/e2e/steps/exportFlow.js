@@ -1,6 +1,10 @@
 const { log, sleep } = require('../utils');
 
-/** Öffnet die Export-Ansicht, prüft die Tabelle und den Download-Mechanismus. */
+/** Öffnet die Export-Ansicht, prüft die Tabelle und den ZIP-Download-Mechanismus (die drei
+ * Einzel-Exporte wurden am 04.09.2026 durch einen gemeinsamen .zip-Download ersetzt - dieser
+ * Schritt testet den Klick/Download in einem echten Browser, die eigentlichen Datei-Inhalte
+ * sind bereits in zipExport.test.ts/xlsxExport.test.ts/receiptMerge.test.ts/
+ * arbeitszeitExport.test.ts als Unit-Tests abgedeckt). */
 async function checkExportFlow(page) {
   const results = {};
 
@@ -12,11 +16,11 @@ async function checkExportFlow(page) {
 
   try {
     const [download] = await Promise.all([
-      page.waitForEvent('download', { timeout: 5000 }),
-      page.click('#downloadBtn'),
+      page.waitForEvent('download', { timeout: 15000 }), // Zip baut 3 Dateien - braucht laenger als ein einzelner Download
+      page.click('#downloadZipBtn'),
     ]);
     const suggested = download.suggestedFilename();
-    results.exportDownloadTriggered = /Zeiterfassung-Export\.json$/.test(suggested);
+    results.exportDownloadTriggered = /_Export-Raoul\.zip$/.test(suggested);
     log(`Export-Download ausgelöst: ${results.exportDownloadTriggered} (Dateiname: ${suggested})`);
   } catch (e) {
     results.exportDownloadTriggered = false;
