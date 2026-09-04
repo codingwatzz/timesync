@@ -73,7 +73,11 @@ async function resetDayToDefault(page, dayRows, rowIndex) {
   await page.fill('#f_beschreibung', '');
   await page.fill('#f_start', '');
   await page.fill('#f_ende', '');
-  await page.fill('#f_pause', '');
+  // '#f_pause' ist ein <select> (Minuten-Dropdown, siehe pauseOptionsFor), kein Texteingabe-
+  // feld - page.fill() wirft hier einen Fehler ("Element is not an <input>..."). '0' ist der
+  // App-eigene Standardwert fuer "keine Pause" (siehe DetailSheet.tsx: value={entry.pause ||
+  // '0'}).
+  await page.selectOption('#f_pause', '0');
   if (await page.locator('#f_km').isVisible()) {
     await page.fill('#f_km', '');
     await page.fill('#f_transport', '');

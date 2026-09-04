@@ -31,7 +31,9 @@ async function fillAndSaveTestEntry(page, dayRows, { testPdfPath, day1RowId }) {
 
   await page.fill('#f_start', '08:00');
   await page.fill('#f_ende', '17:00');
-  await page.fill('#f_pause', '30');
+  // '#f_pause' ist ein <select> (Minuten-Dropdown), kein Texteingabefeld - siehe gleicher
+  // Fix/Kommentar in dayHelpers.js::resetDayToDefault.
+  await page.selectOption('#f_pause', '30');
   await page.fill('#f_beschreibung', TEST_NOTE);
   await page.fill('#f_km', '120');
   await page.fill('#f_transport', '15.50');
