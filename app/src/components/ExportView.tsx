@@ -5,8 +5,6 @@ import { entriesToZeilen, summe } from '../lib/exportZeilen';
 import type { TagesEintrag } from '../core/types';
 import type { KVStore } from '../store/types';
 
-const NAME_STORAGE_KEY = 'spesenabrechnung-name';
-
 interface ExportViewProps {
   year: number;
   month: number;
@@ -17,28 +15,18 @@ interface ExportViewProps {
 }
 
 export function ExportView({ year, month, entries, store, onBack, showToast }: ExportViewProps) {
-  const [name, setName] = useState(() => localStorage.getItem(NAME_STORAGE_KEY) || '');
   const [erstelltXlsx, setErstelltXlsx] = useState(false);
   const [erstelltPdf, setErstelltPdf] = useState(false);
 
   const zeilen = entriesToZeilen(year, month, entries);
   const gesamt = zeilen.reduce((s, z) => s + summe(z), 0);
 
-  function speichereName(wert: string) {
-    setName(wert);
-    localStorage.setItem(NAME_STORAGE_KEY, wert);
-  }
-
   async function handleXlsxDownload() {
-    if (!name.trim()) {
-      showToast('Bitte zuerst den Namen eingeben');
-      return;
-    }
     setErstelltXlsx(true);
     try {
       const { buildFilledXlsx, downloadXlsx } = await import('../lib/xlsxExport');
-      const { blob } = await buildFilledXlsx(name.trim(), year, month, entries);
-      downloadXlsx(blob, year, month, name.trim());
+      const { blob } = await buildFilledXlsx(year, month, entries);
+      downloadXlsx(blob, year, month);
       showToast('Spesenabrechnung heruntergeladen');
     } catch (err) {
       showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
@@ -52,15 +40,11 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
       showToast('Speicher nicht verfügbar');
       return;
     }
-    if (!name.trim()) {
-      showToast('Bitte zuerst den Namen eingeben');
-      return;
-    }
     setErstelltPdf(true);
     try {
       const { buildMergedReceiptsPdf, downloadPdf } = await import('../lib/receiptMerge');
       const { blob, bericht } = await buildMergedReceiptsPdf(store, year, month, entries);
-      downloadPdf(blob, year, month, name.trim());
+      downloadPdf(blob, year, month);
       if (bericht.fehlendeBelege.length > 0) {
         showToast(`Belege heruntergeladen, aber ${bericht.fehlendeBelege.length} Beleg(e) fehlten`);
       } else {
@@ -101,14 +85,6 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
       </table>
       {zeilen.length > 0 && (
         <>
-          <div className="field" style={{ marginTop: 16 }}>
-            <label htmlFor="f_name">Name für die Spesenabrechnung</label>
-            <input
-              id="f_name" type="text" value={name}
-              onChange={(e) => speichereName(e.target.value)}
-              placeholder="Vor- und Nachname"
-            />
-          </div>
           <div className="export-note">
             Zwei Dateien zum direkten Einreichen: die ausgefüllte Spesenabrechnung als Excel-Datei
             und alle Belege dieses Monats als ein zusammenhängendes PDF.

@@ -16,3 +16,8 @@ export const REISEARTEN: Reiseart[] = [
 ];
 
 export const LAENDER: Reiseland[] = ['Deutschland', 'Österreich', 'Schweiz'];
+
+// Feste Werte für die Spesenabrechnungs-Exportdateien - Ein-Personen-App, kein Eingabefeld
+// nötig (Nutzerwunsch 04.09.2026: "Name soll automatisch vergeben werden").
+export const SPESEN_NAME_VOLL = 'Raoul Hübner'; // steht im Dokument selbst (Name-Feld)
+export const SPESEN_NAME_DATEI = 'Raoul'; // Kurzform im Dateinamen, z.B. "..._Raoul.xlsx"

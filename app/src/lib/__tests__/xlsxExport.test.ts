@@ -66,7 +66,7 @@ describe('buildFilledXlsx (Struktur-Regressionstest gegen die echte Vorlage)', (
       '2026-08-01': leererEintrag({ sonstiges: '63' }),
       '2026-08-14': leererEintrag({ sonstiges: '10', km: '150', reiseart: 'Abwesenheitstag (>8h)' }),
     };
-    const { blob } = await buildFilledXlsx('Test Person', 2026, 8, entries);
+    const { blob } = await buildFilledXlsx(2026, 8, entries);
     const buf = new Uint8Array(await blob.arrayBuffer());
     const neuZip = await JSZip.loadAsync(buf);
     const neuNamelist = Object.keys(neuZip.files).filter((k) => !neuZip.files[k].dir).sort();
@@ -78,7 +78,7 @@ describe('buildFilledXlsx (Struktur-Regressionstest gegen die echte Vorlage)', (
     const entries: Record<string, TagesEintrag> = {
       '2026-08-01': leererEintrag({ sonstiges: '63' }),
     };
-    const { blob } = await buildFilledXlsx('Test Person', 2026, 8, entries);
+    const { blob } = await buildFilledXlsx(2026, 8, entries);
     const buf = new Uint8Array(await blob.arrayBuffer());
     const neuZip = await JSZip.loadAsync(buf);
     const neuSheetXml = await neuZip.file('xl/worksheets/sheet1.xml')!.async('string');
@@ -102,7 +102,7 @@ describe('buildFilledXlsx (Struktur-Regressionstest gegen die echte Vorlage)', (
 
   it('setzt Content-Type auf Arbeitsmappe statt Vorlage', async () => {
     const entries: Record<string, TagesEintrag> = { '2026-08-01': leererEintrag({ sonstiges: '5' }) };
-    const { blob } = await buildFilledXlsx('Test Person', 2026, 8, entries);
+    const { blob } = await buildFilledXlsx(2026, 8, entries);
     const buf = new Uint8Array(await blob.arrayBuffer());
     const neuZip = await JSZip.loadAsync(buf);
     const ct = await neuZip.file('[Content_Types].xml')!.async('string');
@@ -115,6 +115,6 @@ describe('buildFilledXlsx (Struktur-Regressionstest gegen die echte Vorlage)', (
     for (let d = 1; d <= 31; d++) {
       entries[`2026-08-${String(d).padStart(2, '0')}`] = leererEintrag({ sonstiges: '1' });
     }
-    await expect(buildFilledXlsx('Test Person', 2026, 8, entries)).rejects.toThrow();
+    await expect(buildFilledXlsx(2026, 8, entries)).rejects.toThrow();
   });
 });

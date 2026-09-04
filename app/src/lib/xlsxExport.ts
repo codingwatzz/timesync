@@ -15,6 +15,7 @@
 import JSZip from 'jszip';
 import type { TagesEintrag } from '../core/types';
 import { type ExportZeile, entriesToZeilen, kmPauschale, vma, summe } from './exportZeilen';
+import { SPESEN_NAME_VOLL, SPESEN_NAME_DATEI } from '../core/constants';
 
 export type { ExportZeile } from './exportZeilen';
 export { entriesToZeilen } from './exportZeilen';
@@ -169,7 +170,7 @@ async function baueXlsxZip(zip: JSZip, originalOrder: string[]): Promise<Blob> {
  * zurück - bereit zum Download. Wirft einen Fehler, falls irgendetwas nicht passt (keine
  * stillschweigend fehlerhafte Datei). */
 export async function buildFilledXlsx(
-  name: string, year: number, month: number, entries: Record<string, TagesEintrag>,
+  year: number, month: number, entries: Record<string, TagesEintrag>,
 ): Promise<{ blob: Blob; zeilen: ExportZeile[] }> {
   const zeilen = entriesToZeilen(year, month, entries);
 
@@ -188,7 +189,7 @@ export async function buildFilledXlsx(
     throw new Error('Vorlage hat nicht die erwartete Struktur (fehlende Kern-Dateien)');
   }
 
-  const sheetXml = patchSheetXml(await sheetXmlDatei.async('string'), name, year, month, zeilen);
+  const sheetXml = patchSheetXml(await sheetXmlDatei.async('string'), SPESEN_NAME_VOLL, year, month, zeilen);
   const workbookXml = patchWorkbookXml(await workbookXmlDatei.async('string'));
   const contentTypesXml = fixContentType(await contentTypesDatei.async('string'));
 
@@ -200,13 +201,12 @@ export async function buildFilledXlsx(
   return { blob, zeilen };
 }
 
-export function downloadXlsx(blob: Blob, year: number, month: number, name: string): void {
+export function downloadXlsx(blob: Blob, year: number, month: number): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   const pad2 = (n: number) => String(n).padStart(2, '0');
-  const nameSlug = name.trim().replace(/\s+/g, '-');
-  a.download = `Spesenabrechnung_${year}-${pad2(month)}_${nameSlug}.xlsx`;
+  a.download = `${year}-${pad2(month)}_Spesenabrechnung-${SPESEN_NAME_DATEI}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
