@@ -17,6 +17,7 @@ interface ExportViewProps {
 export function ExportView({ year, month, entries, store, onBack, showToast }: ExportViewProps) {
   const [erstelltXlsx, setErstelltXlsx] = useState(false);
   const [erstelltPdf, setErstelltPdf] = useState(false);
+  const [erstelltArbeitszeit, setErstelltArbeitszeit] = useState(false);
 
   const zeilen = entriesToZeilen(year, month, entries);
   const gesamt = zeilen.reduce((s, z) => s + summe(z), 0);
@@ -54,6 +55,20 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
       showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setErstelltPdf(false);
+    }
+  }
+
+  async function handleArbeitszeitDownload() {
+    setErstelltArbeitszeit(true);
+    try {
+      const { buildArbeitszeitXlsx, downloadArbeitszeitXlsx } = await import('../lib/arbeitszeitExport');
+      const blob = await buildArbeitszeitXlsx(year, month, entries);
+      downloadArbeitszeitXlsx(blob, year, month);
+      showToast('Arbeitszeiten heruntergeladen');
+    } catch (err) {
+      showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setErstelltArbeitszeit(false);
     }
   }
 
@@ -97,6 +112,13 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
           </button>
         </>
       )}
+      <div className="export-note" style={{ marginTop: 16 }}>
+        Übersicht über Start/Ende/Pause, IST/SOLL/EXTRA und Wochensummen für alle Tage dieses
+        Monats - nur zur eigenen Kontrolle, nicht zum Einreichen.
+      </div>
+      <button className="export-download" id="downloadArbeitszeitBtn" onClick={handleArbeitszeitDownload} disabled={erstelltArbeitszeit} style={{ marginTop: 8 }}>
+        {erstelltArbeitszeit ? 'Wird erstellt…' : 'Arbeitszeiten herunterladen (.xlsx)'}
+      </button>
     </div>
   );
 }

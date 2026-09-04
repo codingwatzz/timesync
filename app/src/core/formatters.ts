@@ -11,6 +11,15 @@ export function fmtHHMM(totalMinutes: number): string {
   return `${pad(h)}:${pad(m)}`;
 }
 
+/** Wie fmtHHMM, aber vorzeichenbewusst (fuer Abweichungen, die negativ sein koennen -
+ * fmtHHMM allein liefert bei negativen Werten wegen JS' Vorzeichen-erhaltendem Modulo
+ * falsche Ergebnisse, z.B. fmtHHMM(-30) statt "-00:30"). */
+export function fmtHHMMSigned(totalMinutes: number): string {
+  const vorzeichen = totalMinutes < 0 ? '-' : '';
+  const abs = Math.abs(totalMinutes);
+  return `${vorzeichen}${fmtHHMM(abs)}`;
+}
+
 export function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
