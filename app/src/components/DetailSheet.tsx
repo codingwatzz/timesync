@@ -8,6 +8,7 @@ import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } fro
 import { fileToDataURL, photoToPdf } from '../lib/pdf';
 import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
 import { useSwipe } from '../hooks/useSwipe';
+import { useSwipeDown } from '../hooks/useSwipeDown';
 import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
 
 interface DetailSheetProps {
@@ -114,6 +115,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     () => onNavigateDay?.(1),
     () => onNavigateDay?.(-1),
   );
+  // Wischen nach UNTEN am Sheet-Griff schließt das Sheet (Bottom-Sheet-Standardmuster) -
+  // bewusst NUR auf den Griff-Bereich angewendet, nicht auf das ganze Sheet, damit normales
+  // Scrollen im Formular nicht versehentlich als Schließen-Geste interpretiert wird.
+  const swipeDownHandlers = useSwipeDown(handleClose);
 
   // Nach einem direkten (nicht-debounced) Save markieren, damit ein evtl. noch laufender
   // Debounce-Timer später keinen überflüssigen, redundanten Save mehr auslöst.
@@ -201,7 +206,9 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   return (
     <div className="sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className="sheet" {...swipeHandlers}>
-        <div className="sheet-handle" />
+        <div className="sheet-handle-zone" {...swipeDownHandlers}>
+          <div className="sheet-handle" />
+        </div>
         <h2>{dow}, {pad(d)}.{pad(m)}.{y}</h2>
         <div className="sheet-sub">Tageseintrag bearbeiten{feiertag ? ' · ' + feiertag : ''}</div>
 

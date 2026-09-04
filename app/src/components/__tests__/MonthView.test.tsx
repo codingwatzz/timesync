@@ -83,4 +83,15 @@ describe('MonthView Kosten-Summe', () => {
     fireEvent.touchEnd(main, { changedTouches: [{ clientX: 250, clientY: 200 }] });
     expect(onPrevMonth).toHaveBeenCalledOnce();
   });
+
+  it('zeigt den Titel "Zeiterfassung" OHNE das frühere "Ledger"-Label daneben', () => {
+    render(
+      <MonthView
+        year={2026} month={8} entries={{}} syncMode="appwrite"
+        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
+      />,
+    );
+    expect(screen.getByText('Zeiterfassung')).toBeInTheDocument();
+    expect(screen.queryByText('Ledger')).not.toBeInTheDocument();
+  });
 });

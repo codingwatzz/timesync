@@ -66,6 +66,22 @@ describe('DetailSheet Auto-Save', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('schließt das Sheet bei einer Wisch-Geste nach unten am Griff (Bottom-Sheet-Muster)', () => {
+    const { onClose, container } = renderSheet();
+    const handleZone = container.querySelector('.sheet-handle-zone')!;
+    fireEvent.touchStart(handleZone, { touches: [{ clientX: 200, clientY: 100 }] });
+    fireEvent.touchEnd(handleZone, { changedTouches: [{ clientX: 200, clientY: 220 }] }); // 120px nach unten
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('schließt NICHT bei einer zu kurzen Bewegung am Griff (Tippen)', () => {
+    const { onClose, container } = renderSheet();
+    const handleZone = container.querySelector('.sheet-handle-zone')!;
+    fireEvent.touchStart(handleZone, { touches: [{ clientX: 200, clientY: 100 }] });
+    fireEvent.touchEnd(handleZone, { changedTouches: [{ clientX: 200, clientY: 110 }] }); // nur 10px
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('speichert nicht erneut, wenn nach dem Speichern keine weitere Änderung erfolgte', async () => {
     const { onSave, beschreibung } = renderSheet();
     fireEvent.change(beschreibung(), { target: { value: 'Kundentermin' } });

@@ -62,7 +62,6 @@ export function MonthView({
       <header className="top">
         <div className="brand">
           <h1>Zeiterfassung</h1>
-          <span className="tag">Ledger</span>
           <span className={badge.className} style={{ marginLeft: 6 }}>{badge.label}</span>
         </div>
         <div className="month-nav">
