@@ -294,6 +294,11 @@ einfache Updates/Tests/Erweiterung". Ergebnis:
    wartet auf die 3 GitHub-Secrets (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
    `GDRIVE_BACKUP_FOLDER_ID`) und einmal manuelle Appwrite/Google-Konsolen-Einrichtung durch
    den Nutzer (siehe `tools/backup/README.md`).
+   **⏰ Appwrite-API-Key "backup-timesync" läuft am 01.01.2029 ab** (Nutzer-Entscheidung,
+   05.09.2026) - rechtzeitig vorher einen neuen erstellen und das Secret
+   `APPWRITE_BACKUP_API_KEY` aktualisieren, sonst bricht das monatliche Backup ab diesem
+   Datum kommentarlos ab (E-Mail-Benachrichtigung von Appwrite bei Ablauf ist nicht
+   garantiert - lieber selbst dran denken).
 4. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
    Abgleichsquelle - die App-Daten für August wurden direkt erfasst, nicht gegen eine externe
    Quelle verifiziert (anders als April-Juli). Kein akuter Handlungsbedarf, nur zur
