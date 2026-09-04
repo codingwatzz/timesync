@@ -52,7 +52,30 @@ aus der Contents-Antwort nehmen und stattdessen die Git-Blobs-API verwenden (fun
 bis 100 MB): `GET /repos/<repo>/git/blobs/<sha>` liefert denselben Inhalt zuverlässig
 base64-kodiert.
 
-## 1. Lokale Prüfung VOR jedem Live-Zyklus
+## 0b. Tool-/Actions-Zeit ist ein echter Kostenfaktor - effizient verifizieren, nicht im Zweifel doppelt
+
+Ein einzelner kleiner, gut verstandener Fix (05.09.2026, CSS `min-width:0`) hat durch ineffiziente
+Verifikation >17 Minuten Tool-Zeit gekostet. Konkrete Lehren, künftig verbindlich:
+
+- **Bei einem etablierten, gut verstandenen Muster** (z.B. bekannte CSS-Regel, Standard-Fix
+  aus der eigenen Fachkenntnis) NICHT vorher UND nachher screenshotten/verifizieren - nur
+  EINMAL danach, zur Bestätigung. Ein "Vorher"-Beweis ist nur nötig, wenn die Diagnose selbst
+  unsicher ist (z.B. mehrere mögliche Ursachen im Raum stehen), nicht um die eigene
+  Unsicherheit über einen ohnehin klaren Fix abzusichern.
+- **Temporäre Branches bei Bedarf neu anlegen statt zu rebasen/mergen.** Ein Rebase/Merge
+  eines Temp-Branches auf einen aktualisierten `main` (inkl. der Build-Artefakt-Commits vom
+  Deploy-Workflow) erzeugt unnötige Merge-Konflikte und Identitäts-Fehler. Einfacher: alten
+  Temp-Branch löschen, neuen frisch von `main` erstellen.
+- **Immer EIN langer Einzel-Wartezeitraum statt mehrerer kurzer Polling-Durchläufe** - jeder
+  Status-Check ist ein Tool-Aufruf, jeder davon kostet. Ein einzelnes `sleep 90` gefolgt von
+  einem Check ist fast immer besser als 6x `sleep 15` + Check.
+- **Playwright/Chromium kann NICHT lokal in Claudes Sandbox installiert werden** (Netzwerk-
+  Sperre blockiert den Chrome-Download) - jede visuelle/Screenshot-Verifikation braucht
+  zwingend einen vollen GitHub-Actions-Durchlauf (~60-90s allein für Playwright-Install).
+  Deshalb Screenshot-Verifikation sparsam einsetzen: nur bei echter Unsicherheit über die
+  Diagnose selbst, nicht routinemäßig für jede CSS-/UI-Änderung.
+
+
 
 Bevor irgendetwas gepusht wird, das einen Deploy/E2E-Test auslöst:
 
