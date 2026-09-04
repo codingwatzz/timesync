@@ -147,14 +147,20 @@ Kollisionen führen (z.B. zwei E2E-Testläufe gleichzeitig auf demselben Testtag
 fremder Commit/Workflow-Lauf auffällt, der nicht aus der eigenen Sitzung stammt: dem Nutzer
 kurz und sachlich Bescheid geben, nicht alarmistisch, und die eigene Arbeit fortsetzen.
 
-## 5. Spesenabrechnung-Export: verbindlicher Standard (bestätigt 03.09.2026)
+## 5. Monats-Export: lebt jetzt in der App, nicht mehr in tools/
 
-`tools/spesenabrechnung/` (siehe dortige README.md) erzeugt das monatliche Einreichungs-PDF.
-Der Nutzer hat den aktuellen Stand (`xlsx_to_pdf.py`, Commit `cb2cf87`) ausdrücklich als "sieht
-jetzt gut aus, das soll ab jetzt immer so aussehen" bestätigt: echte Zellrahmen (beide
-Tabellen), echte Farben aus der Vorlage, deutsches Datumsformat, korrekte
-Verpflegungsmehraufwand-Werte. **Diesen Stand nicht ohne neuen, konkreten Anlass verändern**
-(z.B. nicht "verbessern" oder vereinfachen, nur weil es umständlich aussieht - der Umweg über
-ODS + die vier gezielten Fixes sind das Ergebnis mehrerer gescheiterter Versuche, siehe
-README.md dort). Bei einem neuen Monat: einfach `merge_pdf.py` wie dokumentiert aufrufen, kein
-Nachbau/keine Vereinfachung der Pipeline von Neuem versuchen.
+**Veraltet, nur zur Einordnung:** Frühere Versionen dieser Datei beschrieben hier einen
+verbindlichen `tools/spesenabrechnung/xlsx_to_pdf.py`-Standard (Python, LibreOffice-Umweg
+ueber ODS). Das ist seit 04.09.2026 Geschichte - die App erzeugt Spesenabrechnung (.xlsx),
+Belege (.pdf) und Arbeitszeiten (.xlsx) inzwischen komplett client-seitig im Browser
+(`app/src/lib/export/`, Button "Monat exportieren" -> ein .zip mit allen drei Dateien).
+Der Python-Umweg wurde im Rahmen eines Architektur-Reviews entfernt, da er danach komplett
+redundant war (siehe `tools/spesenabrechnung/README.md`).
+
+`tools/spesenabrechnung/` enthält nur noch zwei reine Node-Diagnose-Skripte
+(`fetch_month.js`/`fetch_receipts.js`), um Appwrite-Rohdaten bei Bedarf direkt
+nachzusehen - nicht zum Erzeugen der Spesenabrechnung.
+
+**Bei einer neuen Änderung am Export:** in `app/src/lib/export/` suchen
+(`xlsxExport.ts`/`receiptMerge.ts`/`arbeitszeitExport.ts`/`zipExport.ts`/`exportZeilen.ts`),
+nicht in `tools/`.

@@ -3,17 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import type { TagesEintrag } from '../../../core/types';
 import type { KVStore } from '../../../store/types';
 import { buildMergedReceiptsPdf } from '../receiptMerge';
-
-function leererEintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
-  return {
-    typ: 'A', typManuell: false, ho: false,
-    start: '', ende: '', pause: '', start2: '', ende2: '', pause2: '',
-    beschreibung: '', km: '', transport: '', hotel: '', bewirtung: '', sonstiges: '',
-    reiseland: 'Deutschland', reiseart: '', fr: false, mi: false, ab: false,
-    receiptIds: [],
-    ...overrides,
-  };
-}
+import { leererEintrag } from './testFixtures';
 
 async function testPdfDataUrl(beschriftung: string): Promise<string> {
   const doc = await PDFDocument.create();

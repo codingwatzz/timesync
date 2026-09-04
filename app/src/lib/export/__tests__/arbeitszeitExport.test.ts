@@ -2,17 +2,7 @@ import { describe, it, expect } from 'vitest';
 import ExcelJS from 'exceljs';
 import type { TagesEintrag } from '../../../core/types';
 import { buildArbeitszeitXlsx } from '../arbeitszeitExport';
-
-function eintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
-  return {
-    typ: 'A', typManuell: true, ho: false,
-    start: '', ende: '', pause: '', start2: '', ende2: '', pause2: '',
-    beschreibung: '', km: '', transport: '', hotel: '', bewirtung: '', sonstiges: '',
-    reiseland: 'Deutschland', reiseart: '', fr: false, mi: false, ab: false,
-    receiptIds: [],
-    ...overrides,
-  };
-}
+import { leererEintrag as eintrag } from './testFixtures';
 
 /** Füllt explizit ALLE Tage eines Monats mit 'Wochenende' (zählt nirgends mit) - vermeidet,
  * dass fehlende Tage über den emptyEntry()-Fallback (wie im Rest der App) unbeabsichtigt als

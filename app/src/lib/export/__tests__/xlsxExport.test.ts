@@ -4,17 +4,7 @@ import path from 'path';
 import JSZip from 'jszip';
 import type { TagesEintrag } from '../../../core/types';
 import { entriesToZeilen, buildFilledXlsx } from '../xlsxExport';
-
-function leererEintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
-  return {
-    typ: 'A', typManuell: false, ho: false,
-    start: '', ende: '', pause: '', start2: '', ende2: '', pause2: '',
-    beschreibung: '', km: '', transport: '', hotel: '', bewirtung: '', sonstiges: '',
-    reiseland: 'Deutschland', reiseart: '', fr: false, mi: false, ab: false,
-    receiptIds: [],
-    ...overrides,
-  };
-}
+import { leererEintrag } from './testFixtures';
 
 describe('entriesToZeilen', () => {
   it('wählt nur Tage mit Kosten- oder Reiseart-relevanten Daten aus', () => {

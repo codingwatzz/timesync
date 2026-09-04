@@ -5,17 +5,7 @@ import JSZip from 'jszip';
 import type { TagesEintrag } from '../../../core/types';
 import type { KVStore } from '../../../store/types';
 import { buildExportZip } from '../zipExport';
-
-function eintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
-  return {
-    typ: 'A', typManuell: true, ho: false,
-    start: '09:00', ende: '16:00', pause: '', start2: '', ende2: '', pause2: '',
-    beschreibung: '', km: '', transport: '', hotel: '', bewirtung: '', sonstiges: '',
-    reiseland: 'Deutschland', reiseart: '', fr: false, mi: false, ab: false,
-    receiptIds: [],
-    ...overrides,
-  };
-}
+import { leererEintrag as eintrag } from './testFixtures';
 
 function mockStore(): KVStore {
   return {
