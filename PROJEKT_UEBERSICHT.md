@@ -131,10 +131,39 @@ Database ID: 6a92dad20003b47b4a19
 Table ID:    key-value
 Bucket ID:   6a92dd0f003962ea7128
 ```
-Berechtigungen: **"Any"-Rolle**, kein Login, kein Zugriffsschutz. Bewusste, unveränderte
-Entscheidung des Nutzers (öffentliches GitHub-Repo + öffentliche Appwrite-Zugangsdaten im
-Client-Code). Risiko: theoretisch könnte jemand, der den Quellcode durchsucht, Daten
-lesen/löschen. Kein Datenverlust-Backup außer dem App-eigenen JSON-Export (Diagnose-Panel).
+Berechtigungen: **abgesichert (04.09.2026)** - Tabelle + Bucket stehen auf `user:<Raouls
+Appwrite-User-ID>` statt `Any`, Zugriff erfordert einen Login (siehe "Appwrite-Absicherung"
+unten). Vorher: "Any"-Rolle, kein Login, kein Zugriffsschutz (bewusste, aber inzwischen
+überholte Entscheidung aus der Frühphase). Backup weiterhin nur der App-eigene JSON-Export
+(Diagnose-Panel) UND (seit 04.09.2026, in Arbeit) ein monatliches automatisches Backup nach
+Google Drive - siehe `tools/backup/README.md`.
+
+## Appwrite-Absicherung (Login + eingeschränkte Berechtigungen, 04.09.2026)
+
+Vorher konnte theoretisch jeder, der den öffentlichen Quellcode durchsucht und die darin
+sichtbaren Appwrite-IDs findet, Daten lesen/löschen ("Any"-Rolle). Das ist jetzt behoben:
+
+- **Echte Appwrite-Nutzer-Session** (Email+Passwort) ist Voraussetzung für JEDEN Zugriff -
+  `app/src/components/AuthGate.tsx` zeigt einen Login-Bildschirm, BEVOR überhaupt versucht
+  wird, den Store zu laden. Ein Server-seitiger API-Key wäre bei einer reinen Browser-PWA
+  KEINE Verbesserung gewesen (läge genauso offen im Bundle) - deshalb echter Login statt Key.
+- Tabellen- (`key-value`) und Bucket-Berechtigung (`receipts`) in der Appwrite Console von
+  `Any` auf `user:<Raouls User-ID>` umgestellt (volle Rechte: Create/Read/Update/Delete) -
+  manueller Konsolen-Schritt, NICHT per Code/API gemacht (dafür wäre ein Appwrite-Admin-Zugang
+  nötig gewesen, den Claude nie hatte).
+- **Wichtiger Sonderfall (siehe `app/src/hooks/useAuth.ts`):** ein echter Netzwerkfehler bei
+  der Session-Prüfung (z.B. echter Offline-Betrieb, kein Internet) wird bewusst NICHT als
+  "nicht eingeloggt" gewertet - sonst würde eine bereits eingeloggte Person offline plötzlich
+  ausgesperrt. Nur eine echte AppwriteException (z.B. 401 online) löst den Login-Zwang aus.
+  Nur so bleibt das bestehende Offline-Verhalten (IndexedDB-Fallback, siehe `createStore.ts`)
+  erhalten.
+- E2E-Test (`test/e2e/steps/login.js`) und Offline-Test loggen sich jetzt ebenfalls ein
+  (Zugangsdaten aus den GitHub-Secrets `APPWRITE_EMAIL`/`APPWRITE_PASSWORD`).
+- **Live verifiziert** (nicht nur Unit-getestet): zwei echte E2E-Läufe über den
+  temporären-Branch-Workaround, einmal direkt nach dem Login-Deploy (noch mit "Any"), einmal
+  NACH der Berechtigungs-Umstellung (mit `user:<id>`) - beide `pass: true`, alle 16
+  kritischen Prüfungen bestanden, inklusive Beleg-Upload/-Persistenz/-Löschung (Bucket) und
+  Import.
 
 ## Der Monats-Export (fertig, siehe `app/src/lib/export/`)
 
@@ -259,9 +288,13 @@ einfache Updates/Tests/Erweiterung". Ergebnis:
 
 1. `DetailSheet.tsx`-Aufteilung (siehe Architektur-Review oben) - bewusst zurückgestellt,
    Timing-Empfehlung siehe dort.
-2. Appwrite-Berechtigungen ("Any"-Rolle): bewusst unverändert gelassen, ggf. bei wachsendem
-   Datenbestand nochmal überdenken.
-3. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
+2. ~~Appwrite-Berechtigungen ("Any"-Rolle)~~ - **erledigt 04.09.2026**, siehe "Appwrite-
+   Absicherung" oben.
+3. Monatliches Backup nach Google Drive - Code fertig (`tools/backup/`), noch nicht deployed:
+   wartet auf die 3 GitHub-Secrets (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
+   `GDRIVE_BACKUP_FOLDER_ID`) und einmal manuelle Appwrite/Google-Konsolen-Einrichtung durch
+   den Nutzer (siehe `tools/backup/README.md`).
+4. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
    Abgleichsquelle - die App-Daten für August wurden direkt erfasst, nicht gegen eine externe
    Quelle verifiziert (anders als April-Juli). Kein akuter Handlungsbedarf, nur zur
    Einordnung falls Abweichungen auffallen sollten.
