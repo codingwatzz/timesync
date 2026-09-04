@@ -5,6 +5,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { login } = require('./e2e/steps/login');
 
 const APP_URL = process.env.APP_URL || 'https://codingwatzz.github.io/timesync/';
 const RESULT_FILE = process.env.RESULT_FILE || 'last-result-offline.json';
@@ -58,6 +59,22 @@ async function main() {
   results.serviceWorkerActive = swActive;
   log(`Service Worker aktiv: ${swActive}`);
 
+  // ---------- 1b. Login (noch online) ----------
+  // Seit 04.09.2026 verbindlich (siehe AuthGate.tsx) - simuliert den realistischen Fall
+  // (eine bereits eingeloggte Person geht offline), nicht bloß eine zufällige Netzwerkfehler-
+  // Ausnahme. Ohne diesen Schritt würde der Test zwar durch den Offline-Netzwerkfehler-
+  // Fallback in useAuth trotzdem durchlaufen (siehe dortigen Kommentar), aber das testet dann
+  // den falschen Fall.
+  results.loggedIn = await login(page);
+  if (!results.loggedIn) {
+    results.pass = false;
+    results.error = 'Login (online) fehlgeschlagen - Voraussetzung für den Offline-Test nicht erfüllt.';
+    fs.writeFileSync(path.join(__dirname, RESULT_FILE), JSON.stringify(results, null, 2));
+    await browser.close();
+    console.error('FAIL:', results.error);
+    process.exit(1);
+  }
+
   // ---------- 2. Netzwerk kappen und neu laden ----------
   await context.setOffline(true);
   log('Netzwerk gekappt (offline). Lade Seite neu…');
@@ -96,6 +113,7 @@ async function main() {
   results.timestamp = new Date().toISOString();
   results.pass =
     results.onlineLoaded &&
+    results.loggedIn &&
     results.serviceWorkerActive &&
     results.offlineReloadCompleted &&
     results.hasVisibleContent &&

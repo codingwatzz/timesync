@@ -37,6 +37,9 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: E2E-Test ausführen
+        env:
+          APPWRITE_EMAIL: ${{ secrets.APPWRITE_EMAIL }}
+          APPWRITE_PASSWORD: ${{ secrets.APPWRITE_PASSWORD }}
         run: node test/e2e.js
 
       - name: Screenshots als Artefakt hochladen
@@ -82,6 +85,9 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Offline-/PWA-Test ausführen
+        env:
+          APPWRITE_EMAIL: ${{ secrets.APPWRITE_EMAIL }}
+          APPWRITE_PASSWORD: ${{ secrets.APPWRITE_PASSWORD }}
         run: node test/offline-test.js
 
       - name: Offline-Screenshots als Artefakt hochladen

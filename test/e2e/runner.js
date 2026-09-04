@@ -15,6 +15,7 @@ const { resetDayToDefault } = require('./dayHelpers');
 const { toAppwriteRowId } = require('./appwriteDirectCheck');
 
 const { loadPage } = require('./steps/load');
+const { login } = require('./steps/login');
 const { readDiagnosePanel } = require('./steps/diagnose');
 const { fillAndSaveTestEntry } = require('./steps/fillAndSaveEntry');
 const { reloadAndVerifyEntry } = require('./steps/reloadAndVerify');
@@ -23,7 +24,7 @@ const { checkImportFlow } = require('./steps/importFlow');
 const { cleanupTestDays } = require('./steps/cleanup');
 
 const CRITICAL_CHECKS = [
-  'loaded', 'syncActive', 'testMonthIsDecember',
+  'loaded', 'loggedIn', 'syncActive', 'testMonthIsDecember',
   'homeofficeDefaultActive', 'travelSectionVisible', 'reiseartWarningVisibleBefore',
   'receiptUploaded', 'fieldsSurvivedReceiptUpload', 'allFieldsPersisted', 'receiptPersisted',
   'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered', 'importWorked',
@@ -64,6 +65,14 @@ async function attemptRun() {
       throw new Error('Seite konnte nicht geladen werden.');
     }
     await shot('01_start.png');
+
+    // ---------- 1b. Login ----------
+    results.loggedIn = await login(page);
+    if (!results.loggedIn) {
+      writePartialResult();
+      throw new Error('Login fehlgeschlagen - siehe Log für Details.');
+    }
+    await shot('01b_after_login.png');
 
     // ---------- 2. Diagnose: Sync-Status ----------
     const debugTextStart = await readDiagnosePanel(page);

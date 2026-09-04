@@ -2,7 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { StoreProvider } from './hooks/StoreContext.tsx'
+import { AuthGate } from './components/AuthGate.tsx'
+import { createAuthClient } from './store/appwriteAuth.ts'
 import { registerServiceWorker } from './lib/serviceWorker'
 
 const APPWRITE_CONFIG = {
@@ -13,11 +14,13 @@ const APPWRITE_CONFIG = {
   bucketId: '6a92dd0f003962ea7128',
 }
 
+const account = createAuthClient(APPWRITE_CONFIG)
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StoreProvider config={APPWRITE_CONFIG}>
+    <AuthGate account={account} storeConfig={APPWRITE_CONFIG}>
       <App />
-    </StoreProvider>
+    </AuthGate>
   </StrictMode>,
 )
 
