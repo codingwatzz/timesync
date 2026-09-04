@@ -118,10 +118,10 @@ describe('buildArbeitszeitXlsx', () => {
         werte[label] = row.getCell(3).value;
       }
     });
-    expect(werte.Arbeitstage).toBe('2');
-    expect(werte.Urlaubstage).toBe('1');
-    expect(werte.Krankheitstage).toBe('1');
-    expect(werte.Gleitfreitage).toBe('1');
+    expect(werte.Arbeitstage).toBe(2);
+    expect(werte.Urlaubstage).toBe(1);
+    expect(werte.Krankheitstage).toBe(1);
+    expect(werte.Gleitfreitage).toBe(1);
   });
 
   it('berechnet die Homeoffice-Quote nur über Arbeitstage', async () => {
@@ -132,17 +132,21 @@ describe('buildArbeitszeitXlsx', () => {
     entries['2026-09-04'] = eintrag({ typ: 'A', ho: true });
     const blob = await buildArbeitszeitXlsx(2026, 9, entries);
     const ws = await ladeWorkbook(blob);
-    let quoteZeile: unknown = null;
+    let quote: unknown = null;
+    let detail: unknown = null;
     ws.eachRow((row) => {
-      if (row.getCell(1).value === 'Homeoffice-Quote') quoteZeile = row.getCell(3).value;
+      if (row.getCell(1).value === 'Homeoffice-Quote:') {
+        quote = row.getCell(2).value;
+        detail = row.getCell(3).value;
+      }
     });
-    expect(quoteZeile).toContain('75%');
-    expect(quoteZeile).toContain('3 von 4');
+    expect(quote).toBeCloseTo(0.75);
+    expect(detail).toContain('3 von 4');
   });
 
-  it('berechnet Gesamt-EXTRA in Prozent relativ zum Gesamt-SOLL', async () => {
+  it('berechnet Gesamt-EXTRA in Prozent relativ zum Gesamt-SOLL (GESAMT-Zeile)', async () => {
     // Zwei Arbeitstage: SOLL = 2*6:24 = 12:48 = 768min. IST = 2*7:00 = 14:00 = 840min.
-    // EXTRA = 72min. Prozent = 72/768*100 = 9.375% -> "+9.4%"
+    // EXTRA = 72min. Prozent = 72/768*100 = 9.375% -> "(+9.4 %)"
     const entries = vollerMonatNeutral(2026, 9);
     entries['2026-09-01'] = eintrag({ typ: 'A', start: '09:00', ende: '16:00', pause: '' });
     entries['2026-09-02'] = eintrag({ typ: 'A', start: '09:00', ende: '16:00', pause: '' });
@@ -150,9 +154,9 @@ describe('buildArbeitszeitXlsx', () => {
     const ws = await ladeWorkbook(blob);
     let prozentZeile: unknown = null;
     ws.eachRow((row) => {
-      if (row.getCell(1).value === 'Gesamt-EXTRA (%)') prozentZeile = row.getCell(3).value;
+      if (row.getCell(1).value === 'GESAMT:') prozentZeile = row.getCell(14).value;
     });
-    expect(prozentZeile).toBe('+9.4%');
+    expect(prozentZeile).toBe('(+9.4 %)');
   });
 
   it('blendet Wochenendtage ohne Arbeitszeit aus, zeigt sie aber wenn Arbeitszeit dokumentiert wurde', async () => {
