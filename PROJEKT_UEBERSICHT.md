@@ -1,5 +1,16 @@
 # Projekt: Zeiterfassung & Spesenabrechnung
 
+**Stand: 04.09.2026, Nachtrag zur Übergabe oben (gleicher Tag, direkte Fortsetzung derselben
+Sitzung):** unabhängige Prüfung durchgeführt (frischer Git-Clone, echter `npm run verify`-
+Lauf, Code-Review) - keine neuen strukturellen Mängel gefunden, drei verwaiste
+Kommentar-Verweise auf das gelöschte Python-Tool bereinigt. Danach die vom Nutzer
+vorgemerkte Funktion "Markierung unerfasster Arbeitstage" gebaut (Details siehe "Was NICHT
+(mehr) offen ist" unten), committet (`df95b5d`) und live deployed (`80846ea`, per
+GitHub-API als `status: built` bestätigt). **Kein echter E2E-Lauf in dieser Sitzung** (nur
+lokale Unit-Tests + Live-Deploy-Status-Check) - die 16 neuen Unit-Tests decken die neue
+Funktion ab, ein E2E-Lauf wurde bewusst nicht zusätzlich angestoßen (kein Formular-/
+Interaktionsverhalten geändert, nur zusätzliche Anzeige-Flags).
+
 **Stand: 04.09.2026 – geschrieben als Übergabe für einen Chat-Neustart (unabhängige Prüfung/
 Bewertung der App gewünscht). Jeder Fakt hier wurde direkt am echten Repo/System verifiziert
 (frischer Git-Pull, echter Testlauf, echter E2E-Lauf), nicht aus dem Gedächtnis eines
@@ -96,6 +107,13 @@ TagesEintrag {
 Belege (`BelegMeta`) liegen als eigene Appwrite-Storage-Datei + Metadaten-Zeile, referenziert
 über `receiptIds`.
 
+**Kern-Hilfsfunktionen für "unerfasste Arbeitszeit"** (`app/src/core/entry.ts` /
+`formatters.ts`, seit 04.09.2026): `fehltArbeitszeit(entry, typ)` prüft, ob ein Arbeitstag
+(typ 'A', auch Homeoffice) weder Start/Ende noch einen Eintrag hat; `istVergangenheit(year,
+month, day, referenz?)` prüft, ob ein Datum echt vor "heute" liegt (heute selbst zählt
+bewusst noch nicht). Beide sind reine, mit `vi.useFakeTimers()` getestete Funktionen -
+Verwendung siehe `DayRow.tsx` (Monatsansicht) und `ExportView.tsx` (Export-Vorschau-Banner).
+
 **Wichtiger Fallstrick:** Appwrite-fileId/rowId für einen Beleg =
 `toAppwriteId('receipt:' + rid)`, also **mit `receipt_`-Präfix** (der Doppelpunkt wird zu
 einem Unterstrich sanitisiert) - `receiptIds` im Tageseintrag speichert dagegen die ROHE
@@ -143,9 +161,11 @@ Geschäftslogik.
 
 ## Testing
 
-- **159 Unit-Tests** (Vitest, 18 Dateien), lokal in ~15-25 Sek. lauffähig: `cd app && npm run
-  test`. `npm run verify` bündelt Test+Lint+Build – IMMER vor einem Push, der einen Live-
-  Zyklus auslöst.
+- **159 Unit-Tests** (Vitest, 18 Dateien) waren zum letzten Übergabe-Stand (04.09.2026,
+  Architektur-Review) aktuell; nach der Funktion "Markierung unerfasster Arbeitstage"
+  (04.09.2026, selbe Sitzung) sind es **175 Unit-Tests** (18 Dateien), lokal in ~15-25 Sek.
+  lauffähig: `cd app && npm run test`. `npm run verify` bündelt Test+Lint+Build – IMMER vor
+  einem Push, der einen Live-Zyklus auslöst.
 - **E2E-Test** (Playwright, GitHub Actions) - läuft **NICHT mehr bei jedem Deploy**
   (bewusste Entscheidung 02.09.2026: kostet mehrere Minuten Actions-Zeit + Wartezeit pro
   Push, unverhältnismäßig teuer für die meisten Änderungen). Läuft nur noch: täglich
@@ -227,17 +247,11 @@ einfache Updates/Tests/Erweiterung". Ergebnis:
 
 ## Offene Punkte / nächste Schritte
 
-1. **NEU (04.09.2026, vom Nutzer für den nächsten Thread vorgemerkt):** Zurückliegende
-   Arbeitstage OHNE erfasste Arbeitszeit sollen in der App markiert/hervorgehoben werden
-   (damit sie nicht vergessen werden). Noch nicht spezifiziert: was genau zählt als "ohne
-   Arbeitszeit" (kein `start`/`ende` gesetzt?), wie weit "zurückliegend" reicht (nur
-   Vergangenheit, ab wann?), und wie die Markierung aussehen soll (Farbe? Icon? Nur in der
-   Monatsansicht oder auch im Export?) - beim Start dieser Aufgabe klären, nicht raten.
-2. `DetailSheet.tsx`-Aufteilung (siehe Architektur-Review oben) - bewusst zurückgestellt,
+1. `DetailSheet.tsx`-Aufteilung (siehe Architektur-Review oben) - bewusst zurückgestellt,
    Timing-Empfehlung siehe dort.
-3. Appwrite-Berechtigungen ("Any"-Rolle): bewusst unverändert gelassen, ggf. bei wachsendem
+2. Appwrite-Berechtigungen ("Any"-Rolle): bewusst unverändert gelassen, ggf. bei wachsendem
    Datenbestand nochmal überdenken.
-4. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
+3. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
    Abgleichsquelle - die App-Daten für August wurden direkt erfasst, nicht gegen eine externe
    Quelle verifiziert (anders als April-Juli). Kein akuter Handlungsbedarf, nur zur
    Einordnung falls Abweichungen auffallen sollten.
@@ -250,3 +264,16 @@ einfache Updates/Tests/Erweiterung". Ergebnis:
   garantiert pixelgenau). Nur auf expliziten neuen Wunsch wieder aufgreifen, dann mit dem
   Wissen, dass ein Browser-Nachbau (ohne LibreOffice/Server) das gleiche Risiko wie beim
   ursprünglichen Anlauf trägt (nicht 100% identisch zur echten Vorlage).
+- **Markierung vergangener Arbeitstage ohne erfasste Arbeitszeit: fertig** (04.09.2026,
+  Commit `df95b5d`, live seit Deploy `80846ea`). Kriterien wurden vom Nutzer geklärt statt
+  geraten: "ohne Arbeitszeit" = kein Start/Ende gesetzt (`core/entry.ts::fehltArbeitszeit`,
+  arbeitszeitMinuten()===0 ODER gar kein Eintrag - gilt für jeden Tag mit typ 'A', auch
+  Homeoffice); "zurückliegend" = beliebig weit in die Vergangenheit, kein festes Zeitfenster
+  (`core/formatters.ts::istVergangenheit`, "heute" selbst zählt bewusst noch nicht als
+  vergessen); Sichtbarkeit = Monatsansicht (neues `⚠ Keine Arbeitszeit erfasst`-Flag in
+  DayRow.tsx, wiederverwendet den bestehenden `.flag.warn`-Stil) + Export-Vorschau (neuer
+  warn-banner in ExportView.tsx, listet alle betroffenen Tage des Monats unabhängig von der
+  kosten-/reiserelevanten Zeilenauswahl auf). Bewusst KEIN globaler Badge außerhalb dieser
+  beiden Stellen (Nutzerentscheidung) - die Monats-für-Monat-Ladearchitektur
+  (`useMonthEntries`) musste dafür nicht angetastet werden. 16 neue Unit-Tests, alle mit
+  `vi.useFakeTimers()` (deterministisch, unabhängig vom echten Testlauf-Datum).
