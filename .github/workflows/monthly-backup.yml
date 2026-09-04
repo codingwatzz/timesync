@@ -1,0 +1,45 @@
+name: Monatliches Backup (Appwrite -> Google Drive)
+
+on:
+  schedule:
+    # Am 1. jedes Monats, 05:00 UTC - vor dem taeglichen E2E-Test (06:00 UTC), damit ein
+    # eventueller E2E-Fehlschlag nicht mit dem Backup-Zeitfenster kollidiert.
+    - cron: '0 5 1 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Abhängigkeiten installieren
+        working-directory: tools/backup
+        run: npm install
+
+      - name: Daten aus Appwrite holen
+        working-directory: tools/backup
+        env:
+          APPWRITE_BACKUP_API_KEY: ${{ secrets.APPWRITE_BACKUP_API_KEY }}
+        run: node monthly_backup.js
+
+      - name: Nach Google Drive hochladen
+        working-directory: tools/backup
+        env:
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GDRIVE_BACKUP_FOLDER_ID: ${{ secrets.GDRIVE_BACKUP_FOLDER_ID }}
+        run: node upload_to_drive.js
+
+      # backup-output.json enthält echte personenbezogene/finanzielle Daten (Reisekosten,
+      # Belege als Base64) - darf UNTER KEINEN UMSTÄNDEN ins Repo committet oder als Actions-
+      # Artefakt hochgeladen werden (Artefakte sind bei einem öffentlichen Repo genauso
+      # öffentlich abrufbar wie der Code selbst). Der Upload-Schritt oben lädt die Datei nach
+      # Google Drive hoch; hier nur sicherstellen, dass nichts davon im Actions-Log oder als
+      # Artefakt hängen bleibt (der Runner selbst wird nach dem Job ohnehin verworfen).
