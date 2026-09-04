@@ -99,11 +99,15 @@ export async function createAppwriteStore(
       }
       const meta = JSON.parse(row.value as string) as BelegMetaShape;
       try {
-        const url = storage.getFileDownload({ bucketId: config.bucketId, fileId: rowId });
-        // { cache: 'no-store' } - ohne das kann der Browser eine bereits zwischengespeicherte
-        // Antwort fuer dieselbe URL liefern, obwohl sich die Datei serverseitig geaendert hat
-        // (real aufgetreten 04.09.2026: ein nachtraeglich in Appwrite ersetzter Beleg wurde
-        // trotzdem noch in der alten Version ausgeliefert, weil die URL unveraendert blieb).
+        // Cache-Buster als eigener Query-Parameter: { cache: 'no-store' } beeinflusst nur den
+        // lokalen Browser-Cache - reicht NICHT aus, wenn Appwrite selbst hinter einem
+        // CDN/Edge-Cache liegt, der Antworten unabhaengig vom Client-Cache-Control fuer die
+        // URL zwischenspeichert (real aufgetreten 04.09.2026: Nutzer hatte den eigenen
+        // Browser-Cache bereits geleert, bekam aber trotzdem noch die alte Datei-Version -
+        // das kann nur an einer Zwischenschicht liegen, die die URL selbst als Cache-Schluessel
+        // nutzt). Ein bei jedem Aufruf neuer Query-Parameter macht die URL fuer JEDE
+        // Caching-Ebene eindeutig und erzwingt so zuverlaessig eine frische Antwort.
+        const url = `${storage.getFileDownload({ bucketId: config.bucketId, fileId: rowId })}&_cb=${Date.now()}`;
         const resp = await fetch(url, { cache: 'no-store' });
         const blob = await resp.blob();
         meta.dataUrl = await blobToDataURL(blob);
