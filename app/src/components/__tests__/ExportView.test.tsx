@@ -1,40 +1,35 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { ExportView } from '../ExportView';
 import { emptyEntry } from '../../core/entry';
-import type { ExportZeile } from '../../core/types';
+import type { TagesEintrag } from '../../core/types';
 
 describe('ExportView', () => {
-  it('zeigt einen Hinweis, wenn keine Vor-Ort-Tage vorhanden sind', () => {
-    render(<ExportView year={2026} month={8} rows={[]} receiptCount={0} onBack={() => {}} onDownload={() => {}} />);
-    expect(screen.getByText('Keine Vor-Ort-Tage in diesem Monat.')).toBeInTheDocument();
+  it('zeigt einen Hinweis, wenn keine kosten-/reiserelevanten Tage vorhanden sind', () => {
+    render(<ExportView year={2026} month={8} entries={{}} store={null} onBack={() => {}} showToast={() => {}} />);
+    expect(screen.getByText('Keine kosten-/reiserelevanten Tage in diesem Monat.')).toBeInTheDocument();
   });
 
   it('zeigt die Summe korrekt formatiert (deutsches Komma)', () => {
-    const rows: ExportZeile[] = [
-      { ...emptyEntry(2026, 8, 17), date: '2026-08-17', transport: '15.50', hotel: '90' },
-    ];
-    render(<ExportView year={2026} month={8} rows={rows} receiptCount={0} onBack={() => {}} onDownload={() => {}} />);
+    const entries: Record<string, TagesEintrag> = {
+      '2026-08-17': { ...emptyEntry(2026, 8, 17), transport: '15.50', hotel: '90' },
+    };
+    render(<ExportView year={2026} month={8} entries={entries} store={null} onBack={() => {}} showToast={() => {}} />);
     expect(screen.getByText(/105,50 € Kosten gesamt/)).toBeInTheDocument();
   });
 
-  it('zeigt den Download-Button nur, wenn es Zeilen gibt', () => {
+  it('zeigt die Download-Buttons nur, wenn es Zeilen gibt', () => {
     const { rerender } = render(
-      <ExportView year={2026} month={8} rows={[]} receiptCount={0} onBack={() => {}} onDownload={() => {}} />,
+      <ExportView year={2026} month={8} entries={{}} store={null} onBack={() => {}} showToast={() => {}} />,
     );
-    expect(screen.queryByText(/Exportdatei herunterladen/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Spesenabrechnung herunterladen/)).not.toBeInTheDocument();
 
-    const rows: ExportZeile[] = [{ ...emptyEntry(2026, 8, 17), date: '2026-08-17' }];
-    rerender(<ExportView year={2026} month={8} rows={rows} receiptCount={0} onBack={() => {}} onDownload={() => {}} />);
-    expect(screen.getByText(/Exportdatei herunterladen/)).toBeInTheDocument();
-  });
-
-  it('ruft onDownload beim Klick auf den Download-Button auf', () => {
-    const onDownload = vi.fn();
-    const rows: ExportZeile[] = [{ ...emptyEntry(2026, 8, 17), date: '2026-08-17' }];
-    render(<ExportView year={2026} month={8} rows={rows} receiptCount={0} onBack={() => {}} onDownload={onDownload} />);
-    fireEvent.click(screen.getByText(/Exportdatei herunterladen/));
-    expect(onDownload).toHaveBeenCalledOnce();
+    const entries: Record<string, TagesEintrag> = {
+      '2026-08-17': { ...emptyEntry(2026, 8, 17), sonstiges: '10' },
+    };
+    rerender(<ExportView year={2026} month={8} entries={entries} store={null} onBack={() => {}} showToast={() => {}} />);
+    expect(screen.getByText(/Spesenabrechnung herunterladen/)).toBeInTheDocument();
+    expect(screen.getByText(/Belege herunterladen/)).toBeInTheDocument();
   });
 });

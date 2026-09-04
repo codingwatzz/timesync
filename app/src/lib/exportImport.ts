@@ -1,58 +1,6 @@
-import type { KVStore } from '../store/types';
-import type { ExportDatei, ExportZeile, TagesEintrag } from '../core/types';
-import { dateKey } from '../core/holidays';
-import { daysInMonth } from '../core/formatters';
-import { loadReceipt } from '../hooks/entryStorage';
+import type { TagesEintrag } from '../core/types';
 
 export { dateKey } from '../core/holidays';
-
-export async function buildExportRows(
-  store: KVStore,
-  year: number,
-  month: number,
-  entries: Record<string, TagesEintrag>,
-): Promise<{ rows: ExportZeile[]; receiptCount: number }> {
-  const n = daysInMonth(year, month);
-  const rows: ExportZeile[] = [];
-  let receiptCount = 0;
-
-  for (let d = 1; d <= n; d++) {
-    const key = dateKey(year, month, d);
-    const e = entries[key];
-    if (e && e.typ === 'A' && !e.ho) {
-      const receipts = [];
-      for (const rid of e.receiptIds) {
-        const r = await loadReceipt(store, rid);
-        if (r) { receipts.push(r); receiptCount++; }
-      }
-      rows.push({ date: key, ...e, receipts });
-    }
-  }
-  return { rows, receiptCount };
-}
-
-export function buildExportPayload(year: number, month: number, rows: ExportZeile[]): ExportDatei {
-  return {
-    format: 'zeiterfassung-export-v1',
-    year,
-    month,
-    generatedAt: new Date().toISOString(),
-    entries: rows,
-  };
-}
-
-export function downloadExportFile(payload: ExportDatei): void {
-  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const pad2 = (n: number) => String(n).padStart(2, '0');
-  a.download = `${payload.year}-${pad2(payload.month)}_Zeiterfassung-Export.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-}
 
 export interface ImportResult {
   count: number;

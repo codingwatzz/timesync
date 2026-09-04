@@ -49,17 +49,3 @@ export interface BelegMeta {
   date: string; // YYYY-MM-DD, zu welchem Tag der Beleg gehört
   dataUrl?: string | null; // wird nur bei Bedarf nachgeladen (kann groß sein)
 }
-
-/** Eine Zeile im Export/Import-Format (kompatibel mit der bestehenden Excel-Übernahme). */
-export interface ExportZeile extends TagesEintrag {
-  date: string;
-  receipts?: BelegMeta[];
-}
-
-export interface ExportDatei {
-  format: 'zeiterfassung-export-v1';
-  year: number;
-  month: number;
-  generatedAt: string;
-  entries: ExportZeile[];
-}

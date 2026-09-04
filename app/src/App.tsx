@@ -10,8 +10,8 @@ import { DetailSheet } from './components/DetailSheet';
 import { ExportView } from './components/ExportView';
 import { DiagnosePanel } from './components/DiagnosePanel';
 import { Toast } from './components/Toast';
-import { buildExportRows, buildExportPayload, downloadExportFile, importFromFile } from './lib/exportImport';
-import type { ExportZeile, TagesEintrag } from './core/types';
+import { importFromFile } from './lib/exportImport';
+import type { TagesEintrag } from './core/types';
 
 type View = 'month' | 'detail' | 'export';
 
@@ -22,7 +22,6 @@ export default function App() {
 
   const [view, setView] = useState<View>('month');
   const [openDayKey, setOpenDayKey] = useState<string | null>(null);
-  const [exportData, setExportData] = useState<{ rows: ExportZeile[]; receiptCount: number } | null>(null);
   // Wird gesetzt, wenn per Wisch-Geste zu einem Tag außerhalb des gerade geladenen Monats
   // gewechselt wird - entries (aus useMonthEntries) ist nur für den aktuell geladenen Monat
   // gefüllt, changeMonth() lädt den neuen Monat erst asynchron nach. Ohne diesen Zwischenstand
@@ -59,17 +58,8 @@ export default function App() {
     setView('month');
   }
 
-  async function handleExport() {
-    if (!store) return;
-    const result = await buildExportRows(store, year, month, entries);
-    setExportData(result);
+  function handleExport() {
     setView('export');
-  }
-
-  function handleDownload() {
-    if (!exportData) return;
-    downloadExportFile(buildExportPayload(year, month, exportData.rows));
-    showToast('Export heruntergeladen');
   }
 
   async function handleImportFile(file: File) {
@@ -93,12 +83,11 @@ export default function App() {
 
   return (
     <div id="app">
-      {view === 'export' && exportData ? (
+      {view === 'export' ? (
         <ExportView
-          year={year} month={month}
-          rows={exportData.rows} receiptCount={exportData.receiptCount}
+          year={year} month={month} entries={entries} store={store}
           onBack={() => setView('month')}
-          onDownload={handleDownload}
+          showToast={showToast}
         />
       ) : (
         <MonthView
