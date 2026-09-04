@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { RESULT_FILE, SCREENSHOT_DIR } = require('./config');
-const { log, MINIMAL_PDF } = require('./utils');
+const { log, sleep, MINIMAL_PDF } = require('./utils');
 const { navigateToSafeTestMonth } = require('./navigation');
 const { resetDayToDefault } = require('./dayHelpers');
 const { toAppwriteRowId } = require('./appwriteDirectCheck');
@@ -75,7 +75,18 @@ async function attemptRun() {
     await shot('01b_after_login.png');
 
     // ---------- 2. Diagnose: Sync-Status ----------
-    const debugTextStart = await readDiagnosePanel(page);
+    // WICHTIG (04.09.2026, nach Einführung des Login-Gates): "#debugBtn sichtbar" (Login
+    // erfolgreich, App gemountet) bedeutet NICHT, dass der Store schon fertig verbunden ist -
+    // createStore()s eigener asynchroner Verbindungstest läuft danach noch einmal separat.
+    // Direkt nach dem Login gelesen, stand hier gelegentlich noch "wird ermittelt…" statt
+    // des echten Endzustands (race condition, kein echter Bug) - deshalb kurz pollen statt
+    // einmalig zu lesen.
+    let debugTextStart = await readDiagnosePanel(page);
+    for (let attempt = 1; attempt <= 10 && debugTextStart.includes('wird ermittelt'); attempt++) {
+      log(`⚠ Speicher-Modus noch "wird ermittelt…" (Versuch ${attempt}/10), warte 1s…`);
+      await sleep(1000);
+      debugTextStart = await readDiagnosePanel(page);
+    }
     results.syncActive = debugTextStart.includes('Appwrite Cloud-Sync (aktiv)');
     log(`Sync aktiv: ${results.syncActive}`);
 
