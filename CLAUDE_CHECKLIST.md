@@ -137,6 +137,27 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   Karteileiche, real aufgetreten am 01.09.2026. Fix: `pendingReceiptLinks.ts` vermerkt die
   Absicht synchron in localStorage vor den beiden Schreibvorgängen; `repairPendingReceiptLinks`
   holt beim nächsten App-Start liegen gebliebene Verknüpfungen automatisch nach.
+- **Appwrite-Storage-Datei-IDs für Belege haben das Präfix `receipt_`** (aus `receipt:<rid>`
+  wird über `toAppwriteId()` `receipt_<rid>` - Doppelpunkt -> Unterstrich). Bei DIREKTEN
+  Storage-Zugriffen (eigene Skripte, nicht die App selbst) IMMER dieses Präfix verwenden,
+  nicht den rohen `rid`. Ein Korrekturversuch am 04.09.2026 schrieb zunächst ohne Präfix -
+  landete an einer verwaisten, nie referenzierten Datei, waehrend die echte, vom Nutzer
+  gesehene Datei unangetastet blieb. Eigene Nachpruefung (Re-Download derselben falschen ID)
+  bestaetigte faelschlich "Erfolg", weil sie denselben Fehler wiederholte statt gegen die
+  ECHTE, von der App genutzte ID zu pruefen - bei Verifikation immer die ID-Herleitung selbst
+  hinterfragen, nicht nur "kommt dieselbe Datei zurueck, die ich geschrieben habe" pruefen.
+- **Appwrite Storage-Downloads laufen hinter einem CDN (Varnish)** - `fetch(url, {cache:
+  'no-store'})` beeinflusst nur den LOKALEN Browser-Cache, nicht das CDN. Nach dem Ersetzen
+  einer Datei unter derselben ID/URL kann das CDN weiterhin die alte Version ausliefern,
+  selbst nach explizitem Client-Cache-Leeren durch den Nutzer. Fix: einen sich aendernden
+  Query-Parameter an die URL anhaengen (`&_cb=${Date.now()}`), damit jede Cache-Ebene die
+  Anfrage als neue Ressource behandelt - bereits so in `appwriteStore.ts` implementiert.
+- **`#f_pause`/`#f_pause2` in `DetailSheet.tsx` sind `<select>`-Dropdowns** (Minuten-Schritte
+  ueber `pauseOptionsFor`), keine Text-Eingabefelder. `page.fill()` in Playwright-Tests wirft
+  darauf einen Fehler ("Element is not an input..."); `page.selectOption()` verwenden. Dieser
+  Fehler steckte unbemerkt im E2E-Test, weil E2E seit 02.09.2026 nicht mehr bei jedem Push
+  laeuft - bei neuen Formularfeld-Aenderungen (Text-Input -> Select o.ae.) aktiv pruefen, ob
+  betroffene E2E-Schritte noch `fill()` statt `selectOption()`/`check()` verwenden.
 
 ## 4. Parallele Sitzungen
 
