@@ -49,7 +49,7 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
       if (belegeBericht.fehlendeBelege.length > 0) {
         showToast(`Export heruntergeladen, aber ${belegeBericht.fehlendeBelege.length} Beleg(e) fehlten`);
       } else {
-        showToast('Export heruntergeladen (.zip mit allen 3 Dateien)');
+        showToast('Export heruntergeladen (.zip mit allen 4 Dateien)');
       }
     } catch (err) {
       showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
@@ -91,9 +91,10 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
         </tbody>
       </table>
       <div className="export-note" style={{ marginTop: 16 }}>
-        Ein Download mit allen drei Dateien dieses Monats: die ausgefüllte Spesenabrechnung
-        (.xlsx), alle Belege als ein zusammenhängendes PDF, und die Arbeitszeiten-Übersicht
-        (.xlsx) - jeweils frisch mit den aktuellen Monatsdaten befüllt.
+        Ein Download mit allen vier Dateien dieses Monats: die ausgefüllte Spesenabrechnung
+        (.xlsx), alle Belege als ein zusammenhängendes PDF, die Arbeitszeiten-Übersicht
+        (.xlsx), und ein Rohdaten-Backup (.json, alle Einträge + Belege dieses Monats als
+        Sicherungskopie) - jeweils frisch mit den aktuellen Monatsdaten befüllt.
       </div>
       <button className="export-download" id="downloadZipBtn" onClick={handleZipDownload} disabled={erstelltZip}>
         {erstelltZip ? 'Wird erstellt…' : 'Export herunterladen (.zip)'}

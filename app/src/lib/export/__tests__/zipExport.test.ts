@@ -25,7 +25,7 @@ describe('buildExportZip', () => {
     })) as unknown as typeof fetch;
   });
 
-  it('packt alle drei Dateien mit den erwarteten Namen in ein .zip', async () => {
+  it('packt alle vier Dateien mit den erwarteten Namen in ein .zip', async () => {
     const entries: Record<string, TagesEintrag> = {
       '2026-08-04': eintrag({ sonstiges: '10', receiptIds: ['nicht-vorhanden'] }),
     };
@@ -36,6 +36,7 @@ describe('buildExportZip', () => {
     expect(namen).toEqual([
       '2026-08_Arbeitszeiten-Raoul.xlsx',
       '2026-08_Belege-Spesenabrechnung-Raoul.pdf',
+      '2026-08_Rohdaten-Backup.json',
       '2026-08_Spesenabrechnung-Raoul.xlsx',
     ]);
     // receiptId referenziert, aber mockStore liefert immer null -> erwartungsgemäß als
@@ -62,5 +63,10 @@ describe('buildExportZip', () => {
     const arbeitszeitBytes = await zip.file('2026-08_Arbeitszeiten-Raoul.xlsx')!.async('uint8array');
     expect(arbeitszeitBytes[0]).toBe(0x50);
     expect(arbeitszeitBytes[1]).toBe(0x4b);
+
+    const backupText = await zip.file('2026-08_Rohdaten-Backup.json')!.async('text');
+    const backup = JSON.parse(backupText);
+    expect(backup.format).toBe('zeiterfassung-backup-v1');
+    expect(backup.entries['2026-08-04'].sonstiges).toBe('10');
   });
 });

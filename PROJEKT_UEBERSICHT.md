@@ -134,9 +134,9 @@ Bucket ID:   6a92dd0f003962ea7128
 Berechtigungen: **abgesichert (04.09.2026)** - Tabelle + Bucket stehen auf `user:<Raouls
 Appwrite-User-ID>` statt `Any`, Zugriff erfordert einen Login (siehe "Appwrite-Absicherung"
 unten). Vorher: "Any"-Rolle, kein Login, kein Zugriffsschutz (bewusste, aber inzwischen
-überholte Entscheidung aus der Frühphase). Backup weiterhin nur der App-eigene JSON-Export
-(Diagnose-Panel) UND (seit 04.09.2026, in Arbeit) ein monatliches automatisches Backup nach
-Google Drive - siehe `tools/backup/README.md`.
+überholte Entscheidung aus der Frühphase). Backup: seit 04.09.2026 eine vierte Datei
+(`<Jahr>-<Monat>_Rohdaten-Backup.json`) im ohnehin monatlich vom Nutzer erstellten
+Export-.zip - siehe "Backup" unten.
 
 ## Appwrite-Absicherung (Login + eingeschränkte Berechtigungen, 04.09.2026)
 
@@ -184,17 +184,48 @@ Button "Monat exportieren" -> Vorschau-Tabelle (kosten-/reiserelevante Tage) -> 
    Wochensummen, GESAMT-Zeile mit %-Abweichung, Homeoffice-Quote, Anzahl Arbeits-/Urlaubs-/
    Kranheits-/Gleitfreitage. Optik vom Nutzer selbst final abgenommen (04.09.2026) - **dieser
    Stand ist verbindlich, nicht ohne neuen Anlass verändern.**
+4. **`<Jahr>-<Monat>_Rohdaten-Backup.json`** (seit 04.09.2026, `backupExport.ts`) - ALLE
+   Tageseinträge des Monats (nicht nur die kosten-/reiserelevanten wie in Punkt 1) plus alle
+   referenzierten Belege als echte Datei-Inhalte (Base64), nicht nur Metadaten. Dient als
+   Backup - siehe Abschnitt "Backup" unten für Hintergrund und bekannte Einschränkung
+   (aktuell kein automatischer Restore aus dieser Datei).
 
-Alle drei Bausteine sind einzeln unit-getestet; `zipExport.ts` fügt nur zusammen, ohne eigene
+Alle vier Bausteine sind einzeln unit-getestet; `zipExport.ts` fügt nur zusammen, ohne eigene
 Geschäftslogik.
+
+## Backup
+
+**Entscheidung 04.09.2026 (nach zwei gescheiterten automatisierten Anläufen, siehe
+Git-Historie):** Statt eines vollautomatischen GitHub-Actions-Backups (erst Google-Drive-
+Service-Account versucht - scheiterte an einer harten Plattform-Grenze, Service-Accounts
+haben bei privaten/nicht-Workspace-Google-Konten keinen eigenen Speicherplatz und können
+grundsätzlich keine Dateien hochladen; dann Email-Versand vorbereitet) fällt das Backup jetzt
+einfach als vierte Datei im ohnehin **monatlich vom Nutzer selbst durchgeführten
+Monats-Export** mit ab (`<Jahr>-<Monat>_Rohdaten-Backup.json`, siehe oben). Vorteil: keine
+externe Infrastruktur, keine Secrets, keine neue Angriffsfläche im öffentlichen Repo - passt
+zur bestehenden "alles läuft im Browser"-Architektur. Nachteil, bewusst in Kauf genommen: die
+Zuverlässigkeit hängt am menschlichen Gewohnheits-Export, nicht an einer Automatik - der
+Nutzer macht diesen Export aber ohnehin schon jeden Monat.
+
+**Wichtige Einschränkung:** Es gibt aktuell KEINEN Ein-Klick-Restore aus dieser Backup-Datei.
+Der bestehende JSON-Import (`lib/exportImport.ts`) versteht das Backup-Format nicht (er
+erwartet ein einfaches `entries`-Array ohne Belege) und verwirft beim Import ohnehin jegliche
+`receiptIds`. Die Backup-Datei ist aktuell ein reines Sicherungs-Archiv zum Nachschauen/
+manuellen Wiederherstellen im Notfall. Eine echte Restore-Funktion wäre ein sinnvoller,
+klar abgegrenzter nächster Schritt, falls gewünscht (siehe "Offene Punkte" unten).
+
+**Aufräumen (nicht sicherheitskritisch, aber unnötig):** Für den verworfenen
+GitHub-Actions-Anlauf wurden ein Appwrite-API-Key ("backup-timesync", rein lesend, läuft
+01.01.2029 ab) und 3 GitHub-Secrets (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
+`GDRIVE_BACKUP_FOLDER_ID`) angelegt - die referenziert jetzt kein Workflow mehr. Kein akutes
+Risiko (rein lesend, kein Löschen möglich), aber bei Gelegenheit aufräumen: den API-Key in der
+Appwrite Console widerrufen, die 3 Secrets in GitHub löschen.
 
 ## Testing
 
-- **159 Unit-Tests** (Vitest, 18 Dateien) waren zum letzten Übergabe-Stand (04.09.2026,
-  Architektur-Review) aktuell; nach der Funktion "Markierung unerfasster Arbeitstage"
-  (04.09.2026, selbe Sitzung) sind es **175 Unit-Tests** (18 Dateien), lokal in ~15-25 Sek.
-  lauffähig: `cd app && npm run test`. `npm run verify` bündelt Test+Lint+Build – IMMER vor
-  einem Push, der einen Live-Zyklus auslöst.
+- **194 Unit-Tests** (Vitest, 22 Dateien, Stand 04.09.2026 nach Login/Auth + Backup-Export)
+  , lokal in ~20-25 Sek. lauffähig: `cd app && npm run test`. `npm run verify` bündelt
+  Test+Lint+Build – IMMER vor einem Push, der einen Live-Zyklus auslöst.
 - **E2E-Test** (Playwright, GitHub Actions) - läuft **NICHT mehr bei jedem Deploy**
   (bewusste Entscheidung 02.09.2026: kostet mehrere Minuten Actions-Zeit + Wartezeit pro
   Push, unverhältnismäßig teuer für die meisten Änderungen). Läuft nur noch: täglich
@@ -290,16 +321,13 @@ einfache Updates/Tests/Erweiterung". Ergebnis:
    Timing-Empfehlung siehe dort.
 2. ~~Appwrite-Berechtigungen ("Any"-Rolle)~~ - **erledigt 04.09.2026**, siehe "Appwrite-
    Absicherung" oben.
-3. Monatliches Backup nach Google Drive - Code fertig (`tools/backup/`), noch nicht deployed:
-   wartet auf die 3 GitHub-Secrets (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
-   `GDRIVE_BACKUP_FOLDER_ID`) und einmal manuelle Appwrite/Google-Konsolen-Einrichtung durch
-   den Nutzer (siehe `tools/backup/README.md`).
-   **⏰ Appwrite-API-Key "backup-timesync" läuft am 01.01.2029 ab** (Nutzer-Entscheidung,
-   05.09.2026) - rechtzeitig vorher einen neuen erstellen und das Secret
-   `APPWRITE_BACKUP_API_KEY` aktualisieren, sonst bricht das monatliche Backup ab diesem
-   Datum kommentarlos ab (E-Mail-Benachrichtigung von Appwrite bei Ablauf ist nicht
-   garantiert - lieber selbst dran denken).
-4. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
+3. ~~Monatliches Backup~~ - **erledigt 04.09.2026**, siehe Abschnitt "Backup" oben (vierte
+   Datei im Monats-Export). Optional als Ausbau denkbar, aber nicht gefordert: ein echter
+   Ein-Klick-Restore aus `_Rohdaten-Backup.json` (aktuell nur manuell nutzbar, siehe dort).
+4. Aufräumen: ungenutzten Appwrite-API-Key "backup-timesync" + 3 GitHub-Secrets vom
+   verworfenen Backup-Anlauf entfernen (siehe Abschnitt "Backup" oben, Details dort - kein
+   akutes Risiko, nur unnötig).
+5. August 2026: keine Original-Spesenabrechnungs-Datei für diesen Monat existiert(e) als
    Abgleichsquelle - die App-Daten für August wurden direkt erfasst, nicht gegen eine externe
    Quelle verifiziert (anders als April-Juli). Kein akuter Handlungsbedarf, nur zur
    Einordnung falls Abweichungen auffallen sollten.

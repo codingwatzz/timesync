@@ -22,16 +22,18 @@ export interface ExportZipErgebnis {
 export async function buildExportZip(
   year: number, month: number, entries: Record<string, TagesEintrag>, store: KVStore,
 ): Promise<ExportZipErgebnis> {
-  const [{ buildFilledXlsx }, { buildMergedReceiptsPdf }, { buildArbeitszeitXlsx }] = await Promise.all([
+  const [{ buildFilledXlsx }, { buildMergedReceiptsPdf }, { buildArbeitszeitXlsx }, { buildBackupJson }] = await Promise.all([
     import('./xlsxExport'),
     import('./receiptMerge'),
     import('./arbeitszeitExport'),
+    import('./backupExport'),
   ]);
 
-  const [spesenErgebnis, belegeErgebnis, arbeitszeitBlob] = await Promise.all([
+  const [spesenErgebnis, belegeErgebnis, arbeitszeitBlob, backupBlob] = await Promise.all([
     buildFilledXlsx(year, month, entries),
     buildMergedReceiptsPdf(store, year, month, entries),
     buildArbeitszeitXlsx(year, month, entries),
+    buildBackupJson(year, month, entries, store),
   ]);
 
   const praefix = `${year}-${pad(month)}`;
@@ -39,6 +41,7 @@ export async function buildExportZip(
   zip.file(`${praefix}_Spesenabrechnung-${SPESEN_NAME_DATEI}.xlsx`, await spesenErgebnis.blob.arrayBuffer());
   zip.file(`${praefix}_Belege-Spesenabrechnung-${SPESEN_NAME_DATEI}.pdf`, await belegeErgebnis.blob.arrayBuffer());
   zip.file(`${praefix}_Arbeitszeiten-${SPESEN_NAME_DATEI}.xlsx`, await arbeitszeitBlob.arrayBuffer());
+  zip.file(`${praefix}_Rohdaten-Backup.json`, await backupBlob.arrayBuffer());
 
   const blob = await zip.generateAsync({ type: 'blob' });
   return { blob, belegeBericht: belegeErgebnis.bericht };
