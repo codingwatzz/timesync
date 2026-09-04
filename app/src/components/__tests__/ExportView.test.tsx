@@ -19,17 +19,8 @@ describe('ExportView', () => {
     expect(screen.getByText(/105,50 € Kosten gesamt/)).toBeInTheDocument();
   });
 
-  it('zeigt die Download-Buttons nur, wenn es Zeilen gibt', () => {
-    const { rerender } = render(
-      <ExportView year={2026} month={8} entries={{}} store={null} onBack={() => {}} showToast={() => {}} />,
-    );
-    expect(screen.queryByText(/Spesenabrechnung herunterladen/)).not.toBeInTheDocument();
-
-    const entries: Record<string, TagesEintrag> = {
-      '2026-08-17': { ...emptyEntry(2026, 8, 17), sonstiges: '10' },
-    };
-    rerender(<ExportView year={2026} month={8} entries={entries} store={null} onBack={() => {}} showToast={() => {}} />);
-    expect(screen.getByText(/Spesenabrechnung herunterladen/)).toBeInTheDocument();
-    expect(screen.getByText(/Belege herunterladen/)).toBeInTheDocument();
+  it('zeigt den Export-Button immer, auch ohne kosten-/reiserelevante Tage (Arbeitszeiten betreffen den ganzen Monat)', () => {
+    render(<ExportView year={2026} month={8} entries={{}} store={null} onBack={() => {}} showToast={() => {}} />);
+    expect(screen.getByText(/Export herunterladen/)).toBeInTheDocument();
   });
 });

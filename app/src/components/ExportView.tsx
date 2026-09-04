@@ -15,60 +15,30 @@ interface ExportViewProps {
 }
 
 export function ExportView({ year, month, entries, store, onBack, showToast }: ExportViewProps) {
-  const [erstelltXlsx, setErstelltXlsx] = useState(false);
-  const [erstelltPdf, setErstelltPdf] = useState(false);
-  const [erstelltArbeitszeit, setErstelltArbeitszeit] = useState(false);
+  const [erstelltZip, setErstelltZip] = useState(false);
 
   const zeilen = entriesToZeilen(year, month, entries);
   const gesamt = zeilen.reduce((s, z) => s + summe(z), 0);
 
-  async function handleXlsxDownload() {
-    setErstelltXlsx(true);
-    try {
-      const { buildFilledXlsx, downloadXlsx } = await import('../lib/xlsxExport');
-      const { blob } = await buildFilledXlsx(year, month, entries);
-      downloadXlsx(blob, year, month);
-      showToast('Spesenabrechnung heruntergeladen');
-    } catch (err) {
-      showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setErstelltXlsx(false);
-    }
-  }
-
-  async function handlePdfDownload() {
+  async function handleZipDownload() {
     if (!store) {
       showToast('Speicher nicht verfügbar');
       return;
     }
-    setErstelltPdf(true);
+    setErstelltZip(true);
     try {
-      const { buildMergedReceiptsPdf, downloadPdf } = await import('../lib/receiptMerge');
-      const { blob, bericht } = await buildMergedReceiptsPdf(store, year, month, entries);
-      downloadPdf(blob, year, month);
-      if (bericht.fehlendeBelege.length > 0) {
-        showToast(`Belege heruntergeladen, aber ${bericht.fehlendeBelege.length} Beleg(e) fehlten`);
+      const { buildExportZip, downloadExportZip } = await import('../lib/zipExport');
+      const { blob, belegeBericht } = await buildExportZip(year, month, entries, store);
+      downloadExportZip(blob, year, month);
+      if (belegeBericht.fehlendeBelege.length > 0) {
+        showToast(`Export heruntergeladen, aber ${belegeBericht.fehlendeBelege.length} Beleg(e) fehlten`);
       } else {
-        showToast(`Belege heruntergeladen (${bericht.eingebundeneBelege.length} Seite${bericht.eingebundeneBelege.length !== 1 ? 'n' : ''})`);
+        showToast('Export heruntergeladen (.zip mit allen 3 Dateien)');
       }
     } catch (err) {
       showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setErstelltPdf(false);
-    }
-  }
-
-  async function handleArbeitszeitDownload() {
-    setErstelltArbeitszeit(true);
-    try {
-      const { buildArbeitszeitXlsx, downloadArbeitszeitXlsx } = await import('../lib/arbeitszeitExport');
-      const blob = await buildArbeitszeitXlsx(year, month, entries);
-      downloadArbeitszeitXlsx(blob, year, month);
-      showToast('Arbeitszeiten heruntergeladen');
-    } catch (err) {
-      showToast(`Fehler: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setErstelltArbeitszeit(false);
+      setErstelltZip(false);
     }
   }
 
@@ -98,26 +68,13 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
           )}
         </tbody>
       </table>
-      {zeilen.length > 0 && (
-        <>
-          <div className="export-note">
-            Zwei Dateien zum direkten Einreichen: die ausgefüllte Spesenabrechnung als Excel-Datei
-            und alle Belege dieses Monats als ein zusammenhängendes PDF.
-          </div>
-          <button className="export-download" id="downloadXlsxBtn" onClick={handleXlsxDownload} disabled={erstelltXlsx}>
-            {erstelltXlsx ? 'Wird erstellt…' : 'Spesenabrechnung herunterladen (.xlsx)'}
-          </button>
-          <button className="export-download" id="downloadPdfBtn" onClick={handlePdfDownload} disabled={erstelltPdf} style={{ marginTop: 8 }}>
-            {erstelltPdf ? 'Wird erstellt…' : 'Belege herunterladen (.pdf)'}
-          </button>
-        </>
-      )}
       <div className="export-note" style={{ marginTop: 16 }}>
-        Übersicht über Start/Ende/Pause, IST/SOLL/EXTRA und Wochensummen für alle Tage dieses
-        Monats - nur zur eigenen Kontrolle, nicht zum Einreichen.
+        Ein Download mit allen drei Dateien dieses Monats: die ausgefüllte Spesenabrechnung
+        (.xlsx), alle Belege als ein zusammenhängendes PDF, und die Arbeitszeiten-Übersicht
+        (.xlsx) - jeweils frisch mit den aktuellen Monatsdaten befüllt.
       </div>
-      <button className="export-download" id="downloadArbeitszeitBtn" onClick={handleArbeitszeitDownload} disabled={erstelltArbeitszeit} style={{ marginTop: 8 }}>
-        {erstelltArbeitszeit ? 'Wird erstellt…' : 'Arbeitszeiten herunterladen (.xlsx)'}
+      <button className="export-download" id="downloadZipBtn" onClick={handleZipDownload} disabled={erstelltZip}>
+        {erstelltZip ? 'Wird erstellt…' : 'Export herunterladen (.zip)'}
       </button>
     </div>
   );
