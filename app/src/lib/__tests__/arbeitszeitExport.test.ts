@@ -154,4 +154,18 @@ describe('buildArbeitszeitXlsx', () => {
     });
     expect(prozentZeile).toBe('+9.4%');
   });
+
+  it('blendet Wochenendtage ohne Arbeitszeit aus, zeigt sie aber wenn Arbeitszeit dokumentiert wurde', async () => {
+    const entries = vollerMonatNeutral(2026, 9); // alle Tage 'W', Sept 2026 hat am 5./6. ein Wochenende
+    entries['2026-09-06'] = eintrag({ typ: 'W', start: '10:00', ende: '12:00', pause: '' }); // Sonntag gearbeitet
+    const blob = await buildArbeitszeitXlsx(2026, 9, entries);
+    const ws = await ladeWorkbook(blob);
+    const daten: string[] = [];
+    ws.eachRow((row) => {
+      const v = row.getCell(1).value;
+      if (typeof v === 'string' && v.includes('.09.2026')) daten.push(v);
+    });
+    expect(daten).not.toContain('05.09.2026'); // Samstag, keine Arbeitszeit -> ausgeblendet
+    expect(daten).toContain('06.09.2026'); // Sonntag, Arbeitszeit dokumentiert -> gezeigt
+  });
 });

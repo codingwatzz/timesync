@@ -59,6 +59,13 @@ function montagDerWoche(datum: Date): string {
   return `${montag.getFullYear()}-${pad(montag.getMonth() + 1)}-${pad(montag.getDate())}`;
 }
 
+const DUENNER_RAHMEN: Partial<ExcelJS.Borders> = {
+  top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+  bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+  left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+  right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+};
+
 function faerbeAbweichung(cell: ExcelJS.Cell, minuten: number): void {
   if (minuten > 0) {
     cell.font = { color: { argb: GRUEN }, bold: true };
@@ -87,6 +94,7 @@ export async function buildArbeitszeitXlsx(year: number, month: number, entries:
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLAU } };
     cell.alignment = { horizontal: 'center' };
+    cell.border = DUENNER_RAHMEN;
   });
   ws.columns = [
     { width: 11 }, { width: 9 }, { width: 10 }, { width: 5 },
@@ -124,28 +132,39 @@ export async function buildArbeitszeitXlsx(year: number, month: number, entries:
     const woche = montagDerWoche(z.datum);
     if (aktuelleWoche !== null && woche !== aktuelleWoche) {
       schreibeWochenZwischensumme();
+      rowIdx++; // Leerzeile zwischen den Wochen fuer bessere Uebersicht
     }
     aktuelleWoche = woche;
 
     const extra = z.ist - z.soll;
-    const row = ws.getRow(rowIdx++);
-    row.getCell(1).value = `${pad(z.datum.getDate())}.${pad(z.datum.getMonth() + 1)}.${z.datum.getFullYear()}`;
-    row.getCell(2).value = WOCHENTAGE[z.datum.getDay()];
-    row.getCell(3).value = TYP_LABEL[z.typ];
-    row.getCell(4).value = z.typ === 'A' ? (z.ho ? 'Ja' : 'Nein') : '';
-    row.getCell(5).value = z.start;
-    row.getCell(6).value = z.ende;
-    row.getCell(7).value = z.pause ? Number(z.pause) : '';
-    row.getCell(8).value = z.start2;
-    row.getCell(9).value = z.ende2;
-    row.getCell(10).value = z.pause2 ? Number(z.pause2) : '';
-    row.getCell(11).value = fmtHHMM(z.ist);
-    row.getCell(12).value = fmtHHMM(z.soll);
-    row.getCell(13).value = fmtHHMMSigned(extra);
-    if (z.typ === 'W' || z.typ === 'F') {
-      row.eachCell((cell) => { cell.font = { color: { argb: 'FF9A9A9A' } }; });
+    // Wochenendtage ohne dokumentierte Arbeitszeit werden nicht als eigene Zeile gezeigt
+    // (Nutzerwunsch 04.09.2026) - zaehlen aber weiterhin korrekt in Wochen-/Gesamtsummen mit,
+    // da diese Berechnungen unten unveraendert fuer JEDEN Tag laufen, nicht nur fuer
+    // angezeigte Zeilen.
+    const zeileAnzeigen = z.typ !== 'W' || z.ist > 0;
+    if (zeileAnzeigen) {
+      const row = ws.getRow(rowIdx++);
+      row.getCell(1).value = `${pad(z.datum.getDate())}.${pad(z.datum.getMonth() + 1)}.${z.datum.getFullYear()}`;
+      row.getCell(2).value = WOCHENTAGE[z.datum.getDay()];
+      row.getCell(3).value = TYP_LABEL[z.typ];
+      row.getCell(4).value = z.typ === 'A' ? (z.ho ? 'Ja' : 'Nein') : '';
+      row.getCell(5).value = z.start;
+      row.getCell(6).value = z.ende;
+      row.getCell(7).value = z.pause ? Number(z.pause) : '';
+      row.getCell(8).value = z.start2;
+      row.getCell(9).value = z.ende2;
+      row.getCell(10).value = z.pause2 ? Number(z.pause2) : '';
+      row.getCell(11).value = fmtHHMM(z.ist);
+      row.getCell(12).value = fmtHHMM(z.soll);
+      row.getCell(13).value = fmtHHMMSigned(extra);
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        if (colNumber <= 13) cell.border = DUENNER_RAHMEN;
+      });
+      if (z.typ === 'W' || z.typ === 'F') {
+        row.eachCell((cell) => { cell.font = { color: { argb: 'FF9A9A9A' } }; });
+      }
+      faerbeAbweichung(row.getCell(13), extra);
     }
-    faerbeAbweichung(row.getCell(13), extra);
 
     wochenAkkumulator.ist += z.ist;
     wochenAkkumulator.soll += z.soll;
