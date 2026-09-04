@@ -154,6 +154,20 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   selbst nach explizitem Client-Cache-Leeren durch den Nutzer. Fix: einen sich aendernden
   Query-Parameter an die URL anhaengen (`&_cb=${Date.now()}`), damit jede Cache-Ebene die
   Anfrage als neue Ressource behandelt - bereits so in `appwriteStore.ts` implementiert.
+- **GitHub-Email-Benachrichtigung für geplante (cron-)Workflow-Läufe hängt an einem
+  unsichtbaren Detail:** GitHub schickt Fehlschlag-Mails für `schedule:`-Läufe an den
+  GitHub-Account, der die `cron:`-Zeile im Workflow-File ZULETZT committet hat - nicht an
+  den, der den Lauf gerade beobachtet oder manuell auslöst (für `workflow_dispatch`-Läufe
+  gilt eine andere Regel: da zählt der tatsächliche Auslöser). Wenn Claude die Cron-Zeile
+  mit einer Fantasie-Commit-Identität (z.B. `claude@anthropic.com` oder ähnlichem, nicht mit
+  dem echten, verifizierten GitHub-Account des Nutzers verknüpft) anfasst, gehen künftige
+  Ausfall-Mails für den geplanten Lauf ins Leere, OHNE dass das auffällt (echt passiert:
+  eine frühere Sitzung committete unter der Autor-Kennung "production-deploy-bot", danach
+  bekam der Nutzer nur noch für manuell/durch Claude ausgelöste Läufe Mails, nicht mehr für
+  den täglichen 06:00-UTC-Lauf - erst am 05.09.2026 bemerkt). **Regel:** die `cron:`-Zeile in
+  `e2e-test.yml` (oder einem anderen geplanten Workflow) möglichst NICHT von Claude aus
+  committen, sondern den Nutzer bitten, eine minimale Änderung selbst direkt im
+  GitHub-Web-UI zu committen, wenn die Zuordnung mal korrigiert werden muss.
 - **`#f_pause`/`#f_pause2` in `DetailSheet.tsx` sind `<select>`-Dropdowns** (Minuten-Schritte
   ueber `pauseOptionsFor`), keine Text-Eingabefelder. `page.fill()` in Playwright-Tests wirft
   darauf einen Fehler ("Element is not an input..."); `page.selectOption()` verwenden. Dieser
