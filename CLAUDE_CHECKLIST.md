@@ -74,8 +74,18 @@ Verifikation >17 Minuten Tool-Zeit gekostet. Konkrete Lehren, künftig verbindli
   zwingend einen vollen GitHub-Actions-Durchlauf (~60-90s allein für Playwright-Install).
   Deshalb Screenshot-Verifikation sparsam einsetzen: nur bei echter Unsicherheit über die
   Diagnose selbst, nicht routinemäßig für jede CSS-/UI-Änderung.
+- **Einmalige Diagnose-/Repro-Skripte (nicht Teil der regulären E2E-Suite) MÜSSEN einen
+  sicheren Test-Monat treffen, genau wie `navigateToSafeTestMonth()` das für die reguläre
+  Suite schon tut - NIEMALS den aktuell angezeigten/echten Monat.** Ein am 05.09.2026 schnell
+  geschriebenes Repro-Skript (CSS-Overflow-Bug) nutzte naiv `dayRows.first()` im gerade
+  offenen Monat - landete dadurch auf dem echten 01.09.2026 und hinterließ dort einen echten
+  Test-Beschreibungstext + einen echten Test-Beleg-Upload in Appwrite, unbemerkt bis der
+  Nutzer es selbst im Kalender sah und manuell aufräumen musste. Regel: JEDES Skript, das
+  gegen die Live-App schreibt (auch ein schnelles Einweg-Diagnose-Skript), muss entweder
+  `navigateToSafeTestMonth()` wiederverwenden oder explizit einen weit in der Zukunft
+  liegenden Monat ansteuern, NIE den Status quo einfach übernehmen.
 
-
+## 1. Lokale Prüfung VOR jedem Live-Zyklus
 
 Bevor irgendetwas gepusht wird, das einen Deploy/E2E-Test auslöst:
 
@@ -213,7 +223,8 @@ kurz und sachlich Bescheid geben, nicht alarmistisch, und die eigene Arbeit fort
 verbindlichen `tools/spesenabrechnung/xlsx_to_pdf.py`-Standard (Python, LibreOffice-Umweg
 ueber ODS). Das ist seit 04.09.2026 Geschichte - die App erzeugt Spesenabrechnung (.xlsx),
 Belege (.pdf) und Arbeitszeiten (.xlsx) inzwischen komplett client-seitig im Browser
-(`app/src/lib/export/`, Button "Monat exportieren" -> ein .zip mit allen drei Dateien).
+(`app/src/lib/export/`, Button "Monat exportieren" -> ein .zip mit vier Dateien - seit
+04.09.2026 zusätzlich ein Rohdaten-Backup, siehe PROJEKT_UEBERSICHT.md Abschnitt "Backup").
 Der Python-Umweg wurde im Rahmen eines Architektur-Reviews entfernt, da er danach komplett
 redundant war (siehe `tools/spesenabrechnung/README.md`).
 
