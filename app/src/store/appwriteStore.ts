@@ -100,7 +100,11 @@ export async function createAppwriteStore(
       const meta = JSON.parse(row.value as string) as BelegMetaShape;
       try {
         const url = storage.getFileDownload({ bucketId: config.bucketId, fileId: rowId });
-        const resp = await fetch(url);
+        // { cache: 'no-store' } - ohne das kann der Browser eine bereits zwischengespeicherte
+        // Antwort fuer dieselbe URL liefern, obwohl sich die Datei serverseitig geaendert hat
+        // (real aufgetreten 04.09.2026: ein nachtraeglich in Appwrite ersetzter Beleg wurde
+        // trotzdem noch in der alten Version ausgeliefert, weil die URL unveraendert blieb).
+        const resp = await fetch(url, { cache: 'no-store' });
         const blob = await resp.blob();
         meta.dataUrl = await blobToDataURL(blob);
       } catch (e) {
