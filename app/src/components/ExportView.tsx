@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { MONATSNAMEN } from '../core/constants';
-import { fmtEUR } from '../core/formatters';
+import { daysInMonth, fmtEUR, istVergangenheit, pad } from '../core/formatters';
+import { dateKey, defaultTyp } from '../core/holidays';
 import { entriesToZeilen, summe } from '../lib/export/exportZeilen';
+import { fehltArbeitszeit } from '../core/entry';
 import type { TagesEintrag } from '../core/types';
 import type { KVStore } from '../store/types';
 
@@ -19,6 +21,20 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
 
   const zeilen = entriesToZeilen(year, month, entries);
   const gesamt = zeilen.reduce((s, z) => s + summe(z), 0);
+
+  // Vergangene Arbeitstage ohne erfasste Arbeitszeit dieses Monats - unabhängig von der
+  // kosten-/reiserelevanten Zeilenauswahl oben (andere Kriterien: dort geht es um Kosten für
+  // die Spesenabrechnung, hier um vergessene Arbeitszeiterfassung).
+  const n = daysInMonth(year, month);
+  const fehlendeTage: string[] = [];
+  for (let d = 1; d <= n; d++) {
+    const key = dateKey(year, month, d);
+    const e = entries[key];
+    const typ = e ? e.typ : defaultTyp(year, month, d);
+    if (istVergangenheit(year, month, d) && fehltArbeitszeit(e, typ)) {
+      fehlendeTage.push(`${pad(d)}.${pad(month)}.`);
+    }
+  }
 
   async function handleZipDownload() {
     if (!store) {
@@ -49,6 +65,12 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
       <div className="sheet-sub">
         {zeilen.length} Zeile{zeilen.length !== 1 ? 'n' : ''} · {fmtEUR(gesamt)} € Kosten gesamt
       </div>
+      {fehlendeTage.length > 0 && (
+        <div className="warn-banner" id="missingWorkTimeWarn">
+          ⚠ {fehlendeTage.length} Arbeitstag{fehlendeTage.length !== 1 ? 'e' : ''} ohne erfasste
+          Arbeitszeit: {fehlendeTage.join(', ')}
+        </div>
+      )}
       <table className="export-table">
         <thead><tr><th>Datum</th><th>Beschreibung</th><th>km</th><th>€</th></tr></thead>
         <tbody>

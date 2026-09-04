@@ -24,6 +24,18 @@ export function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
+/**
+ * Liegt dieses Datum echt VOR dem heutigen Tag (nicht "heute" selbst - der laufende Tag ist
+ * noch nicht "vergessen", er kann noch nachgetragen werden)? `referenz` ist optional
+ * injizierbar (Standard: echtes "jetzt"), damit die Funktion ohne Datums-Mocking testbar
+ * bleibt.
+ */
+export function istVergangenheit(year: number, month: number, day: number, referenz: Date = new Date()): boolean {
+  const tag = new Date(year, month - 1, day);
+  const heuteOhneZeit = new Date(referenz.getFullYear(), referenz.getMonth(), referenz.getDate());
+  return tag < heuteOhneZeit;
+}
+
 /** Formatiert einen Betrag als deutsche Euro-Schreibweise, z.B. 15.5 -> "15,50". */
 export function fmtEUR(n: number | string | undefined | null): string {
   const num = Number(n) || 0;

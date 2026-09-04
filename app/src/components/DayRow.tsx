@@ -1,6 +1,6 @@
 import { WOCHENTAGE, TYP_LABEL } from '../core/constants';
-import { pad, toNumber } from '../core/formatters';
-import { tagesKosten, istVorOrtTag } from '../core/entry';
+import { pad, toNumber, istVergangenheit } from '../core/formatters';
+import { tagesKosten, istVorOrtTag, fehltArbeitszeit } from '../core/entry';
 import { fmtEUR } from '../core/formatters';
 import type { TagesEintrag } from '../core/types';
 
@@ -25,6 +25,12 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
   const vorOrt = istVorOrtTag(entry);
   if (vorOrt) flags.push(<span key="trip" className="flag trip">extern</span>);
   if (vorOrt && !entry?.reiseart) flags.push(<span key="warn" className="flag warn">⚠ Reiseart fehlt</span>);
+  // Vergangener Arbeitstag ohne erfasste Arbeitszeit (weder Eintrag noch Start/Ende) - damit
+  // er nicht vergessen wird. Der heutige Tag zählt bewusst noch nicht als "vergessen", er
+  // kann noch nachgetragen werden.
+  if (istVergangenheit(year, month, day) && fehltArbeitszeit(entry, typ)) {
+    flags.push(<span key="notime" className="flag warn">⚠ Keine Arbeitszeit erfasst</span>);
+  }
   const km = toNumber(entry?.km);
   if (km > 0) flags.push(<span key="km" className="flag km">{km} km</span>);
   if (entry?.receiptIds?.length) {

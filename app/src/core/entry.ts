@@ -1,4 +1,4 @@
-import type { TagesEintrag } from './types';
+import type { TagesEintrag, Wochentyp } from './types';
 import { defaultTyp } from './holidays';
 import { toNumber } from './formatters';
 
@@ -46,4 +46,19 @@ export function arbeitszeitMinuten(
     return Math.max(0, dauer);
   }
   return schichtMinuten(e.start, e.ende, e.pause) + schichtMinuten(e.start2, e.ende2, e.pause2);
+}
+
+/**
+ * Ist dies ein Arbeitstag (typ 'A'), an dem weder eine erste noch eine zweite Schicht
+ * eingetragen wurde? Für alle anderen Tagestypen (Wochenende, Feiertag, Urlaub, Krank,
+ * Gleitfrei) immer false - dort ist grundsätzlich keine Arbeitszeit zu erwarten, das ist kein
+ * "vergessener" Tag. Gilt auch für Homeoffice-Tage (typ 'A' + ho:true), da auch dort eine
+ * echte Arbeitszeit erwartet wird - nur "vor Ort" (istVorOrtTag) ist davon unabhängig.
+ * Kein Eintrag vorhanden (e === undefined, Tag nie geöffnet) zählt ebenfalls als "keine
+ * Arbeitszeit erfasst" - das ist sogar der Hauptfall, den diese Funktion abdecken soll.
+ */
+export function fehltArbeitszeit(e: TagesEintrag | undefined, typ: Wochentyp): boolean {
+  if (typ !== 'A') return false;
+  if (!e) return true;
+  return arbeitszeitMinuten(e) === 0;
 }

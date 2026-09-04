@@ -52,9 +52,8 @@ function istRelevanterTag(e: TagesEintrag): boolean {
   return kosten || Boolean(e.reiseart);
 }
 
-/** Baut die Export-Zeilen aus den App-Tageseinträgen eines Monats - dieselbe Auswahl-Logik
- * wie tools/spesenabrechnung/export_xlsx.py::ist_relevanter_tag (Kosten- oder
- * Reiseart-relevante Tage). */
+/** Baut die Export-Zeilen aus den App-Tageseinträgen eines Monats - wählt Kosten- oder
+ * Reiseart-relevante Tage aus (siehe istRelevanterTag oben). */
 export function entriesToZeilen(year: number, month: number, entries: Record<string, TagesEintrag>): ExportZeile[] {
   const n = daysInMonth(year, month);
   const zeilen: ExportZeile[] = [];

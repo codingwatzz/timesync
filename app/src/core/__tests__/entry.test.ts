@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten } from '../entry';
+import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten, fehltArbeitszeit } from '../entry';
 
 describe('emptyEntry', () => {
   it('setzt Homeoffice standardmäßig auf true', () => {
@@ -87,5 +87,37 @@ describe('arbeitszeitMinuten', () => {
 
   it('behandelt eine leere Pause wie 0 Minuten Pause', () => {
     expect(arbeitszeitMinuten({ ...basis, start: '08:00', ende: '16:00', pause: '' })).toBe(480);
+  });
+});
+
+describe('fehltArbeitszeit', () => {
+  const basis = emptyEntry(2026, 8, 17); // Montag, typ 'A'
+
+  it('ist true, wenn gar kein Eintrag existiert, aber Typ ein Arbeitstag wäre', () => {
+    expect(fehltArbeitszeit(undefined, 'A')).toBe(true);
+  });
+
+  it('ist false für Nicht-Arbeitstage, auch ohne Eintrag', () => {
+    expect(fehltArbeitszeit(undefined, 'W')).toBe(false);
+    expect(fehltArbeitszeit(undefined, 'F')).toBe(false);
+    expect(fehltArbeitszeit(undefined, 'U')).toBe(false);
+    expect(fehltArbeitszeit(undefined, 'K')).toBe(false);
+    expect(fehltArbeitszeit(undefined, 'G')).toBe(false);
+  });
+
+  it('ist true bei Typ A mit Eintrag, aber ohne Start/Ende', () => {
+    expect(fehltArbeitszeit({ ...basis, typ: 'A' }, 'A')).toBe(true);
+  });
+
+  it('ist true bei Typ A mit Homeoffice, aber ohne Start/Ende (Homeoffice ist auch Arbeit)', () => {
+    expect(fehltArbeitszeit({ ...basis, typ: 'A', ho: true }, 'A')).toBe(true);
+  });
+
+  it('ist false, sobald eine Arbeitszeit erfasst ist', () => {
+    expect(fehltArbeitszeit({ ...basis, typ: 'A', start: '08:00', ende: '16:00' }, 'A')).toBe(false);
+  });
+
+  it('ist false, wenn der Tag manuell auf einen Nicht-Arbeitstyp umgestellt wurde', () => {
+    expect(fehltArbeitszeit({ ...basis, typ: 'U', typManuell: true }, 'U')).toBe(false);
   });
 });

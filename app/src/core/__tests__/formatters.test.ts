@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, kontraststreckung, estimateBase64Bytes, fmtHHMM } from '../formatters';
+import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, kontraststreckung, estimateBase64Bytes, fmtHHMM, istVergangenheit } from '../formatters';
 
 describe('pad', () => {
   it('füllt einstellige Zahlen mit führender Null', () => {
@@ -152,5 +152,29 @@ describe('fmtHHMM', () => {
 
   it('funktioniert auch über 24 Stunden hinaus (z.B. Summe über zwei Schichten)', () => {
     expect(fmtHHMM(1500)).toBe('25:00');
+  });
+});
+
+describe('istVergangenheit', () => {
+  const referenz = new Date(2026, 8, 4); // 04.09.2026 (Monat 0-indiziert: 8 = September)
+
+  it('ist true für einen Tag vor dem Referenzdatum', () => {
+    expect(istVergangenheit(2026, 9, 3, referenz)).toBe(true);
+    expect(istVergangenheit(2026, 8, 15, referenz)).toBe(true); // anderer Monat
+  });
+
+  it('ist false für das Referenzdatum selbst (heute ist noch nicht "vergessen")', () => {
+    expect(istVergangenheit(2026, 9, 4, referenz)).toBe(false);
+  });
+
+  it('ist false für einen Tag nach dem Referenzdatum', () => {
+    expect(istVergangenheit(2026, 9, 5, referenz)).toBe(false);
+    expect(istVergangenheit(2026, 10, 1, referenz)).toBe(false);
+  });
+
+  it('ignoriert die Uhrzeit des Referenzdatums (nur der Kalendertag zählt)', () => {
+    const spaetAbends = new Date(2026, 8, 4, 23, 59);
+    expect(istVergangenheit(2026, 9, 4, spaetAbends)).toBe(false);
+    expect(istVergangenheit(2026, 9, 3, spaetAbends)).toBe(true);
   });
 });

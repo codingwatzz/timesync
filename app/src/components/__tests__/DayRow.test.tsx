@@ -99,6 +99,59 @@ describe('DayRow', () => {
     expect(container.querySelector('.flag.km')).not.toBeInTheDocument();
   });
 
+  it('zeigt die Warnung "Keine Arbeitszeit erfasst" an einem vergangenen Arbeitstag ohne Eintrag', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 4)); // "heute" = 04.09.2026
+    try {
+      render(
+        <DayRow year={2026} month={9} day={3} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
+      );
+      expect(screen.getByText('⚠ Keine Arbeitszeit erfasst')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('zeigt die Warnung NICHT am heutigen Tag, auch ohne erfasste Arbeitszeit', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 4));
+    try {
+      render(
+        <DayRow year={2026} month={9} day={4} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
+      );
+      expect(screen.queryByText('⚠ Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('zeigt die Warnung NICHT, sobald eine Arbeitszeit erfasst wurde', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 4));
+    try {
+      const entry = { ...emptyEntry(2026, 9, 3), start: '08:00', ende: '16:00' };
+      render(
+        <DayRow year={2026} month={9} day={3} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+      );
+      expect(screen.queryByText('⚠ Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('zeigt die Warnung NICHT an einem vergangenen Wochenendtag ohne Eintrag', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 4));
+    try {
+      render(
+        <DayRow year={2026} month={8} day={30} entry={undefined} typ="W" feiertag={null} onClick={() => {}} />,
+      );
+      expect(screen.queryByText('⚠ Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('zeigt das "extern"-Flag (vormals "Vor Ort") an einem echten Vor-Ort-Arbeitstag', () => {
     const entry = { ...emptyEntry(2026, 9, 17), typ: 'A' as const, ho: false, km: '50' };
     render(

@@ -1,9 +1,9 @@
 // Befüllt die Spesenabrechnungs-Vorlage (.xltx) direkt im Browser mit den Monatsdaten -
-// chirurgisches XML-Patching (wie tools/spesenabrechnung/export_xlsx.py auf der Python-
-// Seite), damit Dropdown-Validierungen, Formeln und Formatierung der Vorlage unversehrt
-// bleiben. Ergebnis ist eine ECHTE .xlsx-Datei, die der Nutzer in seiner eigenen
-// Tabellenkalkulation (Excel, Google Sheets, ...) öffnet - dort wird sie garantiert korrekt
-// dargestellt, da eine echte Tabellenkalkulation rendert statt eines Rendering-Umwegs.
+// chirurgisches XML-Patching, damit Dropdown-Validierungen, Formeln und Formatierung der
+// Vorlage unversehrt bleiben. Ergebnis ist eine ECHTE .xlsx-Datei, die der Nutzer in seiner
+// eigenen Tabellenkalkulation (Excel, Google Sheets, ...) öffnet - dort wird sie garantiert
+// korrekt dargestellt, da eine echte Tabellenkalkulation rendert statt eines
+// Rendering-Umwegs.
 //
 // WICHTIG: JSZip erzeugt beim Überschreiben vorhandener Dateien automatisch zusätzliche
 // Verzeichnis-Einträge im Ziel-Zip (reproduzierbar getestet 03.09.2026) - genau die Art
@@ -31,8 +31,7 @@ function excelSerial(d: Date): number {
 
 // --- XML-Zellmanipulation - begrenzt IMMER an "</c>" bzw. eigenem "/>", NIE an "</f>"
 // (manche Formelzellen sind selbstschließend "<f t=\"shared\" .../>" ohne eigenes "</f>" -
-// eine an "</f>" begrenzte Suche würde quer durch die Datei laufen). 1:1 aus export_xlsx.py
-// übernommen. ---
+// eine an "</f>" begrenzte Suche würde quer durch die Datei laufen). ---
 
 function findeZelle(xml: string, ref: string): { start: number; end: number; attrs: string; inner: string | null; selfClosing: boolean } {
   const selfClosingMatch = new RegExp(`<c r="${ref}"([^>]*?)/>`).exec(xml);
