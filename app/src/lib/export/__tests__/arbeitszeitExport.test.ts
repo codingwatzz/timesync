@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import ExcelJS from 'exceljs';
-import type { TagesEintrag } from '../../core/types';
+import type { TagesEintrag } from '../../../core/types';
 import { buildArbeitszeitXlsx } from '../arbeitszeitExport';
 
 function eintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {

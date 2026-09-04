@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MONATSNAMEN } from '../core/constants';
 import { fmtEUR } from '../core/formatters';
-import { entriesToZeilen, summe } from '../lib/exportZeilen';
+import { entriesToZeilen, summe } from '../lib/export/exportZeilen';
 import type { TagesEintrag } from '../core/types';
 import type { KVStore } from '../store/types';
 
@@ -27,7 +27,7 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
     }
     setErstelltZip(true);
     try {
-      const { buildExportZip, downloadExportZip } = await import('../lib/zipExport');
+      const { buildExportZip, downloadExportZip } = await import('../lib/export/zipExport');
       const { blob, belegeBericht } = await buildExportZip(year, month, entries, store);
       downloadExportZip(blob, year, month);
       if (belegeBericht.fehlendeBelege.length > 0) {

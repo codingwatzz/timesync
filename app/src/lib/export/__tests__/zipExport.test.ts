@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import JSZip from 'jszip';
-import type { TagesEintrag } from '../../core/types';
-import type { KVStore } from '../../store/types';
+import type { TagesEintrag } from '../../../core/types';
+import type { KVStore } from '../../../store/types';
 import { buildExportZip } from '../zipExport';
 
 function eintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
@@ -27,7 +27,7 @@ function mockStore(): KVStore {
 
 describe('buildExportZip', () => {
   beforeAll(() => {
-    const vorlagePath = path.resolve(__dirname, '../../../public/Spesenabrechnung-Vorlage.xltx');
+    const vorlagePath = path.resolve(__dirname, '../../../../public/Spesenabrechnung-Vorlage.xltx');
     const data = fs.readFileSync(vorlagePath);
     global.fetch = (async () => ({
       ok: true,

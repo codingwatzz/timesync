@@ -3,10 +3,10 @@
 // vergrößern. Die eigentliche xlsx-Erzeugung (mit JSZip) lebt in lib/xlsxExport.ts und wird
 // von dort per dynamic import() nur bei tatsächlichem Bedarf nachgeladen.
 
-import type { TagesEintrag, Reiseart, Reiseland } from '../core/types';
-import { verpflegungsmehraufwand } from '../core/vma';
-import { dateKey } from '../core/holidays';
-import { daysInMonth } from '../core/formatters';
+import type { TagesEintrag, Reiseart, Reiseland } from '../../core/types';
+import { verpflegungsmehraufwand } from '../../core/vma';
+import { dateKey } from '../../core/holidays';
+import { daysInMonth } from '../../core/formatters';
 
 // Rein interne App-Markierung, kein Wert aus der echten Vorlage - muss beim Export wie
 // leer/kein Anspruch behandelt werden (siehe core/vma.ts).

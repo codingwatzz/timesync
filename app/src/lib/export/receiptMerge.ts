@@ -7,11 +7,11 @@
 // Bildverarbeiten nötig.
 
 import { PDFDocument } from 'pdf-lib';
-import type { KVStore } from '../store/types';
-import type { TagesEintrag } from '../core/types';
-import { loadReceipt } from '../hooks/entryStorage';
-import { dateKey } from '../core/holidays';
-import { daysInMonth } from '../core/formatters';
+import type { KVStore } from '../../store/types';
+import type { TagesEintrag } from '../../core/types';
+import { loadReceipt } from '../../hooks/entryStorage';
+import { dateKey } from '../../core/holidays';
+import { daysInMonth } from '../../core/formatters';
 
 export interface BelegMergeBericht {
   eingebundeneBelege: { date: string; name: string }[];

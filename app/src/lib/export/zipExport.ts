@@ -3,11 +3,11 @@
 // (siehe xlsxExport.ts) im Bundle steckt.
 
 import JSZip from 'jszip';
-import type { TagesEintrag } from '../core/types';
-import type { KVStore } from '../store/types';
-import { SPESEN_NAME_DATEI } from '../core/constants';
-import { pad } from '../core/formatters';
-import { triggerDownload } from './download';
+import type { TagesEintrag } from '../../core/types';
+import type { KVStore } from '../../store/types';
+import { SPESEN_NAME_DATEI } from '../../core/constants';
+import { pad } from '../../core/formatters';
+import { triggerDownload } from '../download';
 import type { BelegMergeBericht } from './receiptMerge';
 
 export interface ExportZipErgebnis {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import JSZip from 'jszip';
-import type { TagesEintrag } from '../../core/types';
+import type { TagesEintrag } from '../../../core/types';
 import { entriesToZeilen, buildFilledXlsx } from '../xlsxExport';
 
 function leererEintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
@@ -49,7 +49,7 @@ describe('buildFilledXlsx (Struktur-Regressionstest gegen die echte Vorlage)', (
   let originalSheetXml: string;
 
   beforeAll(async () => {
-    const vorlagePath = path.resolve(__dirname, '../../../public/Spesenabrechnung-Vorlage.xltx');
+    const vorlagePath = path.resolve(__dirname, '../../../../public/Spesenabrechnung-Vorlage.xltx');
     const data = fs.readFileSync(vorlagePath);
     global.fetch = (async () => ({
       ok: true,

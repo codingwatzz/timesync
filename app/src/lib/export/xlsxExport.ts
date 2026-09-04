@@ -13,9 +13,9 @@
 // Zusammenbauen entfernt (siehe `baueXlsxZip`).
 
 import JSZip from 'jszip';
-import type { TagesEintrag } from '../core/types';
+import type { TagesEintrag } from '../../core/types';
 import { type ExportZeile, entriesToZeilen, kmPauschale, vma, summe } from './exportZeilen';
-import { SPESEN_NAME_VOLL } from '../core/constants';
+import { SPESEN_NAME_VOLL } from '../../core/constants';
 
 export type { ExportZeile } from './exportZeilen';
 export { entriesToZeilen } from './exportZeilen';

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
-import type { TagesEintrag } from '../../core/types';
-import type { KVStore } from '../../store/types';
+import type { TagesEintrag } from '../../../core/types';
+import type { KVStore } from '../../../store/types';
 import { buildMergedReceiptsPdf } from '../receiptMerge';
 
 function leererEintrag(overrides: Partial<TagesEintrag> = {}): TagesEintrag {
