@@ -2,5 +2,5 @@
   "pass": false,
   "crashed": true,
   "error": "page.fill: Error: Element is not an <input>, <textarea> or [contenteditable] element\nCall log:\n  - waiting for locator('#f_pause')\n  -   locator resolved to <select id=\"f_pause\">…</select>\n  -   fill(\"\")\n  - attempting fill action\n  -   waiting for element to be visible, enabled and editable\n\n    at resetDayToDefault (/home/runner/work/timesync/timesync/test/e2e/dayHelpers.js:76:14)\n    at async attemptRun (/home/runner/work/timesync/timesync/test/e2e/runner.js:86:5)\n    at async main (/home/runner/work/timesync/timesync/test/e2e.js:27:5)",
-  "timestamp": "2026-09-03T06:16:26.120Z"
+  "timestamp": "2026-09-04T06:22:28.359Z"
 }
