@@ -232,14 +232,3 @@ export async function buildArbeitszeitXlsx(year: number, month: number, entries:
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
-
-export function downloadArbeitszeitXlsx(blob: Blob, year: number, month: number): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${year}-${pad(month)}_Arbeitszeiten-Raoul.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-}

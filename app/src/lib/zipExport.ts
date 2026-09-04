@@ -7,6 +7,7 @@ import type { TagesEintrag } from '../core/types';
 import type { KVStore } from '../store/types';
 import { SPESEN_NAME_DATEI } from '../core/constants';
 import { pad } from '../core/formatters';
+import { triggerDownload } from './download';
 import type { BelegMergeBericht } from './receiptMerge';
 
 export interface ExportZipErgebnis {
@@ -33,8 +34,7 @@ export async function buildExportZip(
     buildArbeitszeitXlsx(year, month, entries),
   ]);
 
-  const pad2 = (n: number) => String(n).padStart(2, '0');
-  const praefix = `${year}-${pad2(month)}`;
+  const praefix = `${year}-${pad(month)}`;
   const zip = new JSZip();
   zip.file(`${praefix}_Spesenabrechnung-${SPESEN_NAME_DATEI}.xlsx`, await spesenErgebnis.blob.arrayBuffer());
   zip.file(`${praefix}_Belege-Spesenabrechnung-${SPESEN_NAME_DATEI}.pdf`, await belegeErgebnis.blob.arrayBuffer());
@@ -45,12 +45,5 @@ export async function buildExportZip(
 }
 
 export function downloadExportZip(blob: Blob, year: number, month: number): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${year}-${pad(month)}_Export-${SPESEN_NAME_DATEI}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  triggerDownload(blob, `${year}-${pad(month)}_Export-${SPESEN_NAME_DATEI}.zip`);
 }

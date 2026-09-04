@@ -12,7 +12,6 @@ import type { TagesEintrag } from '../core/types';
 import { loadReceipt } from '../hooks/entryStorage';
 import { dateKey } from '../core/holidays';
 import { daysInMonth } from '../core/formatters';
-import { SPESEN_NAME_DATEI } from '../core/constants';
 
 export interface BelegMergeBericht {
   eingebundeneBelege: { date: string; name: string }[];
@@ -69,16 +68,4 @@ export async function buildMergedReceiptsPdf(
   const bytes = await zusammengefuehrt.save();
   const blob = new Blob([bytes.slice().buffer], { type: 'application/pdf' });
   return { blob, bericht };
-}
-
-export function downloadPdf(blob: Blob, year: number, month: number): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const pad2 = (n: number) => String(n).padStart(2, '0');
-  a.download = `${year}-${pad2(month)}_Belege-Spesenabrechnung-${SPESEN_NAME_DATEI}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
 }

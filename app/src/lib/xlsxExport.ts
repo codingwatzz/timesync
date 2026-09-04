@@ -15,7 +15,7 @@
 import JSZip from 'jszip';
 import type { TagesEintrag } from '../core/types';
 import { type ExportZeile, entriesToZeilen, kmPauschale, vma, summe } from './exportZeilen';
-import { SPESEN_NAME_VOLL, SPESEN_NAME_DATEI } from '../core/constants';
+import { SPESEN_NAME_VOLL } from '../core/constants';
 
 export type { ExportZeile } from './exportZeilen';
 export { entriesToZeilen } from './exportZeilen';
@@ -199,16 +199,4 @@ export async function buildFilledXlsx(
 
   const blob = await baueXlsxZip(zip, originalOrder);
   return { blob, zeilen };
-}
-
-export function downloadXlsx(blob: Blob, year: number, month: number): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const pad2 = (n: number) => String(n).padStart(2, '0');
-  a.download = `${year}-${pad2(month)}_Spesenabrechnung-${SPESEN_NAME_DATEI}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
