@@ -178,9 +178,19 @@ Geschäftslogik.
   Text-Felder gültig) - behoben (`page.selectOption()`). Ein redundanter Prüfschritt
   (Wochenend-/Feiertags-Erkennung, bereits vollständig durch Unit-Tests abgedeckt) wurde
   entfernt. Danach: **vollständiger E2E-Lauf grün, alle 16 kritischen Prüfungen bestanden.**
-- **Bekannte, akzeptierte Unschärfe:** `importWorked` schlägt in E2E gelegentlich fehl
-  (Appwrite Eventual Consistency beim Import-Bulk-Schreiben) - kein Crash, alle anderen
-  Prüfungen bestehen zuverlässig. Bewusst nicht weiter debuggt.
+- **`importWorked`-Flakigkeit robuster gemacht (04.09.2026, selbe Sitzung wie oben):** war
+  bisher "bekannte, akzeptierte Unschärfe" (schlug gelegentlich fehl wegen Appwrite Eventual
+  Consistency, ohne Crash, alle anderen Prüfungen bestanden zuverlässig) - da dieser Check in
+  `runner.js::CRITICAL_CHECKS` steht, ließ ein Fehlschlag hier den GESAMTEN Lauf rot
+  erscheinen, obwohl nichts wirklich kaputt war. Fix: Wartebudget deutlich erhöht (10 Versuche
+  statt 6, Backoff-Deckel 20s statt 12s, ~140s statt ~42s Gesamtbudget) UND ein direkter
+  Appwrite-Read (`appwriteDirectCheck.js`) als Diagnose ab dem 3. Versuch - unterscheidet klar
+  "Daten sind schon da, UI hinkt nur hinterher" (weiter warten lohnt sich) von "Daten wirklich
+  noch nicht da" (potenziell echtes Problem). Ändert NICHT das Pass/Fail-Kriterium selbst
+  (bleibt an der UI-Sicht), verbessert nur Diagnose + senkt die Falsch-Fehlschlag-Rate. Noch
+  nicht durch einen echten E2E-Lauf bestätigt (nächster planmäßiger Lauf: 05.09.2026 06:00
+  UTC) - falls der wider Erwarten noch fehlschlägt, direkt ins Log schauen (die neue Diagnose
+  sagt jetzt klar, ob es Appwrite-Verzögerung oder ein echter UI-Bug war).
 - **Offline-/PWA-Test**: separat (`test/offline-test.js`), prüft Service-Worker-Caching.
 
 ## Architektur-Review (04.09.2026, auf Nutzerwunsch)

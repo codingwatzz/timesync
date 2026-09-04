@@ -95,7 +95,9 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
 
 - Appwrite-Schreibvorgänge können einige Sekunden brauchen, bis sie überall konsistent lesbar
   sind ("Eventual Consistency"). Großzügige Wartebudgets sind bereits gesetzt
-  (`test/e2e/steps/importFlow.js`). Nicht erneut als Bug behandeln.
+  (`test/e2e/steps/importFlow.js`, seit 04.09.2026 bis zu ~140s Gesamtbudget über 10 Versuche
+  mit gedeckeltem Backoff, plus direkter Appwrite-Read als Diagnose ab dem 3. Versuch - siehe
+  Kommentar dort). Nicht erneut als Bug behandeln.
 - `page.waitForFunction(fn, options)` in Playwright ist FALSCH - das Options-Objekt wird sonst
   als Funktionsargument gebunden, das Timeout wird stillschweigend ignoriert. Immer:
   `page.waitForFunction(fn, undefined, options)`.- Meine Sandbox kann `*.github.io` nicht direkt anfragen (Netzwerk-Freigabeliste). Status der
