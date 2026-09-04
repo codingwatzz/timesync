@@ -41,6 +41,18 @@ export function rgbToGray(r: number, g: number, b: number): number {
 }
 
 /**
+ * Sanfte Kontraststreckung eines Graustufen-Werts (0-255): proportional hochskalieren,
+ * sodass `weisspunkt` zu reinem Weiß (255) wird - keine harte Schwelle, Abstufungen bleiben
+ * erhalten. Wird beim Foto-Beleg-Upload verwendet, um einen hellgrauen Tischhintergrund
+ * fast weiß erscheinen zu lassen (spart Druckertinte), ohne Ziffern zu gefährden - anders
+ * als ein harter Schwarz-Weiß-Schwellenwert, der am 03.09.2026 nachweislich einzelne
+ * Ziffern verfälscht hat (siehe lib/pdf.ts::photoToPdf).
+ */
+export function kontraststreckung(grauwert: number, weisspunkt: number): number {
+  return Math.min(255, Math.round(grauwert * (255 / weisspunkt)));
+}
+
+/**
  * Schätzt die Bytegröße der Base64-Nutzdaten einer data:-URL (ohne den "data:...;base64,"-
  * Präfix). Base64 kodiert 3 Rohbytes in 4 Zeichen, daher der Faktor 3/4. Wird beim Foto-
  * Beleg-Upload genutzt, um die Ziel-Dateigröße einzuhalten (siehe lib/pdf.ts::photoToPdf).

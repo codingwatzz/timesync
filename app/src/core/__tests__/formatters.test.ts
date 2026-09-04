@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, estimateBase64Bytes, fmtHHMM } from '../formatters';
+import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, kontraststreckung, estimateBase64Bytes, fmtHHMM } from '../formatters';
 
 describe('pad', () => {
   it('füllt einstellige Zahlen mit führender Null', () => {
@@ -94,6 +94,35 @@ describe('rgbToGray', () => {
 
   it('rundet auf ganze Zahlen', () => {
     expect(Number.isInteger(rgbToGray(123, 45, 200))).toBe(true);
+  });
+});
+
+describe('kontraststreckung', () => {
+  it('macht einen Wert am Weißpunkt zu reinem Weiß (255)', () => {
+    expect(kontraststreckung(190, 190)).toBe(255);
+  });
+
+  it('lässt Werte über dem Weißpunkt nicht über 255 hinausgehen (kein Überlauf)', () => {
+    expect(kontraststreckung(255, 190)).toBe(255);
+  });
+
+  it('gibt für Schwarz weiterhin Schwarz zurück (0 bleibt 0)', () => {
+    expect(kontraststreckung(0, 190)).toBe(0);
+  });
+
+  it('hellt einen typischen grauen Tischhintergrund (176) fast zu Weiß auf', () => {
+    // Realer Messwert vom 04.09.2026 (echter Beleg-Foto-Hintergrund) - Nutzerbeschwerde
+    // "zu viel grau beim Drucken". Mit Weißpunkt 190 wird das fast rein weiß.
+    expect(kontraststreckung(176, 190)).toBeGreaterThan(235);
+  });
+
+  it('verändert dunkle Ziffern-Pixel nur moderat (keine harte 0/255-Schwelle)', () => {
+    // Im Gegensatz zum verworfenen harten Schwellenwert (03.09.2026, "0" wurde zu "3")
+    // bleibt hier eine kontinuierliche Abstufung erhalten statt eines harten Sprungs.
+    const dunkel = kontraststreckung(20, 190);
+    const mittel = kontraststreckung(100, 190);
+    expect(dunkel).toBeLessThan(mittel);
+    expect(mittel).toBeLessThan(255);
   });
 });
 

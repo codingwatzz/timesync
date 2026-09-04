@@ -1,4 +1,4 @@
-import { rgbToGray, estimateBase64Bytes } from '../core/formatters';
+import { rgbToGray, kontraststreckung, estimateBase64Bytes } from '../core/formatters';
 
 // Ziel: ~300dpi bei A4-Breite (8,27" × 300 ≈ 2481px) - der übliche Richtwert für gut lesbare
 // Dokumenten-Scans. Echte DPI lassen sich aus einem Handyfoto nicht exakt bestimmen (wir
@@ -14,6 +14,14 @@ const PDF_CONTAINER_OVERHEAD_BYTES = 20 * 1024;
 // schon bei der ersten Stufe weit unter das Limit; nur sehr detailreiche/dunkle Fotos
 // brauchen die niedrigeren Stufen.
 const JPEG_QUALITAETSSTUFEN = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2];
+// Weißpunkt für die sanfte Kontraststreckung (siehe unten) - Pixelwerte ab diesem Wert
+// werden zu reinem Weiß, alles darunter wird PROPORTIONAL mitgestreckt (keine harte
+// Schwelle). An echten Belegen getestet (04.09.2026): 190 aufgehellt einen typischen
+// grauen Tischhintergrund zuverlässig zu Weiß, ohne Ziffern zu beschädigen (getestet auch
+// am Schattenwurf-Problemfall vom 03.09.2026, bei dem ein harter Schwellenwert Ziffern
+// verfälscht hatte - hier blieben alle Ziffern korrekt, da keine harte 0/255-Schwelle
+// verwendet wird, sondern eine kontinuierliche Kurve).
+const WEISSPUNKT = 190;
 
 export function fileToDataURL(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -25,9 +33,10 @@ export function fileToDataURL(file: File | Blob): Promise<string> {
 }
 
 /**
- * Wandelt ein Foto in ein platzsparendes PDF um: Graustufen statt Farbe (~300dpi bei
- * A4-Breite). JPEG-Qualität wird automatisch so weit abgesenkt, bis das PDF die 2-MB-
- * Obergrenze einhält.
+ * Wandelt ein Foto in ein platzsparendes PDF um: Graustufen statt Farbe, sanfte
+ * Kontraststreckung (heller Tischhintergrund wird nahezu weiß - spart Druckertinte, ohne
+ * Ziffern zu gefährden), ~300dpi bei A4-Breite. JPEG-Qualität wird automatisch so weit
+ * abgesenkt, bis das PDF die 2-MB-Obergrenze einhält.
  *
  * WICHTIG (03.09.2026): Es gab hier zwischenzeitlich automatische Rand-Erkennung/Zuschnitt
  * (Scanic) und danach einen harten Schwarz-Weiß-Schwellenwert. Beides wurde wieder entfernt:
@@ -35,7 +44,13 @@ export function fileToDataURL(file: File | Blob): Promise<string> {
  * Scanic-Zuschnitt lieferte in der echten Nutzung (eigener Test durch den Nutzer, mehrere
  * Fotos unter guten Lichtverhältnissen) keine ausreichend zuverlässigen Ergebnisse - zu
  * fehleranfällig und zu komplex für den Nutzen. Zurück zum einfachen, seit Monaten
- * bewährten Stand: nur Graustufen, kein Zuschnitt, kein Schwellenwert.
+ * bewährten Stand: nur Graustufen, kein Zuschnitt, kein harter Schwellenwert.
+ *
+ * WICHTIG (04.09.2026): Nutzer bemängelte zu viel grauen Hintergrund beim Drucken (echte
+ * Belege hatten einen deutlich sichtbaren grauen Tischhintergrund). Fix: sanfte
+ * Kontraststreckung (linear, kein hartes 0/255-Cutoff wie beim damals verworfenen
+ * Schwellenwert) - an echten Belegen UND am damaligen Schattenwurf-Problemfall getestet,
+ * Ziffern bleiben in beiden Fällen korrekt lesbar.
  */
 export async function photoToPdf(file: File): Promise<string> {
   // jsPDF erst hier bei tatsächlichem Bedarf nachladen (nicht im Hauptbundle) - spart auf
@@ -65,9 +80,13 @@ export async function photoToPdf(file: File): Promise<string> {
   const px = imageData.data;
   for (let i = 0; i < px.length; i += 4) {
     const gray = rgbToGray(px[i], px[i + 1], px[i + 2]);
-    px[i] = gray;
-    px[i + 1] = gray;
-    px[i + 2] = gray;
+    // Sanfte Kontraststreckung: proportional hochskalieren, mit WEISSPUNKT als Ziel für
+    // "praktisch weiß" - keine harte Schwelle, Abstufungen bleiben erhalten (siehe
+    // Docstring oben, Grund für "sanft" statt hartem Schwellenwert).
+    const gestreckt = kontraststreckung(gray, WEISSPUNKT);
+    px[i] = gestreckt;
+    px[i + 1] = gestreckt;
+    px[i + 2] = gestreckt;
   }
   ctx.putImageData(imageData, 0, 0);
 
