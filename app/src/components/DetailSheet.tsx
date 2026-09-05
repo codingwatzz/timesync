@@ -9,7 +9,27 @@ import { fileToDataURL, photoToPdf } from '../lib/pdf';
 import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
 import { useSwipe } from '../hooks/useSwipe';
 import { useSwipeDown } from '../hooks/useSwipeDown';
+import { Paperclip, Camera, FileText, X, Plus, AlertTriangle } from 'lucide-react';
 import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
+
+// ---------------------------------------------------------------------
+// Styling-Konstanten (Tailwind, Design-System "Slate & Teal", dark-first).
+// Reine Präsentationsschicht - keine Logik. Zentral gehalten, damit sich
+// wiederholende Formularfelder nicht 15x dieselbe Klassenkette tragen.
+// ---------------------------------------------------------------------
+const labelCls = 'mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-text-muted';
+const inputCls =
+  'w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-[15px] text-text ' +
+  'placeholder:text-text-faint focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary';
+const sectionTitleCls =
+  'mt-4 mb-2 border-t border-border pt-3 text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted';
+const secondaryBtnCls =
+  'mb-3.5 w-full rounded-lg border border-border bg-surface px-2 py-2.5 text-sm font-semibold ' +
+  'text-text-muted transition-colors hover:border-primary hover:text-primary';
+
+const TAB_BG: Record<Wochentyp, string> = {
+  A: 'bg-tab-a', W: 'bg-tab-w', F: 'bg-tab-f', U: 'bg-tab-u', K: 'bg-tab-k', G: 'bg-tab-g',
+};
 
 interface DetailSheetProps {
   dateKey: string; // YYYY-MM-DD
@@ -204,52 +224,69 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   }
 
   return (
-    <div className="sheet-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className="sheet" {...swipeHandlers}>
-        <div className="sheet-handle-zone" {...swipeDownHandlers}>
-          <div className="sheet-handle" />
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+    >
+      <div
+        className="sheet mx-auto max-h-[92vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl
+          bg-surface-2 px-5 pb-8 pt-1.5 text-text shadow-[0_-12px_40px_-8px_rgba(99,102,241,0.18)]
+          animate-[slideup_0.22s_ease] font-sans"
+        {...swipeHandlers}
+      >
+        <div className="sheet-handle-zone flex touch-none justify-center pb-3.5 pt-2.5" {...swipeDownHandlers}>
+          <div className="sheet-handle h-1 w-9 rounded-full bg-border" />
         </div>
-        <h2>{dow}, {pad(d)}.{pad(m)}.{y}</h2>
-        <div className="sheet-sub">Tageseintrag bearbeiten{feiertag ? ' · ' + feiertag : ''}</div>
+        <h2 className="m-0 text-[17px] font-semibold text-text">{dow}, {pad(d)}.{pad(m)}.{y}</h2>
+        <div className="mb-4 text-xs text-text-muted">Tageseintrag bearbeiten{feiertag ? ' · ' + feiertag : ''}</div>
 
-        <div className="section-title">Tagestyp</div>
-        <div className="typ-pick" id="typPick">
-          {(Object.keys(TYP_LABEL) as Wochentyp[]).map((t) => (
-            <button
-              key={t}
-              data-t={t}
-              className={t === entry.typ ? `active ${t}` : ''}
-              onClick={() => setTyp(t)}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted">Tagestyp</div>
+        <div className="flex flex-wrap gap-1.5" id="typPick">
+          {(Object.keys(TYP_LABEL) as Wochentyp[]).map((t) => {
+            const active = t === entry.typ;
+            return (
+              <button
+                key={t}
+                data-t={t}
+                onClick={() => setTyp(t)}
+                className={
+                  active
+                    ? `active ${t} rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-on-accent'}`
+                    : 'rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-bold text-text-muted transition-colors hover:border-primary hover:text-text'
+                }
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="toggle-row" style={{ marginTop: 14 }}>
-          <div className="tl">Homeoffice</div>
+        <div className="mt-3.5 flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5">
+          <div className="text-sm font-semibold text-text">Homeoffice</div>
           <div
             id="hoSwitch"
-            className={`switch${entry.ho ? ' on' : ''}`}
+            className={`relative h-[26px] w-[46px] flex-shrink-0 cursor-pointer rounded-full transition-colors ${entry.ho ? 'on bg-primary' : 'bg-canvas border border-border'}`}
             onClick={() => update('ho', !entry.ho)}
           >
-            <div className="knob" />
+            <div className={`absolute top-0.5 h-[22px] w-[22px] rounded-full border border-border bg-text-on-accent shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition-[left] duration-150 ${entry.ho ? 'left-[22px]' : 'left-0.5'}`} />
           </div>
         </div>
 
-        <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={`${sectionTitleCls} flex items-center justify-between`}>
           <span>Zeiten</span>
-          <span className="arbeitszeit-badge mono">{fmtHHMM(arbeitszeitMinuten(entry))}</span>
+          <span className="arbeitszeit-badge rounded-full bg-primary-soft px-2.5 py-0.5 font-mono text-[13px] font-bold text-primary">
+            {fmtHHMM(arbeitszeitMinuten(entry))}
+          </span>
         </div>
-        <div className="row3">
-          <div className="field"><label>Start</label>
-            <input id="f_start" type="time" value={entry.start} onChange={(e) => update('start', e.target.value)} />
+        <div className="flex gap-2">
+          <div className="flex-1"><label className={labelCls}>Start</label>
+            <input className={inputCls} id="f_start" type="time" value={entry.start} onChange={(e) => update('start', e.target.value)} />
           </div>
-          <div className="field"><label>Ende</label>
-            <input id="f_ende" type="time" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
+          <div className="flex-1"><label className={labelCls}>Ende</label>
+            <input className={inputCls} id="f_ende" type="time" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
           </div>
-          <div className="field"><label>Pause (Min)</label>
-            <select id="f_pause" value={entry.pause || '0'} onChange={(e) => update('pause', e.target.value)}>
+          <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
+            <select className={inputCls} id="f_pause" value={entry.pause || '0'} onChange={(e) => update('pause', e.target.value)}>
               {pauseOptionsFor(entry.pause).map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -257,46 +294,45 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
         {zweiteSchichtOffen ? (
           <>
-            <div className="row3-subheading">2. Schicht</div>
-            <div className="row3" style={{ marginTop: -6 }}>
-              <div className="field"><label>Start</label>
-                <input id="f_start2" type="time" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
+            <div className="mb-2 mt-3.5 border-t border-dashed border-border pt-2.5 text-[10px] font-bold uppercase tracking-wide text-primary">2. Schicht</div>
+            <div className="flex gap-2">
+              <div className="flex-1"><label className={labelCls}>Start</label>
+                <input className={inputCls} id="f_start2" type="time" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
               </div>
-              <div className="field"><label>Ende</label>
-                <input id="f_ende2" type="time" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
+              <div className="flex-1"><label className={labelCls}>Ende</label>
+                <input className={inputCls} id="f_ende2" type="time" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
               </div>
-              <div className="field"><label>Pause (Min)</label>
-                <select id="f_pause2" value={entry.pause2 || '0'} onChange={(e) => update('pause2', e.target.value)}>
+              <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
+                <select className={inputCls} id="f_pause2" value={entry.pause2 || '0'} onChange={(e) => update('pause2', e.target.value)}>
                   {pauseOptionsFor(entry.pause2).map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
             </div>
             <button
               id="removeSecondShiftBtn"
-              className="close"
-              style={{ width: '100%', marginBottom: 14, padding: '8px' }}
+              className={`${secondaryBtnCls} flex items-center justify-center gap-1.5`}
               onClick={() => {
                 update('start2', ''); update('ende2', ''); update('pause2', '');
                 setZweiteSchichtOffen(false);
               }}
             >
-              × Zweite Schicht entfernen
+              <X size={14} strokeWidth={2.25} /> Zweite Schicht entfernen
             </button>
           </>
         ) : (
           <button
             id="addSecondShiftBtn"
-            className="close"
-            style={{ width: '100%', marginBottom: 14, padding: '8px' }}
+            className={`${secondaryBtnCls} mt-3.5 flex items-center justify-center gap-1.5`}
             onClick={() => setZweiteSchichtOffen(true)}
           >
-            + Zweite Schicht (z. B. abends nochmal gearbeitet)
+            <Plus size={14} strokeWidth={2.25} /> Zweite Schicht (z. B. abends nochmal gearbeitet)
           </button>
         )}
 
-        <div className="field">
-          <label>Notiz / Beschreibung</label>
+        <div className="mb-3.5">
+          <label className={labelCls}>Notiz / Beschreibung</label>
           <textarea
+            className={`${inputCls} min-h-[44px] resize-y`}
             id="f_beschreibung"
             placeholder="Anlass, Details, Ort..."
             value={entry.beschreibung}
@@ -304,73 +340,83 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           />
         </div>
 
-        <div className="field">
-          <label>Sonstiges € <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(z.B. Bahncard, Deutschlandticket - unabhängig vom Tagestyp)</span></label>
-          <input id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
+        <div className="mb-3.5">
+          <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(z.B. Bahncard, Deutschlandticket - unabhängig vom Tagestyp)</span></label>
+          <input className={inputCls} id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
         </div>
 
         <div id="travelSection" style={{ display: showTravel ? '' : 'none' }}>
-          <div className="section-title">Fahrt &amp; Kosten</div>
-          <div className="row2">
-            <div className="field"><label>Gefahrene km</label>
-              <input id="f_km" type="number" placeholder="0" value={entry.km} onChange={(e) => update('km', e.target.value)} />
+          <div className={sectionTitleCls}>Fahrt &amp; Kosten</div>
+          <div className="flex gap-2.5">
+            <div className="mb-3.5 flex-1"><label className={labelCls}>Gefahrene km</label>
+              <input className={inputCls} id="f_km" type="number" placeholder="0" value={entry.km} onChange={(e) => update('km', e.target.value)} />
             </div>
-            <div className="field"><label>Transport €</label>
-              <input id="f_transport" type="number" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', e.target.value)} />
+            <div className="mb-3.5 flex-1"><label className={labelCls}>Transport €</label>
+              <input className={inputCls} id="f_transport" type="number" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', e.target.value)} />
             </div>
           </div>
-          <div className="row2">
-            <div className="field"><label>Hotel €</label>
-              <input id="f_hotel" type="number" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', e.target.value)} />
+          <div className="flex gap-2.5">
+            <div className="mb-3.5 flex-1"><label className={labelCls}>Hotel €</label>
+              <input className={inputCls} id="f_hotel" type="number" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', e.target.value)} />
             </div>
-            <div className="field">
-              <label>Bewirtung € <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(+Beleg)</span></label>
-              <input id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
+            <div className="mb-3.5 flex-1">
+              <label className={labelCls}>Bewirtung € <span className="font-normal normal-case tracking-normal text-text-faint">(+Beleg)</span></label>
+              <input className={inputCls} id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
             </div>
           </div>
 
-          <div className="section-title">Verpflegungsmehraufwand</div>
+          <div className={sectionTitleCls}>Verpflegungsmehraufwand</div>
           {!entry.reiseart && (
-            <div id="reiseartWarn" className="warn-banner">
-              ⚠ Ohne Art des Reisetages wird in der Spesenabrechnung kein Verpflegungsmehraufwand berechnet.
+            <div id="reiseartWarn" className="mb-3.5 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2.5 text-xs font-semibold text-warning">
+              <AlertTriangle size={15} className="flex-shrink-0" strokeWidth={2.25} />
+              Ohne Art des Reisetages wird in der Spesenabrechnung kein Verpflegungsmehraufwand berechnet.
             </div>
           )}
-          <div className="row2">
-            <div className="field">
-              <label>Reiseland</label>
-              <select id="f_reiseland" value={entry.reiseland} onChange={(e) => update('reiseland', e.target.value as TagesEintrag['reiseland'])}>
+          <div className="flex gap-2.5">
+            <div className="mb-3.5 flex-1">
+              <label className={labelCls}>Reiseland</label>
+              <select className={inputCls} id="f_reiseland" value={entry.reiseland} onChange={(e) => update('reiseland', e.target.value as TagesEintrag['reiseland'])}>
                 {LAENDER.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
-            <div className="field">
-              <label>Art des Reisetages</label>
-              <select id="f_reiseart" value={entry.reiseart} onChange={(e) => update('reiseart', e.target.value as TagesEintrag['reiseart'])}>
+            <div className="mb-3.5 flex-1">
+              <label className={labelCls}>Art des Reisetages</label>
+              <select className={inputCls} id="f_reiseart" value={entry.reiseart} onChange={(e) => update('reiseart', e.target.value as TagesEintrag['reiseart'])}>
                 {REISEARTEN.map((a) => <option key={a} value={a}>{a || '– keine –'}</option>)}
               </select>
             </div>
           </div>
-          <div className="field">
-            <label>Mahlzeit durch Firma bezahlt?</label>
-            <div className="row3">
-              <div className="yesno" data-field="fr">
-                <button className={entry.fr ? 'active' : ''} onClick={() => toggleYesNo('fr')}>Frühstück</button>
+          <div className="mb-3.5">
+            <label className={labelCls}>Mahlzeit durch Firma bezahlt?</label>
+            <div className="flex gap-2">
+              <div className="flex-1" data-field="fr">
+                <button
+                  className={`w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors ${entry.fr ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  onClick={() => toggleYesNo('fr')}
+                >Frühstück</button>
               </div>
-              <div className="yesno" data-field="mi">
-                <button className={entry.mi ? 'active' : ''} onClick={() => toggleYesNo('mi')}>Mittag</button>
+              <div className="flex-1" data-field="mi">
+                <button
+                  className={`w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors ${entry.mi ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  onClick={() => toggleYesNo('mi')}
+                >Mittag</button>
               </div>
-              <div className="yesno" data-field="ab">
-                <button className={entry.ab ? 'active' : ''} onClick={() => toggleYesNo('ab')}>Abend</button>
+              <div className="flex-1" data-field="ab">
+                <button
+                  className={`w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors ${entry.ab ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  onClick={() => toggleYesNo('ab')}
+                >Abend</button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="section-title">Belege</div>
-        <div className="receipt-list">
+        <div className={sectionTitleCls}>Belege</div>
+        <div className="mb-2.5 flex flex-col gap-2">
           {receipts.map((r) => (
             <div
               key={r.id}
-              className="receipt-item"
+              className="receipt-item flex cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2.5 transition-colors hover:border-primary active:bg-surface-2"
               data-rid={r.id}
               onClick={() => handleOpenReceipt(r)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenReceipt(r); } }}
@@ -378,24 +424,39 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
               tabIndex={0}
               title="Zum Ansehen antippen"
             >
-              <div className="ic">📄</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="rn">{r.name}</div>
-                <div className="rd">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
+              <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+                <FileText size={15} strokeWidth={2.25} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] text-text">{r.name}</div>
+                <div className="text-[10px] text-text-muted">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
               </div>
               <button
-                className="del"
+                className="rounded px-1.5 py-1 text-danger"
                 data-rid={r.id}
+                aria-label="Beleg löschen"
                 onClick={(e) => { e.stopPropagation(); handleDeleteReceipt(r.id); }}
               >
-                ×
+                <X size={16} strokeWidth={2.25} />
               </button>
             </div>
           ))}
         </div>
-        <div className="add-receipt-row">
-          <button id="uploadPdfBtn" onClick={() => pdfInputRef.current?.click()}>📎 PDF hochladen</button>
-          <button id="takePhotoBtn" onClick={() => photoInputRef.current?.click()}>📷 Foto aufnehmen</button>
+        <div className="flex gap-2">
+          <button
+            id="uploadPdfBtn"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent px-3 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-surface"
+            onClick={() => pdfInputRef.current?.click()}
+          >
+            <Paperclip size={15} strokeWidth={2.25} /> PDF hochladen
+          </button>
+          <button
+            id="takePhotoBtn"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent px-3 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-surface"
+            onClick={() => photoInputRef.current?.click()}
+          >
+            <Camera size={15} strokeWidth={2.25} /> Foto aufnehmen
+          </button>
         </div>
         <input
           ref={pdfInputRef} id="pdfInput" type="file" accept="application/pdf" style={{ display: 'none' }}
@@ -406,9 +467,17 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ''; }}
         />
 
-        <div className="sheet-actions">
-          <button className="close" id="closeBtn" onClick={handleClose}>Schließen</button>
-          <button className="save" id="saveBtn" onClick={handleSave}>Speichern</button>
+        <div className="sticky bottom-0 mt-5 flex gap-2.5 border-t border-border bg-surface-2 pt-3.5 pb-0.5">
+          <button
+            className="flex-1 rounded-lg border border-border bg-surface px-3 py-3 text-sm font-bold text-text transition-colors hover:border-primary"
+            id="closeBtn"
+            onClick={handleClose}
+          >Schließen</button>
+          <button
+            className="flex-1 rounded-lg bg-primary px-3 py-3 text-sm font-bold text-on-accent shadow-[0_4px_16px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-primary-strong"
+            id="saveBtn"
+            onClick={handleSave}
+          >Speichern</button>
         </div>
       </div>
     </div>

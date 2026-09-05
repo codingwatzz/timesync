@@ -167,7 +167,7 @@ describe('DetailSheet Beleg-Vorschau', () => {
     );
 
     await screen.findByText('test-beleg.pdf');
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByLabelText('Beleg löschen'));
     expect(store.delete).toHaveBeenCalledWith('receipt:r1');
     expect(openSpy).not.toHaveBeenCalled();
   });
