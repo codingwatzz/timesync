@@ -1,6 +1,64 @@
 {
-  "pass": false,
-  "crashed": true,
-  "error": "page.fill: Error: Element is not an <input>, <textarea> or [contenteditable] element\nCall log:\n  - waiting for locator('#f_pause')\n  -   locator resolved to <select id=\"f_pause\">…</select>\n  -   fill(\"\")\n  - attempting fill action\n  -   waiting for element to be visible, enabled and editable\n\n    at resetDayToDefault (/home/runner/work/timesync/timesync/test/e2e/dayHelpers.js:76:14)\n    at async attemptRun (/home/runner/work/timesync/timesync/test/e2e/runner.js:86:5)\n    at async main (/home/runner/work/timesync/timesync/test/e2e.js:27:5)",
-  "timestamp": "2026-09-04T06:22:28.359Z"
+  "loaded": true,
+  "loggedIn": true,
+  "syncActive": true,
+  "testMonthIsDecember": true,
+  "homeofficeDefaultActive": true,
+  "travelSectionVisible": true,
+  "reiseartWarningVisibleBefore": true,
+  "reiseartWarningVisibleAfter": false,
+  "receiptUploaded": true,
+  "fieldsSurvivedReceiptUpload": true,
+  "immediateAfterSave": {
+    "beschreibung": "E2E-Test 2026-09-05T06:12:49.862Z",
+    "km": "120"
+  },
+  "directReadRightAfterSave": {
+    "found": true,
+    "beschreibung": "E2E-Test 2026-09-05T06:12:49.862Z",
+    "km": "120"
+  },
+  "monthLabelBeforeReload": "Dezember 2032\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2032\n31 Tage",
+  "sameMonthAfterReload": true,
+  "directReadAfterReload": {
+    "found": true,
+    "beschreibung": "E2E-Test 2026-09-05T06:12:49.862Z",
+    "km": "120"
+  },
+  "persistedValues": {
+    "beschreibung": "E2E-Test 2026-09-05T06:12:49.862Z",
+    "start": "08:00",
+    "ende": "17:00",
+    "pause": "30",
+    "km": "120",
+    "transport": "15.50",
+    "hotel": "90",
+    "bewirtung": "12.30",
+    "sonstiges": "7.50",
+    "reiseland": "Österreich",
+    "reiseart": "Abwesenheitstag (>8h)"
+  },
+  "allFieldsPersisted": true,
+  "receiptPersisted": true,
+  "receiptDeleted": true,
+  "exportShowsEntry": true,
+  "exportDownloadTriggered": true,
+  "importWorked": true,
+  "importedDescActual": "Import-Test-Eintrag",
+  "importGroundTruthConfirmed": false,
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788588735599\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[06:12:19] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[06:12:19] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[06:12:19] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788588735599\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[06:13:05] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[06:13:05] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[06:13:05] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()"
+  ],
+  "pageErrors": [],
+  "timestamp": "2026-09-05T06:13:42.022Z",
+  "reiseartWarningVisibleAfterOk": true,
+  "pass": true,
+  "failedChecks": []
 }
