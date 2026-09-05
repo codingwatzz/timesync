@@ -4,7 +4,7 @@
 // eine alte, installierte SW-Version u.U. unbegrenzt aktiv, weil "kein Unterschied" erkannt
 // wird - genau das führte am 02.09.2026 dazu, dass Updates ohne manuelles Cache-Leeren nicht
 // mehr ankamen).
-const CACHE_NAME = 'zeiterfassung-56c05d078583de1c58312b2c498d5dd52cdbff79';
+const CACHE_NAME = 'zeiterfassung-3c5824edc15fd8cac2d6617b6d84d901ae31090f';
 const APP_SHELL = [
   './',
   './index.html',
