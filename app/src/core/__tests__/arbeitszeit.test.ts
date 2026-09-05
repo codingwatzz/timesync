@@ -103,4 +103,31 @@ describe('berechneArbeitszeit', () => {
     expect(b.arbeitstageGesamt).toBe(21); // trotzdem 21 Werktage als "Arbeitstag" gezaehlt
     expect(b.homeofficeQuote).toBe(1); // emptyEntry() default: ho=true
   });
+
+  it('schließt Tage nach dem bisDatum aus (Vorschau: nur bis heute)', () => {
+    // 03.08. und 04.08. sind beide Arbeitstage; bisDatum=03.08. → 04.08. darf nicht einfließen
+    const entries: Record<string, TagesEintrag> = {};
+    for (let d = 1; d <= 31; d++) {
+      entries[`2026-08-${String(d).padStart(2, '0')}`] = eintrag({ typ: 'G' }); // neutral
+    }
+    entries['2026-08-03'] = eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' });
+    entries['2026-08-04'] = eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' });
+
+    const bisDatum = new Date(2026, 7, 3); // 03.08.2026
+    const b = berechneArbeitszeit(2026, 8, entries, bisDatum);
+    expect(b.arbeitstageGesamt).toBe(1); // nur 03.08., nicht 04.08.
+    expect(b.gesamtIst).toBe(504); // nur eine Schicht à 8:24h
+  });
+
+  it('ignoriert bisDatum, wenn es weggelassen wird (Export: ganzer Monat)', () => {
+    const entries: Record<string, TagesEintrag> = {};
+    for (let d = 1; d <= 31; d++) {
+      entries[`2026-08-${String(d).padStart(2, '0')}`] = eintrag({ typ: 'G' });
+    }
+    entries['2026-08-03'] = eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' });
+    entries['2026-08-04'] = eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' });
+
+    const b = berechneArbeitszeit(2026, 8, entries);
+    expect(b.arbeitstageGesamt).toBe(2);
+  });
 });

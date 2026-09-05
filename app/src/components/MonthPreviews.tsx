@@ -41,7 +41,7 @@ export function MonthPreviews({ year, month, entries }: MonthPreviewsProps) {
       </button>
       {offen === 'arbeitszeit' && (
         <div className="preview-panel">
-          <ArbeitszeitPreviewTable berechnung={berechneArbeitszeit(year, month, entries)} />
+          <ArbeitszeitPreviewTable berechnung={berechneArbeitszeit(year, month, entries, new Date())} />
         </div>
       )}
     </div>

@@ -47,8 +47,15 @@ function montagDerWoche(datum: Date): string {
 
 export function berechneArbeitszeit(
   year: number, month: number, entries: Record<string, TagesEintrag>,
+  /** Optional: Nur Tage bis einschließlich diesem Datum berücksichtigen. Für die In-App-
+   * Vorschau des laufenden Monats sinnvoll (zukünftige Tage nicht einrechnen). Für den
+   * .xlsx-Export immer weggelassen (der zeigt immer den ganzen Monat). */
+  bisDatum?: Date,
 ): ArbeitszeitBerechnung {
   const n = daysInMonth(year, month);
+  const grenze = bisDatum
+    ? new Date(bisDatum.getFullYear(), bisDatum.getMonth(), bisDatum.getDate())
+    : null;
   const zeilen: ArbeitszeitZeile[] = [];
 
   let wochenAkkumulator = { ist: 0, soll: 0 };
@@ -61,8 +68,9 @@ export function berechneArbeitszeit(
   let gesamtSoll = 0;
 
   for (let d = 1; d <= n; d++) {
-    const e = entries[dateKey(year, month, d)] ?? emptyEntry(year, month, d);
     const datum = new Date(year, month - 1, d);
+    if (grenze && datum > grenze) break; // ab hier: Zukunft, nicht einrechnen
+    const e = entries[dateKey(year, month, d)] ?? emptyEntry(year, month, d);
     const ist = arbeitszeitMinuten(e);
     const soll = e.typ === 'A' ? SOLL_MINUTEN_PRO_ARBEITSTAG : 0;
     const extra = ist - soll;

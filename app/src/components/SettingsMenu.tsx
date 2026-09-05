@@ -28,10 +28,10 @@ export function SettingsMenu({ mode, log, onImportFile }: SettingsMenuProps) {
           <div className="settings-backdrop" onClick={() => setMenuOpen(false)} />
           <div className="settings-dropdown">
             <button onClick={() => { setMenuOpen(false); importInputRef.current?.click(); }}>
-              ⇪ Importieren
+              Importieren
             </button>
             <button onClick={() => { setMenuOpen(false); setDiagnoseOpen(true); }}>
-              ℹ️ Diagnose
+              Diagnose
             </button>
           </div>
         </>
