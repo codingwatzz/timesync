@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { StorageMode } from '../store/types';
 
 const MODE_LABEL: Record<StorageMode, string> = {
@@ -8,9 +7,17 @@ const MODE_LABEL: Record<StorageMode, string> = {
   'claude-artefakt': 'Claude-Artefakt',
 };
 
-export function DiagnosePanel({ mode, log }: { mode: StorageMode; log: string[] }) {
-  const [open, setOpen] = useState(false);
+interface DiagnosePanelProps {
+  mode: StorageMode;
+  log: string[];
+  open: boolean;
+  onClose: () => void;
+}
 
+/** Zeigt Diagnose-Infos (Speicher-Modus, URL, Log) - seit 04.09.2026 eine reine, von außen
+ * gesteuerte Komponente (kein eigener sichtbarer Auslöse-Button mehr), erreichbar über das
+ * Zahnrad-Menü (SettingsMenu.tsx) statt eines eigenen schwebenden Buttons. */
+export function DiagnosePanel({ mode, log, open, onClose }: DiagnosePanelProps) {
   const content = [
     `Speicher-Modus: ${MODE_LABEL[mode]}`,
     `URL: ${location.href}`,
@@ -20,17 +27,12 @@ export function DiagnosePanel({ mode, log }: { mode: StorageMode; log: string[] 
   ].join('\n');
 
   return (
-    <>
-      <button id="debugBtn" title="Diagnose anzeigen" onClick={() => setOpen(true)}>
-        ℹ️
-      </button>
-      <div id="debugOverlay" className={open ? 'show' : ''}>
-        <div id="debugPanel">
-          <div className="debug-header">Diagnose</div>
-          <pre id="debugContent">{content}</pre>
-          <button id="debugCloseBtn" onClick={() => setOpen(false)}>Schließen</button>
-        </div>
+    <div id="debugOverlay" className={open ? 'show' : ''}>
+      <div id="debugPanel">
+        <div className="debug-header">Diagnose</div>
+        <pre id="debugContent">{content}</pre>
+        <button id="debugCloseBtn" onClick={onClose}>Schließen</button>
       </div>
-    </>
+    </div>
   );
 }

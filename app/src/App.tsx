@@ -8,7 +8,6 @@ import { loadEntry } from './hooks/entryStorage';
 import { MonthView } from './components/MonthView';
 import { DetailSheet } from './components/DetailSheet';
 import { ExportView } from './components/ExportView';
-import { DiagnosePanel } from './components/DiagnosePanel';
 import { Toast } from './components/Toast';
 import { importFromFile } from './lib/exportImport';
 import type { TagesEintrag } from './core/types';
@@ -67,7 +66,7 @@ export default function App() {
     showToast('Importiere…');
     const result = await importFromFile(file, saveEntry);
     if (result.error) {
-      showToast('Import fehlgeschlagen – siehe Diagnose-Button unten rechts');
+      showToast('Import fehlgeschlagen – siehe Diagnose im ⚙-Menü');
     } else {
       // Erst neu laden, DANN die Erfolgsmeldung zeigen - sonst könnte der Nutzer (oder ein
       // Test) auf die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
@@ -91,7 +90,7 @@ export default function App() {
         />
       ) : (
         <MonthView
-          year={year} month={month} entries={entries} syncMode={mode}
+          year={year} month={month} entries={entries} syncMode={mode} log={log}
           onPrevMonth={() => changeMonth(-1)}
           onNextMonth={() => changeMonth(1)}
           onOpenDay={openDay}
@@ -113,7 +112,6 @@ export default function App() {
       )}
 
       <Toast message={toastMessage} />
-      <DiagnosePanel mode={mode} log={log} />
     </div>
   );
 }

@@ -15,10 +15,11 @@ async function login(page) {
     );
   }
 
-  // #debugBtn gehört zur DiagnosePanel, die Teil von <App/> ist und erst NACH erfolgreichem
-  // Login gerendert wird (siehe AuthGate.tsx) - zuverlässiger und schnellerer Indikator als
-  // auf Monatsdaten zu warten, die erst asynchron nachladen.
-  const alreadyPastLogin = await page.locator('#debugBtn').count() > 0;
+  // #settingsBtn (Zahnrad-Menü) gehört zu MonthView, die Teil von <App/> ist und erst NACH
+  // erfolgreichem Login gerendert wird (siehe AuthGate.tsx) - zuverlässiger und schnellerer
+  // Indikator als auf Monatsdaten zu warten, die erst asynchron nachladen. War früher
+  // #debugBtn (eigener Diagnose-Button), der wanderte 04.09.2026 hinter dieses Menü.
+  const alreadyPastLogin = await page.locator('#settingsBtn').count() > 0;
   if (alreadyPastLogin) {
     log('Bereits eingeloggt (Session im Browser-Kontext vorhanden) - kein Login-Formular nötig.');
     return true;
@@ -30,7 +31,7 @@ async function login(page) {
   await page.click('#loginBtn');
 
   try {
-    await page.waitForSelector('#debugBtn', { timeout: 15000 });
+    await page.waitForSelector('#settingsBtn', { timeout: 15000 });
     log('Login erfolgreich.');
     return true;
   } catch {

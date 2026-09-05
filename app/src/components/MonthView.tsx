@@ -1,10 +1,11 @@
-import { useRef } from 'react';
 import { MONATSNAMEN } from '../core/constants';
 import { daysInMonth, fmtEUR } from '../core/formatters';
 import { dateKey, defaultTyp, feiertagName } from '../core/holidays';
 import { tagesKosten } from '../core/entry';
 import { toNumber } from '../core/formatters';
 import { DayRow } from './DayRow';
+import { SettingsMenu } from './SettingsMenu';
+import { MonthPreviews } from './MonthPreviews';
 import { useSwipe } from '../hooks/useSwipe';
 import type { TagesEintrag } from '../core/types';
 import type { StorageMode } from '../store/types';
@@ -21,6 +22,7 @@ interface MonthViewProps {
   month: number;
   entries: Record<string, TagesEintrag>;
   syncMode: StorageMode;
+  log: string[];
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onOpenDay: (key: string) => void;
@@ -29,7 +31,7 @@ interface MonthViewProps {
 }
 
 export function MonthView({
-  year, month, entries, syncMode, onPrevMonth, onNextMonth, onOpenDay, onExport, onImportFile,
+  year, month, entries, syncMode, log, onPrevMonth, onNextMonth, onOpenDay, onExport, onImportFile,
 }: MonthViewProps) {
   const n = daysInMonth(year, month);
   const days = Array.from({ length: n }, (_, i) => i + 1);
@@ -52,7 +54,6 @@ export function MonthView({
   }
 
   const badge = SYNC_BADGE[syncMode];
-  const importInputRef = useRef<HTMLInputElement>(null);
   // Wischen nach links = weiter (nächster Monat), nach rechts = zurück (voriger Monat) -
   // gängige Konvention aus Kalender-/Foto-Apps.
   const swipeHandlers = useSwipe(onNextMonth, onPrevMonth);
@@ -61,8 +62,9 @@ export function MonthView({
     <>
       <header className="top">
         <div className="brand">
+          <SettingsMenu mode={syncMode} log={log} onImportFile={onImportFile} />
           <h1>Zeiterfassung</h1>
-          <span className={badge.className} style={{ marginLeft: 6 }}>{badge.label}</span>
+          <span className={badge.className} style={{ marginLeft: 'auto' }}>{badge.label}</span>
         </div>
         <div className="month-nav">
           <button id="prevM" onClick={onPrevMonth}>‹</button>
@@ -94,24 +96,10 @@ export function MonthView({
             />
           );
         })}
+        <MonthPreviews year={year} month={month} entries={entries} />
       </main>
 
       <div className="fab">
-        <button className="secondary" onClick={() => importInputRef.current?.click()}>
-          ⇪ Importieren
-        </button>
-        <input
-          ref={importInputRef}
-          id="importFileInput"
-          type="file"
-          accept="application/json"
-          style={{ display: 'none' }}
-          onChange={(ev) => {
-            const file = ev.target.files?.[0];
-            if (file) onImportFile(file);
-            ev.target.value = '';
-          }}
-        />
         <button id="exportBtn" onClick={onExport}>Monat exportieren →</button>
       </div>
     </>

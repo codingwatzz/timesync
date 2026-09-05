@@ -75,7 +75,7 @@ async function attemptRun() {
     await shot('01b_after_login.png');
 
     // ---------- 2. Diagnose: Sync-Status ----------
-    // WICHTIG (04.09.2026, nach Einführung des Login-Gates): "#debugBtn sichtbar" (Login
+    // WICHTIG (04.09.2026, nach Einführung des Login-Gates): "#settingsBtn sichtbar" (Login
     // erfolgreich, App gemountet) bedeutet NICHT, dass der Store schon fertig verbunden ist -
     // createStore()s eigener asynchroner Verbindungstest läuft danach noch einmal separat.
     // Direkt nach dem Login gelesen, stand hier gelegentlich noch "wird ermittelt…" statt

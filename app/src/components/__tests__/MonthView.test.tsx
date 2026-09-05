@@ -16,7 +16,7 @@ describe('MonthView Kosten-Summe', () => {
     };
     render(
       <MonthView
-        year={2026} month={8} entries={entries} syncMode="appwrite"
+        year={2026} month={8} entries={entries} syncMode="appwrite" log={[]}
         onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );
@@ -33,7 +33,7 @@ describe('MonthView Kosten-Summe', () => {
     // Kennzahl in der Summary-Strip-Pille ein (Tag 20 im Monat rendert sonst ebenfalls "20").
     const { container } = render(
       <MonthView
-        year={2026} month={8} entries={entries} syncMode="appwrite"
+        year={2026} month={8} entries={entries} syncMode="appwrite" log={[]}
         onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );
@@ -46,7 +46,7 @@ describe('MonthView Kosten-Summe', () => {
     const onPrevMonth = vi.fn();
     render(
       <MonthView
-        year={2026} month={8} entries={{}} syncMode="appwrite"
+        year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
         onPrevMonth={onPrevMonth} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );
@@ -60,7 +60,7 @@ describe('MonthView Kosten-Summe', () => {
     const onNextMonth = vi.fn();
     const { container } = render(
       <MonthView
-        year={2026} month={8} entries={{}} syncMode="appwrite"
+        year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
         onPrevMonth={noop} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );
@@ -74,7 +74,7 @@ describe('MonthView Kosten-Summe', () => {
     const onPrevMonth = vi.fn();
     const { container } = render(
       <MonthView
-        year={2026} month={8} entries={{}} syncMode="appwrite"
+        year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
         onPrevMonth={onPrevMonth} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );
@@ -87,7 +87,7 @@ describe('MonthView Kosten-Summe', () => {
   it('zeigt den Titel "Zeiterfassung" OHNE das frühere "Ledger"-Label daneben', () => {
     render(
       <MonthView
-        year={2026} month={8} entries={{}} syncMode="appwrite"
+        year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
         onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );

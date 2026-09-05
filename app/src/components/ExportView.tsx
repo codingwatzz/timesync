@@ -4,6 +4,7 @@ import { daysInMonth, fmtEUR, istVergangenheit, pad } from '../core/formatters';
 import { dateKey, defaultTyp } from '../core/holidays';
 import { entriesToZeilen, summe } from '../lib/export/exportZeilen';
 import { fehltArbeitszeit } from '../core/entry';
+import { SpesenPreviewTable } from './SpesenPreviewTable';
 import type { TagesEintrag } from '../core/types';
 import type { KVStore } from '../store/types';
 
@@ -71,25 +72,7 @@ export function ExportView({ year, month, entries, store, onBack, showToast }: E
           Arbeitszeit: {fehlendeTage.join(', ')}
         </div>
       )}
-      <table className="export-table">
-        <thead><tr><th>Datum</th><th>Beschreibung</th><th>km</th><th>€</th></tr></thead>
-        <tbody>
-          {zeilen.length === 0 ? (
-            <tr><td colSpan={4} style={{ fontFamily: 'inherit', color: 'var(--grey)' }}>Keine kosten-/reiserelevanten Tage in diesem Monat.</td></tr>
-          ) : (
-            zeilen.map((z) => (
-              <tr key={z.datum.toISOString()}>
-                <td>{String(z.datum.getDate()).padStart(2, '0')}.{String(z.datum.getMonth() + 1).padStart(2, '0')}.</td>
-                <td style={{ fontFamily: 'inherit', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {z.beschreibung || '–'}
-                </td>
-                <td>{z.km || '–'}</td>
-                <td>{fmtEUR(summe(z))}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <SpesenPreviewTable zeilen={zeilen} />
       <div className="export-note" style={{ marginTop: 16 }}>
         Ein Download mit allen vier Dateien dieses Monats: die ausgefüllte Spesenabrechnung
         (.xlsx), alle Belege als ein zusammenhängendes PDF, die Arbeitszeiten-Übersicht
