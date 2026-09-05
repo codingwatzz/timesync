@@ -165,6 +165,27 @@ sichtbaren Appwrite-IDs findet, Daten lesen/löschen ("Any"-Rolle). Das ist jetz
   kritischen Prüfungen bestanden, inklusive Beleg-Upload/-Persistenz/-Löschung (Bucket) und
   Import.
 
+## Zahnrad-Menü + In-App-Vorschau (05.09.2026)
+
+Nutzerwunsch: Import/Diagnose aus der Monatsansicht in ein Menü verschieben, plus eine
+ausklappbare Vorschau auf Spesenabrechnung/Arbeitszeiten OHNE Datei-Erzeugung.
+
+- **Zahnrad ⚙ oben links** (`SettingsMenu.tsx`) statt Drei-Linien-Menü - bewusste Entscheidung,
+  da diese App nur EINE Hauptansicht hat (Kalender), ein Hamburger-Menü würde fälschlich
+  mehrere Seiten suggerieren. Enthält: Importieren, Diagnose. "Monat exportieren" bleibt
+  bewusst ein eigener, gut sichtbarer Button (monatlich gebraucht, im Gegensatz zu den beiden
+  anderen).
+- **`core/arbeitszeit.ts`** (neu): reine Berechnungslogik aus `arbeitszeitExport.ts`
+  herausgelöst - Excel-Export UND die neue In-App-Vorschau nutzen jetzt exakt dieselbe
+  Berechnung (keine zwei Implementierungen, die hätten auseinanderlaufen können).
+- **`MonthPreviews.tsx`**: ausklappbare Akkordeon-Sektion direkt in der Monatsansicht
+  ("Spesenabrechnung-Vorschau" / "Arbeitszeiten-Vorschau") - rein synchrone Berechnung aus den
+  ohnehin geladenen `entries`, kein Store-/Netzwerk-Zugriff, keine Datei wird erzeugt.
+- `DiagnosePanel.tsx` ist jetzt eine von außen gesteuerte Komponente (open/onClose-Props),
+  kein eigener schwebender Auslöse-Button mehr.
+- E2E-Test angepasst: Diagnose ist jetzt hinter `#settingsBtn` → Zahnrad-Menü → "Diagnose"
+  erreichbar, nicht mehr über das inzwischen entfernte `#debugBtn`.
+
 ## Der Monats-Export (fertig, siehe `app/src/lib/export/`)
 
 Button "Monat exportieren" -> Vorschau-Tabelle (kosten-/reiserelevante Tage) -> ein Klick auf
@@ -223,7 +244,7 @@ Appwrite Console widerrufen, die 3 Secrets in GitHub löschen.
 
 ## Testing
 
-- **194 Unit-Tests** (Vitest, 22 Dateien, Stand 04.09.2026 nach Login/Auth + Backup-Export)
+- **225 Unit-Tests** (Vitest, 28 Dateien, Stand 05.09.2026 nach Zahnrad-Menü + Vorschau)
   , lokal in ~20-25 Sek. lauffähig: `cd app && npm run test`. `npm run verify` bündelt
   Test+Lint+Build – IMMER vor einem Push, der einen Live-Zyklus auslöst.
 - **E2E-Test** (Playwright, GitHub Actions) - läuft **NICHT mehr bei jedem Deploy**
