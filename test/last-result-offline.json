@@ -1,12 +1,13 @@
 {
   "onlineLoaded": true,
   "serviceWorkerActive": true,
+  "loggedIn": true,
   "offlineReloadCompleted": true,
   "titleAfterOffline": "Zeiterfassung",
   "hasVisibleContent": true,
   "appRootRendered": true,
   "headerVisible": true,
   "pageErrors": [],
-  "timestamp": "2026-09-04T06:17:38.962Z",
+  "timestamp": "2026-09-05T06:12:21.522Z",
   "pass": true
 }
