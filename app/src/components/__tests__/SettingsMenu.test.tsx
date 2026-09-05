@@ -38,4 +38,19 @@ describe('SettingsMenu', () => {
     fireEvent.click(container.querySelector('.settings-backdrop')!);
     expect(screen.queryByText('Importieren')).not.toBeInTheDocument();
   });
+
+  it('schaltet zwischen Dunkel- und Hell-Modus um (Klasse "light" auf <html>)', () => {
+    localStorage.removeItem('zeiterfassung-theme');
+    document.documentElement.classList.remove('light');
+    render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} />);
+    fireEvent.click(screen.getByTitle('Einstellungen'));
+    expect(screen.getByRole('button', { name: /Heller Modus/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Heller Modus/ }));
+    expect(document.documentElement).toHaveClass('light');
+
+    fireEvent.click(screen.getByTitle('Einstellungen'));
+    expect(screen.getByRole('button', { name: /Dunkler Modus/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Dunkler Modus/ }));
+    expect(document.documentElement).not.toHaveClass('light');
+  });
 });

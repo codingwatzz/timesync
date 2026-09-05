@@ -44,14 +44,14 @@ describe('MonthView Kosten-Summe', () => {
   it('ruft onNextMonth/onPrevMonth beim Klick auf die Navigationspfeile auf', () => {
     const onNextMonth = vi.fn();
     const onPrevMonth = vi.fn();
-    render(
+    const { container } = render(
       <MonthView
         year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
         onPrevMonth={onPrevMonth} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop}
       />,
     );
-    screen.getByText('›').click();
-    screen.getByText('‹').click();
+    fireEvent.click(container.querySelector('#nextM')!);
+    fireEvent.click(container.querySelector('#prevM')!);
     expect(onNextMonth).toHaveBeenCalledOnce();
     expect(onPrevMonth).toHaveBeenCalledOnce();
   });

@@ -32,13 +32,13 @@ describe('DayRow', () => {
   it('zeigt die Reiseart-Warnung bei "vor Ort"-Tag ohne gesetzte Reiseart', () => {
     const entry = { ...emptyEntry(2026, 8, 17), ho: false, typ: 'A' as const, km: '50' };
     render(<DayRow year={2026} month={8} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />);
-    expect(screen.getByText('⚠ Reiseart fehlt')).toBeInTheDocument();
+    expect(screen.getByText('Reiseart fehlt')).toBeInTheDocument();
   });
 
   it('zeigt KEINE Reiseart-Warnung, wenn eine Reiseart gesetzt ist', () => {
     const entry = { ...emptyEntry(2026, 8, 17), ho: false, typ: 'A' as const, km: '50', reiseart: 'Anreisetag' as const };
     render(<DayRow year={2026} month={8} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />);
-    expect(screen.queryByText('⚠ Reiseart fehlt')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reiseart fehlt')).not.toBeInTheDocument();
   });
 
   it('ruft onClick auf, wenn die Zeile angeklickt wird', () => {
@@ -106,7 +106,7 @@ describe('DayRow', () => {
       render(
         <DayRow year={2026} month={9} day={3} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
       );
-      expect(screen.getByText('⚠ Keine Arbeitszeit erfasst')).toBeInTheDocument();
+      expect(screen.getByText('Keine Arbeitszeit erfasst')).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -119,7 +119,7 @@ describe('DayRow', () => {
       render(
         <DayRow year={2026} month={9} day={4} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
       );
-      expect(screen.queryByText('⚠ Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
+      expect(screen.queryByText('Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -133,7 +133,7 @@ describe('DayRow', () => {
       render(
         <DayRow year={2026} month={9} day={3} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
       );
-      expect(screen.queryByText('⚠ Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
+      expect(screen.queryByText('Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -146,7 +146,7 @@ describe('DayRow', () => {
       render(
         <DayRow year={2026} month={8} day={30} entry={undefined} typ="W" feiertag={null} onClick={() => {}} />,
       );
-      expect(screen.queryByText('⚠ Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
+      expect(screen.queryByText('Keine Arbeitszeit erfasst')).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

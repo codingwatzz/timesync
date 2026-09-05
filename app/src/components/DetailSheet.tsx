@@ -251,7 +251,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                 onClick={() => setTyp(t)}
                 className={
                   active
-                    ? `active ${t} rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-on-accent'}`
+                    ? `active ${t} rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-text-on-accent'}`
                     : 'rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-bold text-text-muted transition-colors hover:border-primary hover:text-text'
                 }
               >
@@ -265,7 +265,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           <div className="text-sm font-semibold text-text">Homeoffice</div>
           <div
             id="hoSwitch"
-            className={`relative h-[26px] w-[46px] flex-shrink-0 cursor-pointer rounded-full transition-colors ${entry.ho ? 'on bg-primary' : 'bg-canvas border border-border'}`}
+            className={`relative h-[26px] w-[46px] flex-shrink-0 cursor-pointer rounded-full border border-border transition-colors ${entry.ho ? 'on bg-primary' : 'bg-text-faint/35'}`}
             onClick={() => update('ho', !entry.ho)}
           >
             <div className={`absolute top-0.5 h-[22px] w-[22px] rounded-full border border-border bg-text-on-accent shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition-[left] duration-150 ${entry.ho ? 'left-[22px]' : 'left-0.5'}`} />
@@ -474,7 +474,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             onClick={handleClose}
           >Schließen</button>
           <button
-            className="flex-1 rounded-lg bg-primary px-3 py-3 text-sm font-bold text-on-accent shadow-[0_4px_16px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-primary-strong"
+            className="flex-1 rounded-lg bg-primary px-3 py-3 text-sm font-bold text-text-on-accent shadow-[0_4px_16px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-primary-strong"
             id="saveBtn"
             onClick={handleSave}
           >Speichern</button>
