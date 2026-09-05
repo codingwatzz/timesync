@@ -218,6 +218,30 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
   aktuellen Monat. (05.09.2026: Repro-Skript schrieb in echten 01.09. → Nutzer musste
   manuell aufräumen.)
 
+## Frontend / Design (für nächste Sitzung)
+
+Der Nutzer möchte als nächstes das UI-Design verbessern. Relevante Ausgangslage:
+
+**CSS-Architektur:** Eine einzige Datei `app/src/index.css` (~230 Zeilen), kein CSS-Framework.
+Alle Farben als CSS-Variablen in `:root`:
+```
+--ink: #1c2521         (Text)
+--paper: #f6f3ec       (Hintergrund)
+--card: #ffffff        (Karten/Sheets)
+--line: #dcd6c8        (Trennlinien, Rahmen)
+--teal / --teal-dark   (Primärfarbe Buttons, Tabs)
+--amber / --amber-soft (Warn-/Reise-Akzente)
+--red                  (Fehler, Krank-Tab)
+--grey                 (Beschriftungen, Placeholder)
+--tab-a/w/f/u/k/g      (Tab-Farben je Tagestyp)
+```
+Sämtliche Abstände, Radien und Typografie sind direkte px/em-Werte, keine Tokens.
+
+**Wichtig:** `npm run verify` vor jedem Push (Lint + Build), CSS-Änderungen lösen **keinen
+Deploy** aus – nur Pushes auf Dateien unter `app/**` tun das (und auch nur dann, wenn der
+geänderte Pfad im Deploy-Workflow greift). Reine CSS-Verbesserungen können also direkt
+committet werden, ohne ein aufwändiges E2E-Verifikations-Setup.
+
 ## Offene Punkte / nächste Schritte
 
 1. **`DetailSheet.tsx` (416 Zeilen)** – Formular-UI, AutoSave-Debounce und Beleg-Upload in
