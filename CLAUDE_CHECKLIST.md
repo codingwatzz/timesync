@@ -61,6 +61,13 @@ aus der Contents-Antwort nehmen und stattdessen die Git-Blobs-API verwenden (fun
 bis 100 MB): `GET /repos/<repo>/git/blobs/<sha>` liefert denselben Inhalt zuverlässig
 base64-kodiert.
 
+**UPDATE 2 (06.09.2026, Abend): Actions-Scope-Token erneut bestätigt funktionsfähig.**
+`workflow_dispatch` per direktem API-Call lief erneut sauber durch (HTTP 204, kein
+Temp-Branch-Umweg), Push + E2E-Anstoß + Ergebnisabruf über Contents-API in EINEM
+zusammenhängenden Block (ein `sleep 240` statt mehrfachem Polling). Nach dieser Sitzung
+wurde der Nutzer zur Rotation des im Chat geteilten Tokens geraten (siehe oben) - beim
+nächsten Thread ggf. nachfragen, ob das erledigt ist bzw. ob ein neues Token gilt.
+
 ## 0b. Tool-/Actions-Zeit ist ein echter Kostenfaktor - effizient verifizieren, nicht im Zweifel doppelt
 
 Ein einzelner kleiner, gut verstandener Fix (05.09.2026, CSS `min-width:0`) hat durch ineffiziente
@@ -245,6 +252,29 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   vom Tagestyp - kein echtes Nutzer-Signal. Bei Prüfungen "hat dieser Tag schon echte Daten"
   NIEMALS `ho` alleine werten (führte einmal zu einer fast fehlerhaften Freischalt-Logik,
   vor dem Zeigen selbst gefunden und korrigiert - siehe `DetailSheet.tsx::hatVersteckbareDaten()`).
+- **`<input type="number">` ist NICHT komma-sicher** (deutsche Locale/Tastatur kann ein
+  Komma statt Punkt als Dezimaltrennzeichen liefern, HTML5-Zahleneingaben verlangen aber
+  einen Punkt) - betraf alle Betragsfelder (km/Transport/Hotel/Bewirtung/Sonstiges) in
+  `DetailSheet.tsx`, behoben 06.09.2026 (Abend, UX-Review Punkt 4.2): `type="text"
+  inputMode="decimal"` + zentrale, komma-tolerante `core/formatters.ts::toNumber()`.
+- **Bei Zahl-Parsing-Bugs IMMER projektweit grep'en, nicht nur die offensichtliche Stelle
+  fixen** (Checkliste Abschnitt 2, "Bugfix an einer Stelle -> überall prüfen" - hier
+  besonders wörtlich genommen): die Komma-Unsicherheit von oben steckte NICHT nur in
+  `core/formatters.ts::toNumber()`, sondern in ZWEI weiteren, unabhängigen Parser-Kopien
+  (`lib/export/exportZeilen.ts` eigene `toNumber()`, `lib/export/receiptMerge.ts` eigenes
+  Inline-`parseFloat()`) - letztere wurde erst durch gezieltes `grep -rn "parseFloat\|Number("`
+  über den ganzen `src/`-Baum gefunden, NACH dem ersten "fertig" gefühlten Fix. Bei
+  Betrags-/Zahlen-Feldern künftig immer diesen grep machen, bevor ein Parsing-Fix als
+  vollständig gilt - Duplikate an unerwarteten Stellen (hier: PDF-Merge-Logik) sind der
+  Normalfall, nicht die Ausnahme.
+- **Import schrieb früher sofort und ohne Rückfrage** (`lib/exportImport.ts::importFromFile()`
+  rief `saveEntry()` in einer Schleife auf) - behoben 06.09.2026 (Abend, UX-Review Punkt 4.1):
+  zweistufig, `parseImportFile()` (nur parsen) → `importPlan.ts::buildImportPlan()` (prüft
+  Überschreibungen, schreibt nichts) → `components/ImportConfirmDialog.tsx` (Bestätigung +
+  optionale Sicherheitskopie) → erst dann `applyImportPlan()` schreibt wirklich. Bei
+  künftigen "Datei rein → sofort verarbeiten"-Mustern (Import, Restore o.ä.) immer prüfen,
+  ob ein Schreibvorgang OHNE Vorschau/Bestätigung passiert, bevor er als "funktioniert ja"
+  durchgewunken wird - Funktionieren und Sicherheit sind zwei verschiedene Prüfungen.
 
 ## 4. Parallele Sitzungen
 

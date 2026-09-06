@@ -1,10 +1,10 @@
 # Projekt: Zeiterfassung & Spesenabrechnung
 
-**Stand: 06.09.2026 – Übergabe nach abgeschlossenem UI-Redesign (Tailwind + Indigo & Ocean
-Design-System, alle Screens migriert, 20-Punkte-UX/UI-Audit umgesetzt, Beleg-Upload-Bug
-behoben, 3 Feature-Wünsche umgesetzt). Alle Fakten direkt am frischen Repo/System verifiziert
-(npm run verify lokal, letzter manueller E2E-Lauf `pass: true, failedChecks: []`). Diese
-Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
+**Stand: 06.09.2026 (Abend) – nach abgeschlossenem UX/UI-Review + 4 daraus umgesetzten Fixes
+(Import-Absicherung, komma-sichere Betragsfelder, aria-labels, Ladefeedback). Alle Fakten
+direkt am frischen Repo/System verifiziert (npm run verify lokal: 255 Tests grün, echter
+E2E-Lauf danach: `pass: true, failedChecks: []`). Diese Datei ist die Quelle der Wahrheit –
+nicht der Chatverlauf.**
 
 ## Ziel
 
@@ -14,25 +14,50 @@ Web-App (PWA) zur Erfassung von Arbeitszeiten, Homeoffice-Tagen, Reisekosten und
 **Repo:** https://github.com/codingwatzz/timesync (öffentlich, main-Branch)
 **Nutzer:** Raoul Hübner, sqior medical GmbH
 
-## Für Claude: erster Schritt in DIESEM nächsten Thread
+## Für Claude: erster Schritt im nächsten Thread
 
-Der Nutzer möchte, dass dieser Thread mit einem **neutralen, kritischen UX/UI-Review**
-beginnt – exakt derselbe Bewertungsauftrag wie am Ende der letzten Sitzung, diesmal aber
-gegen den JETZT fertigen Stand (nicht den Zwischenstand von damals). Der volle Prompt-Wortlaut
-(1:1 verwenden, nicht zusammenfassen):
+Der UX/UI-Review-Auftrag von der letzten Übergabe ist **abgearbeitet** - kein offener Auftrag
+mehr für den nächsten Thread. Stattdessen normal mit `CLAUDE_CHECKLIST.md` weiterarbeiten
+(Abschnitt 0: GitHub-Token-Status prüfen, bevor größere Arbeit beginnt) und die "Offene
+Punkte" unten als Ausgangspunkt nehmen, falls der Nutzer nichts Neues vorgibt.
 
-> Du bist ein erfahrenes Team aus Senior UX Designer und Senior UI Designer. Bewerte die
-> vorliegende Software/App ganzheitlich und kritisch aus Sicht professioneller UX- und
-> UI-Gestaltung. Bewerte nicht nach persönlichem Geschmack, sondern anhand etablierter
-> Prinzipien für Usability, User Experience, Interface Design, Accessibility und moderne
-> Softwaregestaltung. [... vollständiger Auftrag: 1. UX – Nutzung und Funktion, 2. UI –
-> Visuelle Gestaltung und Interface Design, 3. UX und UI gemeinsam betrachten, 4. Kritische
-> Bewertung mit Schweregrad-Einstufung (🔴🟠🟡🟢), 5. Abschlussbewertung mit Top-10-Listen
-> und Gesamtbewertung – siehe Chatverlauf der Sitzung vom 06.09.2026 für den exakten,
-> vollständigen Wortlaut, falls dieser hier gekürzt wirkt.]
+## UX/UI-Review 06.09.2026 – Ergebnis + umgesetzte Fixes
 
-Erst DANACH normal mit `CLAUDE_CHECKLIST.md` weiterarbeiten (verbindliche Arbeitsroutine).
-**Falls kein GitHub-Token bekannt ist**: aktiv danach fragen, bevor größere Arbeit beginnt.
+Kritisches Review (Senior-UX/UI-Auftrag) gegen den fertigen Redesign-Stand ergab: Redesign
+insgesamt sehr sauber (durchgängige Focus-Rings, geprüfte Kontraste, 44px-Touch-Targets,
+Bestätigungsdialoge, Auto-Save-Feedback). 6 konkrete Findings, davon 4 auf Nutzerwunsch
+sofort umgesetzt (per Code-Review gefunden, nicht am Live-Build - Sandbox kann
+`*.github.io` nicht erreichen):
+
+1. **🔴 Import ohne Bestätigung** (behoben) - Import lief vorher direkt durch (Datei
+   ausgewählt → sofort geschrieben, `saveEntry` pro Zeile, kein Merge/Preview). Jetzt
+   zweistufig: `lib/exportImport.ts::parseImportFile()` parst nur noch (kein Schreibzugriff),
+   `lib/importPlan.ts::buildImportPlan()` prüft je Tag, ob schon Daten vorliegen (würden
+   überschrieben), `components/ImportConfirmDialog.tsx` zeigt Format-Hinweis + Anzahl
+   Einträge/Zeitraum + Überschreib-Warnung + optionalen "Sicherheitskopie herunterladen"-
+   Button (nur die überschriebenen Tage, aktueller Stand VOR dem Import) - erst nach
+   expliziter Bestätigung schreibt `applyImportPlan()`. `App.tsx` orchestriert das
+   zweistufig (`handleImportFile` parst+baut Plan, `handleConfirmImport` schreibt).
+2. **🟠 Komma-unsichere Betragsfelder** (behoben) - `<input type="number">` ist NICHT
+   komma-sicher (deutsche Locale/Tastatur), UND es gab drei unabhängige, komma-unsichere
+   Zahl-Parser im Projekt (`core/formatters.ts::toNumber()`, eine Kopie in
+   `lib/export/exportZeilen.ts`, eine dritte, unentdeckte in `lib/export/receiptMerge.ts`).
+   Alle auf EINE zentrale `core/formatters.ts::toNumber()` vereinheitlicht, die sowohl „,"
+   als auch „." als Dezimaltrennzeichen akzeptiert (bei beiden Zeichen zählt das SPÄTERE als
+   Dezimaltrennzeichen, z.B. "1.234,56" → 1234.56). Die 5 Betragsfelder (km, Transport,
+   Hotel, Bewirtung, Sonstiges) in `DetailSheet.tsx` sind jetzt `type="text"
+   inputMode="decimal"` statt `type="number"`, mit eigenem Zeichenfilter
+   (`sanitizeAmountInput()`) statt Browser-Validierung, plus Hinweistext im Formular.
+3. **🟠 Fehlende aria-label an Monatswechsel-Buttons** (behoben) - `#prevM`/`#nextM` in
+   `MonthView.tsx` hatten nur ein Icon, keinen zugänglichen Namen.
+4. **🟡 Kein Ladefeedback während Session-Prüfung** (behoben) - `AuthGate.tsx` zeigte bei
+   `status === 'checking'` einen komplett leeren Div, jetzt ein Spinner.
+
+**Bewusst NICHT angefasst (Nutzerentscheidung):**
+- 🟡 Touch-Target-Ausnahme bei Wochenendzeilen in `DayRow.tsx` (reduziertes Padding, unter
+  dem sonst projektweiten 44px-Standard) - lassen.
+- 🟢 Swipe-Geste zur Tagesnavigation überlappt theoretisch mit Textauswahl in der
+  Beschreibung-Textarea - lassen.
 
 ## Architektur
 
@@ -45,7 +70,10 @@ app/src/
   core/                     Reine Logik, 0 DOM-Abhängigkeit. Fast alles hier unit-getestet.
     types.ts                Datenmodell (TagesEintrag, Wochentyp, ...)
     entry.ts                emptyEntry(), arbeitszeitMinuten(), fehltArbeitszeit()
-    formatters.ts           pad(), fmtHHMM(), istVergangenheit(), daysInMonth() u.a.
+    formatters.ts           pad(), fmtHHMM(), istVergangenheit(), daysInMonth(),
+                            toNumber() (seit 06.09.2026 komma-sicher: "," UND "."
+                            als Dezimaltrennzeichen - EINZIGE Zahl-Parser-Implementierung
+                            im Projekt, siehe UX-Review-Kapitel oben), sanitizeAmountInput()
     holidays.ts             Feiertage, defaultTyp(), dateKey()
     vma.ts                  Verpflegungsmehraufwand-Berechnung
     arbeitszeit.ts          berechneArbeitszeit() – gemeinsame Logik für .xlsx-Export UND
@@ -69,12 +97,16 @@ app/src/
     DayRow.tsx              Eine Tages-Zeile inkl. Flags (Homeoffice, Reiseart fehlt,
                             ⚠ Keine Arbeitszeit erfasst für vergangene Arbeitstage). "km"
                             neutral (kein Akzent), "extern" nutzt eigene info-Farbe
-    DetailSheet.tsx         Tages-Detailformular (653 Zeilen – größte Datei, gewachsen durch
-                            3 neue Features 06.09.2026, Refactoring-Empfehlung siehe "Offene
-                            Punkte"). Enthält: Tagestyp-Legende (ⓘ-Popover), Bestätigungs-
-                            dialog bei Tagestyp-Wechsel mit Bestandsdaten, Freischalt-Logik
-                            für Nicht-Arbeitstage (alles außer Sonstiges+Notiz eingeklappt),
-                            Beleg-zu-Feld-Zuordnung (`BelegMeta.feld`)
+    DetailSheet.tsx         Tages-Detailformular (größte Datei, Refactoring-Empfehlung siehe
+                            "Offene Punkte"). Enthält: Tagestyp-Legende (ⓘ-Popover),
+                            Bestätigungsdialog bei Tagestyp-Wechsel mit Bestandsdaten,
+                            Freischalt-Logik für Nicht-Arbeitstage, Beleg-zu-Feld-Zuordnung
+                            (`BelegMeta.feld`). Betragsfelder (km/Transport/Hotel/Bewirtung/
+                            Sonstiges) seit 06.09.2026 `type="text" inputMode="decimal"`
+                            (nicht mehr `type="number"`, siehe UX-Review-Kapitel oben)
+    ImportConfirmDialog.tsx NEU (06.09.2026) - Bestätigungsdialog vor jedem Import: Format-
+                            Hinweis, Anzahl Einträge/Zeitraum, Überschreib-Warnung, optionaler
+                            Sicherheitskopie-Download. Siehe UX-Review-Kapitel oben.
     ExportView.tsx          Export-Vorschau + ZIP-Download-Trigger
     SettingsMenu.tsx        Zahnrad-Menü oben links (Light/Dark-Umschalter, Import, Diagnose)
     MonthPreviews.tsx       Ausklappbare Akkordeon-Vorschau in der Monatsansicht
@@ -109,7 +141,11 @@ app/src/
     pdf.ts                  Foto → platzsparendes Graustufen-PDF
     download.ts             triggerDownload() – gemeinsamer Download-Helfer
     pendingReceiptLinks.ts  Offline-/Unterbrechungs-Resilienz beim Beleg-Upload
-    exportImport.ts         JSON-Import (Backup wiederherstellen)
+    exportImport.ts         parseImportFile() – parst/validiert eine Import-Datei, schreibt
+                            NICHTS (seit 06.09.2026, siehe UX-Review-Kapitel oben)
+    importPlan.ts           NEU (06.09.2026) - buildImportPlan() (prüft Überschreibungen),
+                            downloadPreImportBackup(), applyImportPlan() (schreibt erst nach
+                            Bestätigung im ImportConfirmDialog)
     serviceWorker.ts        PWA-Caching (network-first für den eigenen Origin)
 
 test/
@@ -220,11 +256,12 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
 
 ## Testing
 
-- **241 Unit-Tests** (Vitest, 30 Dateien). `cd app && npm run test`. `npm run verify`
+- **255 Unit-Tests** (Vitest, 34 Dateien). `cd app && npm run test`. `npm run verify`
   bündelt Test+Lint+Build – IMMER vor einem Push, der einen Live-Zyklus auslöst.
 - **E2E-Test** (Playwright, GitHub Actions) – nur täglich 06:00 UTC oder manuell per
-  `workflow_dispatch` (Token mit Actions-Scope vorhanden, direkt auslösbar ohne
-  Temp-Branch-Umweg). Letzter Lauf: 06.09.2026, `pass: true, failedChecks: []`.
+  `workflow_dispatch` (Token mit Actions-Scope bestätigt funktionsfähig, direkt auslösbar
+  ohne Temp-Branch-Umweg - erneut getestet 06.09.2026 Abend, HTTP 204). Letzter Lauf:
+  06.09.2026 Abend (nach Import-/Betragsfeld-Fixes), `pass: true, failedChecks: []`.
   WICHTIG: Cron-Mails gehen an den GitHub-Account, der die cron:-Zeile zuletzt committete.
   Falls die Mails wieder ausbleiben → Nutzer muss die Zeile selbst im Browser-Editor
   anfassen (siehe CLAUDE_CHECKLIST.md, Abschnitt 0b).
@@ -334,9 +371,9 @@ auslösbar, kein Temp-Branch-Umweg mehr nötig, siehe CLAUDE_CHECKLIST.md Abschn
 
 ## Offene Punkte / nächste Schritte
 
-1. **`DetailSheet.tsx` (653 Zeilen)** – Formular-UI, AutoSave-Debounce und Beleg-Upload in
-   einer Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer,
-   aber echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
+1. **`DetailSheet.tsx`** – Formular-UI, AutoSave-Debounce und Beleg-Upload in einer
+   Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer, aber
+   echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
    Formularfeld eingebaut wird**, nie auf Vorrat.
 2. **Kein Restore aus `_Rohdaten-Backup.json`** – nur manuell nutzbar, kein Ein-Klick-Restore.
    Wäre ein sinnvoller, klar abgegrenzter nächster Schritt wenn gewünscht.
@@ -344,6 +381,12 @@ auslösbar, kein Temp-Branch-Umweg mehr nötig, siehe CLAUDE_CHECKLIST.md Abschn
    vom verworfenen automatischen Backup-Anlauf (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
    `GDRIVE_BACKUP_FOLDER_ID`): kein Risiko (rein lesend), aber aufräumen wenn Zeit ist.
 4. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
+5. **GitHub-Token vom 06.09.2026 (Abend)** – wurde im Chat für Push + `workflow_dispatch`
+   verwendet. Nutzer wurde zur Rotation/zum Widerruf geraten (siehe CLAUDE_CHECKLIST.md,
+   Abschnitt 0) - Status beim nächsten Thread ggf. nachfragen, falls relevant.
+6. **`DayRow.tsx`-Touch-Target bei Wochenendzeilen** und **Swipe-/Textauswahl-Überlappung**
+   in `DetailSheet.tsx` (siehe UX-Review-Kapitel oben, Punkte 5/6) – bewusst nicht angefasst,
+   nicht erneut vorschlagen, außer der Nutzer bringt es selbst wieder auf.
 
 ## Was NICHT mehr offen ist
 
@@ -354,17 +397,9 @@ auslösbar, kein Temp-Branch-Umweg mehr nötig, siehe CLAUDE_CHECKLIST.md Abschn
 - In-App-Vorschau (Spesen + Arbeitszeiten) → fertig
 - Beschreibungstext-Overflow-Bug (CSS min-width) → behoben
 - `importWorked`-Flakigkeit → robuster mit Backoff + direktem Appwrite-Read
-- **Beleg-Upload/-Persistieren/-Löschen (06.09.2026)** → wieder grün, per E2E bestätigt
-  (`pass: true, failedChecks: []`). War KEIN systematisches Appwrite-Berechtigungsproblem
-  (Bucket-Permissions + File-Security-Einstellung wurden geprüft, beide korrekt) - der
-  ursprüngliche 401-Verdacht war vermutlich flüchtige Appwrite-Eventual-Consistency. Die
-  echte, verbleibende Ursache war eine fünfte übersehene E2E-Selektor-Regression aus dem
-  UI-Redesign (`.del`-Klasse am Beleg-Löschen-Button entfernt beim Icon-Umbau, ohne gegen
-  `test/e2e/` geprüft zu werden). appwriteStore.ts hat zusätzlich verbessertes Error-Logging
-  bekommen (verschluckte Nicht-404-Fehler beim defensiven Lösch-Versuch vor dem Upload sind
-  jetzt sichtbar).
-- **Beleg-zu-Feld-Zuordnung, Bestätigungsdialog bei Tagestyp-Wechsel, Felder bei
-  Nicht-Arbeitstagen ausblenden (06.09.2026)** → alle drei umgesetzt (Commit `1633559`),
-  per E2E bestätigt (`pass: true`). `BelegMeta.feld` rein informativ, fließt nicht in den
-  Export ein. "Sonstiges €" bewusst von der Ausblend-Logik ausgenommen (bleibt unabhängig
-  vom Tagestyp eingebbar).
+- Beleg-Upload/-Persistieren/-Löschen → fertig, per E2E bestätigt
+- Beleg-zu-Feld-Zuordnung, Bestätigungsdialog bei Tagestyp-Wechsel, Felder bei
+  Nicht-Arbeitstagen ausblenden → fertig
+- **UX/UI-Review 06.09.2026 (Abend) + 4 Fixes** (Import-Bestätigung, komma-sichere
+  Betragsfelder, aria-labels Monatswechsel, Ladefeedback AuthGate) → fertig, siehe eigenes
+  Kapitel oben. Kein offener Review-Auftrag mehr für den nächsten Thread.
