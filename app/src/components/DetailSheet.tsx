@@ -391,7 +391,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
               <input className={inputCls} id="f_km" type="number" placeholder="0" value={entry.km} onChange={(e) => update('km', e.target.value)} />
             </div>
             <div className="mb-3.5 flex-1">
-              <label className={labelCls}>Transport € <span className="font-normal normal-case tracking-normal text-text-faint">(z.B. Zug, Flug, …)</span></label>
+              <label className={labelCls}>Transport € <span className="font-normal normal-case tracking-normal text-text-faint">(Zug, Flug, ...)</span></label>
               <input className={inputCls} id="f_transport" type="number" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', e.target.value)} />
             </div>
           </div>
@@ -407,7 +407,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         </div>
 
         <div className="mb-3.5">
-          <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(z.B. Parken, Taxi, … - unabhängig vom Tagestyp)</span></label>
+          <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(Parken, Taxi, …)</span></label>
           <input className={inputCls} id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
         </div>
 
