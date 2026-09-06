@@ -254,26 +254,6 @@ committet werden, ohne ein aufwändiges E2E-Verifikations-Setup.
    vom verworfenen automatischen Backup-Anlauf (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
    `GDRIVE_BACKUP_FOLDER_ID`): kein Risiko (rein lesend), aber aufräumen wenn Zeit ist.
 4. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
-5. **NEU (05.09.2026, aus UI-Redesign-Feedback zurückgestellt, bewusst als eigene Aufgabe
-   nach Abschluss der Design-Arbeiten):**
-   - **Beleg-zu-Feld-Zuordnung**: Belege sollen künftig einem bestimmten Kostenfeld
-     (Transport/Hotel/Bewirtung/Sonstiges) zugeordnet werden können, nicht nur pauschal dem
-     Tag. Wenn ein Betrag eingetragen, aber kein Beleg zugeordnet ist, soll eine Warnung im
-     Abschnitt "Fahrt & Kosten" erscheinen. **Erfordert Datenmodell-Änderung**
-     (`BelegMeta`/`receiptIds` aktuell nur pro Tag, nicht pro Feld) - nicht nebenbei im
-     Rahmen eines Design-Tasks machen, sondern als eigene Aufgabe mit eigener
-     Datenmodell-Migration planen.
-   - **Bestätigungsdialog bei Tagestyp-Wechsel mit bestehenden Daten**: Wenn bereits
-     Einträge/Belege für einen Tag vorliegen und der Tagestyp von "Arbeit" auf einen anderen
-     Typ geändert wird, soll gefragt werden: "Es liegen bereits Einträge/Belege für diesen
-     Tag vor. Soll Tagestyp wirklich von Arbeitstag auf … geändert werden?"
-   - **Felder bei Nicht-Arbeitstagen (Wochenende/Feiertag/Urlaub/Krank/Gleitfrei) standardmäßig
-     ausgeblendet**, mit Freischalt-Button + sichtbarer Warnung "ACHTUNG! Dies ist kein
-     regulärer Arbeitstag." - verhindert versehentliche Angaben/Belege an eigentlich
-     arbeitsfreien Tagen. **Achtung bei Umsetzung:** "Sonstiges €" bleibt davon ausdrücklich
-     ausgenommen (siehe Architektur-Review, muss unabhängig vom Tagestyp eingebbar bleiben,
-     z.B. Bahncard an einem Wochenendtag) - beim Ausblenden anderer Felder nicht versehentlich
-     mit einschließen.
 
 ## Was NICHT mehr offen ist
 
@@ -293,3 +273,8 @@ committet werden, ohne ein aufwändiges E2E-Verifikations-Setup.
   `test/e2e/` geprüft zu werden). appwriteStore.ts hat zusätzlich verbessertes Error-Logging
   bekommen (verschluckte Nicht-404-Fehler beim defensiven Lösch-Versuch vor dem Upload sind
   jetzt sichtbar).
+- **Beleg-zu-Feld-Zuordnung, Bestätigungsdialog bei Tagestyp-Wechsel, Felder bei
+  Nicht-Arbeitstagen ausblenden (06.09.2026)** → alle drei umgesetzt (Commit `1633559`),
+  per E2E bestätigt (`pass: true`). `BelegMeta.feld` rein informativ, fließt nicht in den
+  Export ein. "Sonstiges €" bewusst von der Ausblend-Logik ausgenommen (bleibt unabhängig
+  vom Tagestyp eingebbar).
