@@ -1,6 +1,79 @@
 {
+  "loaded": true,
+  "loggedIn": true,
+  "syncActive": true,
+  "testMonthIsDecember": true,
+  "homeofficeDefaultActive": true,
+  "travelSectionVisible": true,
+  "reiseartWarningVisibleBefore": true,
+  "reiseartWarningVisibleAfter": false,
+  "receiptUploaded": false,
+  "fieldsSurvivedReceiptUpload": true,
+  "immediateAfterSave": {
+    "beschreibung": "E2E-Test 2026-09-06T11:40:00.551Z",
+    "km": "120"
+  },
+  "directReadRightAfterSave": {
+    "found": true,
+    "beschreibung": "E2E-Test 2026-09-06T11:40:00.551Z",
+    "km": "120"
+  },
+  "monthLabelBeforeReload": "Dezember 2038\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2038\n31 Tage",
+  "sameMonthAfterReload": true,
+  "directReadAfterReload": {
+    "found": true,
+    "beschreibung": "E2E-Test 2026-09-06T11:40:00.551Z",
+    "km": "120"
+  },
+  "persistedValues": {
+    "beschreibung": "E2E-Test 2026-09-06T11:40:00.551Z",
+    "start": "08:00",
+    "ende": "17:00",
+    "pause": "30",
+    "km": "120",
+    "transport": "15.50",
+    "hotel": "90",
+    "bewirtung": "12.30",
+    "sonstiges": "7.50",
+    "reiseland": "Österreich",
+    "reiseart": "Abwesenheitstag (>8h)"
+  },
+  "allFieldsPersisted": true,
+  "receiptPersisted": false,
+  "receiptDeleted": false,
+  "exportShowsEntry": true,
+  "exportDownloadTriggered": true,
+  "importWorked": true,
+  "importedDescActual": "Import-Test-Eintrag",
+  "importGroundTruthConfirmed": false,
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788694737510\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[11:39:02] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[11:39:02] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[11:39:02] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1788694737510\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[11:40:16] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[11:40:17] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[11:40:17] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()"
+  ],
+  "pageErrors": [],
+  "timestamp": "2026-09-06T11:43:09.070Z",
+  "reiseartWarningVisibleAfterOk": true,
   "pass": false,
-  "crashed": true,
-  "error": "locator.innerText: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.label').first()\n\n    at navigateToSafeTestMonth (/home/runner/work/timesync/timesync/test/e2e/navigation.js:20:56)\n    at async attemptRun (/home/runner/work/timesync/timesync/test/e2e/runner.js:95:24)\n    at async main (/home/runner/work/timesync/timesync/test/e2e.js:27:5)",
-  "timestamp": "2026-09-06T06:15:36.323Z"
+  "failedChecks": [
+    "receiptUploaded",
+    "receiptPersisted",
+    "receiptDeleted"
+  ]
 }
