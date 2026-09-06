@@ -244,23 +244,6 @@ committet werden, ohne ein aufwändiges E2E-Verifikations-Setup.
 
 ## Offene Punkte / nächste Schritte
 
-0. **DRINGEND (06.09.2026): Beleg-Upload schlägt live mit HTTP 401 fehl** – per manuell
-   ausgelöstem E2E-Lauf entdeckt (`failedChecks: ["receiptUploaded", "receiptPersisted",
-   "receiptDeleted"]`, 16× 401 in `consoleErrors`, siehe `test/last-result.json` im Commit
-   `8b1fbfe`). **Bestätigt NICHT durch das UI-Redesign verursacht** (`git diff` über
-   `store/`/`entryStorage.ts`/`pdf.ts` im gesamten Redesign-Zeitraum: 0 Zeilen Änderung; Lauf
-   vom 05.09. vor dem Redesign hatte noch `receiptUploaded: true, pass: true`). Bucket-
-   Permissions (`receipts`, ID `6a92dd0f003962ea7128`) wurden geprüft: Rolle "Raoul (User)"
-   hat Create/Read/Update/Delete, "File Security" ist AUS (d.h. Datei-Einzelrechte werden
-   ohnehin ignoriert, nur Bucket-Rechte zählen) - Berechtigungen sehen korrekt aus, Ursache
-   liegt also woanders. Verdächtig: `appwriteStore.ts` Zeile 144-147 (der defensive
-   `storage.deleteFile()`-Aufruf vor jedem Upload) schluckt JEDEN Fehler undifferenziert
-   (kein `isNotFoundError`-Check wie beim `get()` weiter oben) - ein echter 401 dort würde
-   unsichtbar bleiben, bevor `createFile()` überhaupt versucht wird. Genauere Eingrenzung
-   braucht entweder Appwrites eigene Request-Logs oder gezieltes Zusatz-Logging im Code -
-   beides echte Backend-Diagnose, bewusst NICHT im Rahmen der UI-Redesign-Sitzung
-   weiterverfolgt. **Nächster Schritt: eigene, fokussierte Debugging-Sitzung**, idealerweise
-   mit Zugriff auf Appwrite-Request-Logs, bevor blind am Code herumprobiert wird.
 1. **`DetailSheet.tsx` (416 Zeilen)** – Formular-UI, AutoSave-Debounce und Beleg-Upload in
    einer Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer,
    aber echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
@@ -301,3 +284,12 @@ committet werden, ohne ein aufwändiges E2E-Verifikations-Setup.
 - In-App-Vorschau (Spesen + Arbeitszeiten) → fertig
 - Beschreibungstext-Overflow-Bug (CSS min-width) → behoben
 - `importWorked`-Flakigkeit → robuster mit Backoff + direktem Appwrite-Read
+- **Beleg-Upload/-Persistieren/-Löschen (06.09.2026)** → wieder grün, per E2E bestätigt
+  (`pass: true, failedChecks: []`). War KEIN systematisches Appwrite-Berechtigungsproblem
+  (Bucket-Permissions + File-Security-Einstellung wurden geprüft, beide korrekt) - der
+  ursprüngliche 401-Verdacht war vermutlich flüchtige Appwrite-Eventual-Consistency. Die
+  echte, verbleibende Ursache war eine fünfte übersehene E2E-Selektor-Regression aus dem
+  UI-Redesign (`.del`-Klasse am Beleg-Löschen-Button entfernt beim Icon-Umbau, ohne gegen
+  `test/e2e/` geprüft zu werden). appwriteStore.ts hat zusätzlich verbessertes Error-Logging
+  bekommen (verschluckte Nicht-404-Fehler beim defensiven Lösch-Versuch vor dem Upload sind
+  jetzt sichtbar).
