@@ -40,6 +40,8 @@ export interface TagesEintrag {
   receiptIds: string[];
 }
 
+export type BelegFeld = '' | 'transport' | 'hotel' | 'bewirtung' | 'sonstiges';
+
 /** Metadaten zu einem hochgeladenen Beleg (PDF). Das eigentliche PDF liegt im Storage-Backend. */
 export interface BelegMeta {
   id: string;
@@ -47,5 +49,9 @@ export interface BelegMeta {
   mime: string;
   createdAt: number;
   date: string; // YYYY-MM-DD, zu welchem Tag der Beleg gehört
+  // Welchem Kostenfeld dieser Beleg zugeordnet ist (Transport/Hotel/Bewirtung/Sonstiges) -
+  // '' bedeutet "keinem bestimmten Feld zugeordnet". Rein optional/informativ, beeinflusst
+  // nicht den Export - dient nur der Warnung "Betrag ohne Beleg" in der Tagesansicht.
+  feld?: BelegFeld;
   dataUrl?: string | null; // wird nur bei Bedarf nachgeladen (kann groß sein)
 }

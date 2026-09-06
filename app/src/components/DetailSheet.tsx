@@ -9,8 +9,8 @@ import { fileToDataURL, photoToPdf } from '../lib/pdf';
 import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
 import { useSwipe } from '../hooks/useSwipe';
 import { useSwipeDown } from '../hooks/useSwipeDown';
-import { Paperclip, Camera, FileText, X, Plus, AlertTriangle, Info } from 'lucide-react';
-import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
+import { Paperclip, Camera, FileText, X, Plus, AlertTriangle, Info, ShieldAlert } from 'lucide-react';
+import type { TagesEintrag, Wochentyp, BelegMeta, BelegFeld } from '../core/types';
 
 // Kurzform-Labels nur für die Dropdown-ANZEIGE (Werte selbst bleiben unverändert, siehe
 // core/constants.ts::REISEARTEN - die Exportlogik matcht auf die vollen Werte). Grund:
@@ -24,6 +24,34 @@ const REISEART_LABEL: Record<string, string> = {
   'Abwesenheitstag (>8h)': 'Abwesend (>8h)',
   'Abwesenheitstag (24h)': 'Abwesend (24h)',
 };
+
+const BELEG_FELD_LABEL: Record<BelegFeld, string> = {
+  '': '– kein Feld –',
+  transport: 'Transport',
+  hotel: 'Hotel',
+  bewirtung: 'Bewirtung',
+  sonstiges: 'Sonstiges',
+};
+
+/** Kostenfelder, die einem Beleg zuordenbar sind (Sonstiges bewusst mit dabei, obwohl es
+ * außerhalb des "Fahrt & Kosten"-Blocks steht - siehe UX-Audit-Folgeauftrag 06.09.2026). */
+const BELEG_ZUORDENBARE_FELDER = ['transport', 'hotel', 'bewirtung', 'sonstiges'] as const;
+
+/** Prüft, ob für einen Tag bereits Daten vorliegen, die bei "kein Arbeitstag" normalerweise
+ * ausgeblendet würden (Zeiten/Fahrt&Kosten/Verpflegung/Belege - NICHT Sonstiges oder
+ * Beschreibung, die bleiben ohnehin immer sichtbar). "ho" bewusst NICHT geprüft - ist laut
+ * core/entry.ts::emptyEntry() für JEDEN Tag standardmäßig true, kein echtes Nutzer-Signal.
+ * Wird für zwei Zwecke genutzt:
+ * 1) Sheet startet beim Öffnen bereits "freigeschaltet", wenn solche Daten schon existieren
+ *    (damit nichts Bestehendes unerwartet versteckt wird).
+ * 2) Bestätigungsdialog beim Wechsel weg von "Arbeit" nur zeigen, wenn wirklich etwas zu
+ *    verlieren/übersehen wäre. */
+function hatVersteckbareDaten(e: TagesEintrag): boolean {
+  return Boolean(
+    e.start || e.ende || e.start2 || e.ende2 || e.km || e.transport || e.hotel
+    || e.bewirtung || e.reiseart || e.fr || e.mi || e.ab || e.receiptIds.length > 0,
+  );
+}
 
 // ---------------------------------------------------------------------
 // Styling-Konstanten (Tailwind, Design-System "Slate & Teal", dark-first).
@@ -65,6 +93,14 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     Boolean(initialEntry.start2 || initialEntry.ende2 || initialEntry.pause2),
   );
   const [legendeOffen, setLegendeOffen] = useState(false);
+  // Bei Nicht-Arbeitstagen (W/F/U/K/G) sind Zeiten/Homeoffice/Fahrt&Kosten/Verpflegung/Belege
+  // per default ausgeblendet (siehe hatVersteckbareDaten-Kommentar oben) - startet aber schon
+  // "freigeschaltet", falls für diesen Tag bereits solche Daten vorliegen (nichts Bestehendes
+  // unerwartet verstecken).
+  const [freigeschaltet, setFreigeschaltet] = useState(() => hatVersteckbareDaten(initialEntry));
+  // Bestätigungsdialog beim Wechsel von "Arbeit" auf einen anderen Tagestyp, wenn schon Daten
+  // vorliegen - hält den ZIEL-Tagestyp, bis der Nutzer bestätigt oder abbricht.
+  const [pendingTypWechsel, setPendingTypWechsel] = useState<Wochentyp | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,7 +141,8 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   const [y, m, d] = dateKey.split('-').map(Number);
   const dow = WOCHENTAGE[new Date(y, m - 1, d).getDay()];
   const feiertag = feiertagName(y, m, d);
-  const showTravel = entry.typ === 'A' && !entry.ho;
+  const showTravel = (entry.typ === 'A' || freigeschaltet) && !entry.ho;
+  const zeigeVersteckteFelder = entry.typ === 'A' || freigeschaltet;
 
   // Beleg-Metadaten laden, sobald sich die Beleg-IDs ändern (z.B. nach Upload/Löschen)
   useEffect(() => {
@@ -131,6 +168,26 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   function setTyp(typ: Wochentyp) {
     update('typ', typ);
     update('typManuell', true);
+  }
+
+  /** Wie setTyp(), aber fragt erst nach, wenn von "Arbeit" auf einen anderen Tagestyp
+   * gewechselt wird UND für den Tag schon Zeiten/Kosten/Belege vorliegen - siehe
+   * hatVersteckbareDaten(). Bestätigt der Nutzer, bleiben die Felder automatisch sichtbar
+   * (freigeschaltet), statt dass er direkt danach nochmal extra entsperren müsste. */
+  function requestTypChange(t: Wochentyp) {
+    if (entry.typ === 'A' && t !== 'A' && hatVersteckbareDaten(entry)) {
+      setPendingTypWechsel(t);
+      return;
+    }
+    setTyp(t);
+  }
+
+  function confirmTypWechsel() {
+    if (pendingTypWechsel) {
+      setTyp(pendingTypWechsel);
+      setFreigeschaltet(true);
+    }
+    setPendingTypWechsel(null);
   }
 
   async function handleSave() {
@@ -237,11 +294,60 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     update(field, !entry[field]);
   }
 
+  // Für welche Kostenfelder ist ein Betrag > 0 eingetragen, aber KEIN Beleg mit passender
+  // Zuordnung vorhanden? Rein informativ (siehe BelegMeta.feld-Kommentar), beeinflusst den
+  // Export nicht.
+  const belegFehltFuer = BELEG_ZUORDENBARE_FELDER.filter((feldName) => {
+    const val = parseFloat(String(entry[feldName]).replace(',', '.'));
+    if (!val || val <= 0) return false;
+    return !receipts.some((r) => r.feld === feldName);
+  });
+
+  /** Ordnet einen Beleg nachträglich einem Kostenfeld zu (oder entfernt die Zuordnung, '').
+   * Kann sowohl direkt nach dem Hochladen als auch später jederzeit genutzt werden - dieselbe
+   * Auswahl an jedem Beleg in der Liste. */
+  async function handleSetReceiptFeld(rid: string, feld: BelegFeld) {
+    if (!store) return;
+    const current = receipts.find((r) => r.id === rid);
+    if (!current) return;
+    const updated = { ...current, feld };
+    setReceipts((prev) => prev.map((r) => (r.id === rid ? updated : r)));
+    await saveReceipt(store, rid, updated);
+  }
+
   return (
     <div
       className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
+      {pendingTypWechsel && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-[360px] rounded-2xl bg-surface-2 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+            <div className="mb-3 flex items-center gap-2 text-warning">
+              <ShieldAlert size={20} strokeWidth={2.25} />
+              <span className="text-[15px] font-bold text-text">Tagestyp wirklich ändern?</span>
+            </div>
+            <p className="mb-4 text-sm leading-relaxed text-text-muted">
+              Es liegen bereits Einträge/Belege für diesen Tag vor. Soll der Tagestyp wirklich
+              von Arbeitstag auf „{TYP_LABEL[pendingTypWechsel]}" geändert werden?
+            </p>
+            <div className="flex gap-2.5">
+              <button
+                className="min-h-11 flex-1 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm font-bold text-text transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                onClick={() => setPendingTypWechsel(null)}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="min-h-11 flex-1 rounded-lg bg-warning px-3 py-2.5 text-sm font-bold text-canvas transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-text focus-visible:outline-none"
+                onClick={confirmTypWechsel}
+              >
+                Ja, ändern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className="sheet mx-auto max-h-[92vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl
           bg-surface-2 px-5 pb-8 pt-1.5 text-text shadow-[0_-12px_40px_-8px_rgba(99,102,241,0.18)]
@@ -284,7 +390,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
               <button
                 key={t}
                 data-t={t}
-                onClick={() => setTyp(t)}
+                onClick={() => requestTypChange(t)}
                 className={
                   active
                     ? `active ${t} flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-transparent px-3 text-sm font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-text-on-accent'}`
@@ -297,79 +403,104 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           })}
         </div>
 
-        <div
-          className="mt-3.5 flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-          role="switch"
-          aria-checked={entry.ho}
-          aria-label="Homeoffice"
-          tabIndex={0}
-          onClick={() => update('ho', !entry.ho)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); update('ho', !entry.ho); } }}
-        >
-          <div className="text-sm font-semibold text-text">Homeoffice</div>
-          <div
-            id="hoSwitch"
-            className={`relative h-[26px] w-[46px] flex-shrink-0 rounded-full border border-border transition-colors ${entry.ho ? 'on bg-primary' : 'bg-text-faint/35'}`}
-          >
-            <div className={`absolute top-0.5 h-[22px] w-[22px] rounded-full border border-border bg-text-on-accent shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition-[left] duration-150 ${entry.ho ? 'left-[22px]' : 'left-0.5'}`} />
+        {entry.typ !== 'A' && !freigeschaltet && (
+          <div className="mt-3.5 rounded-lg border border-border bg-surface px-3 py-3">
+            <div className="mb-2 text-sm text-text-muted">
+              Für „{TYP_LABEL[entry.typ]}" sind normalerweise keine Zeiten, Fahrt- oder
+              Verpflegungsangaben nötig.
+            </div>
+            <button
+              className="min-h-11 w-full rounded-lg border border-dashed border-border bg-transparent px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              onClick={() => setFreigeschaltet(true)}
+            >
+              Felder trotzdem bearbeiten
+            </button>
           </div>
-        </div>
+        )}
+        {entry.typ !== 'A' && freigeschaltet && (
+          <div className="mt-3.5 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2.5 text-xs font-semibold text-warning">
+            <ShieldAlert size={15} className="flex-shrink-0" strokeWidth={2.25} />
+            ACHTUNG! Dies ist kein regulärer Arbeitstag.
+          </div>
+        )}
 
-        <div className={`${sectionTitleCls} flex items-center justify-between`}>
-          <span>Zeiten</span>
-          <span className="arbeitszeit-badge rounded-full bg-primary-soft px-2.5 py-0.5 font-mono text-[13px] font-bold text-primary">
-            {fmtHHMM(arbeitszeitMinuten(entry))}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1"><label className={labelCls}>Start</label>
-            <input className={inputCls} id="f_start" type="time" lang="de-DE" value={entry.start} onChange={(e) => update('start', e.target.value)} />
-          </div>
-          <div className="flex-1"><label className={labelCls}>Ende</label>
-            <input className={inputCls} id="f_ende" type="time" lang="de-DE" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
-          </div>
-          <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
-            <select className={inputCls} id="f_pause" value={entry.pause || '0'} onChange={(e) => update('pause', e.target.value)}>
-              {pauseOptionsFor(entry.pause).map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {zweiteSchichtOffen ? (
+        {zeigeVersteckteFelder && (
           <>
-            <div className="mb-2 mt-3.5 border-t border-dashed border-border pt-2.5 text-[10px] font-bold uppercase tracking-wide text-primary">2. Schicht</div>
+            <div
+              className="mt-3.5 flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              role="switch"
+              aria-checked={entry.ho}
+              aria-label="Homeoffice"
+              tabIndex={0}
+              onClick={() => update('ho', !entry.ho)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); update('ho', !entry.ho); } }}
+            >
+              <div className="text-sm font-semibold text-text">Homeoffice</div>
+              <div
+                id="hoSwitch"
+                className={`relative h-[26px] w-[46px] flex-shrink-0 rounded-full border border-border transition-colors ${entry.ho ? 'on bg-primary' : 'bg-text-faint/35'}`}
+              >
+                <div className={`absolute top-0.5 h-[22px] w-[22px] rounded-full border border-border bg-text-on-accent shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition-[left] duration-150 ${entry.ho ? 'left-[22px]' : 'left-0.5'}`} />
+              </div>
+            </div>
+
+            <div className={`${sectionTitleCls} flex items-center justify-between`}>
+              <span>Zeiten</span>
+              <span className="arbeitszeit-badge rounded-full bg-primary-soft px-2.5 py-0.5 font-mono text-[13px] font-bold text-primary">
+                {fmtHHMM(arbeitszeitMinuten(entry))}
+              </span>
+            </div>
             <div className="flex gap-2">
               <div className="flex-1"><label className={labelCls}>Start</label>
-                <input className={inputCls} id="f_start2" type="time" lang="de-DE" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
+                <input className={inputCls} id="f_start" type="time" lang="de-DE" value={entry.start} onChange={(e) => update('start', e.target.value)} />
               </div>
               <div className="flex-1"><label className={labelCls}>Ende</label>
-                <input className={inputCls} id="f_ende2" type="time" lang="de-DE" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
+                <input className={inputCls} id="f_ende" type="time" lang="de-DE" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
               </div>
               <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
-                <select className={inputCls} id="f_pause2" value={entry.pause2 || '0'} onChange={(e) => update('pause2', e.target.value)}>
-                  {pauseOptionsFor(entry.pause2).map((m) => <option key={m} value={m}>{m}</option>)}
+                <select className={inputCls} id="f_pause" value={entry.pause || '0'} onChange={(e) => update('pause', e.target.value)}>
+                  {pauseOptionsFor(entry.pause).map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
             </div>
-            <button
-              id="removeSecondShiftBtn"
-              className={`${secondaryBtnCls} flex items-center justify-center gap-1.5`}
-              onClick={() => {
-                update('start2', ''); update('ende2', ''); update('pause2', '');
-                setZweiteSchichtOffen(false);
-              }}
-            >
-              <X size={14} strokeWidth={2.25} /> Zweite Schicht entfernen
-            </button>
+
+            {zweiteSchichtOffen ? (
+              <>
+                <div className="mb-2 mt-3.5 border-t border-dashed border-border pt-2.5 text-[10px] font-bold uppercase tracking-wide text-primary">2. Schicht</div>
+                <div className="flex gap-2">
+                  <div className="flex-1"><label className={labelCls}>Start</label>
+                    <input className={inputCls} id="f_start2" type="time" lang="de-DE" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
+                  </div>
+                  <div className="flex-1"><label className={labelCls}>Ende</label>
+                    <input className={inputCls} id="f_ende2" type="time" lang="de-DE" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
+                  </div>
+                  <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
+                    <select className={inputCls} id="f_pause2" value={entry.pause2 || '0'} onChange={(e) => update('pause2', e.target.value)}>
+                      {pauseOptionsFor(entry.pause2).map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button
+                  id="removeSecondShiftBtn"
+                  className={`${secondaryBtnCls} flex items-center justify-center gap-1.5`}
+                  onClick={() => {
+                    update('start2', ''); update('ende2', ''); update('pause2', '');
+                    setZweiteSchichtOffen(false);
+                  }}
+                >
+                  <X size={14} strokeWidth={2.25} /> Zweite Schicht entfernen
+                </button>
+              </>
+            ) : (
+              <button
+                id="addSecondShiftBtn"
+                className={`${secondaryBtnCls} mt-3.5 flex items-center justify-center gap-1.5`}
+                onClick={() => setZweiteSchichtOffen(true)}
+              >
+                <Plus size={14} strokeWidth={2.25} /> Zweite Schicht (z. B. abends nochmal gearbeitet)
+              </button>
+            )}
           </>
-        ) : (
-          <button
-            id="addSecondShiftBtn"
-            className={`${secondaryBtnCls} mt-3.5 flex items-center justify-center gap-1.5`}
-            onClick={() => setZweiteSchichtOffen(true)}
-          >
-            <Plus size={14} strokeWidth={2.25} /> Zweite Schicht (z. B. abends nochmal gearbeitet)
-          </button>
         )}
 
         <div className="mb-3.5">
@@ -383,6 +514,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           />
         </div>
 
+        {zeigeVersteckteFelder && (
         <div id="travelSection" style={{ display: showTravel ? '' : 'none' }}>
           <div className={sectionTitleCls}>Fahrt &amp; Kosten</div>
           <div className="flex gap-2.5">
@@ -405,12 +537,21 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             </div>
           </div>
         </div>
+        )}
 
         <div className="mb-3.5">
           <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(Parken, Taxi, …)</span></label>
           <input className={inputCls} id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
         </div>
 
+        {belegFehltFuer.length > 0 && (
+          <div className="mb-3.5 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2.5 text-xs font-semibold text-warning">
+            <AlertTriangle size={15} className="flex-shrink-0" strokeWidth={2.25} />
+            Kein Beleg zugeordnet für: {belegFehltFuer.map((f) => BELEG_FELD_LABEL[f]).join(', ')}
+          </div>
+        )}
+
+        {zeigeVersteckteFelder && (
         <div style={{ display: showTravel ? '' : 'none' }}>
           <div className={sectionTitleCls}>Verpflegungsmehraufwand</div>
           {!entry.reiseart && (
@@ -457,7 +598,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             </div>
           </div>
         </div>
+        )}
 
+        {zeigeVersteckteFelder && (
+        <>
         <div className={sectionTitleCls}>Belege</div>
         <div className="mb-2.5 flex flex-col gap-2">
           {receipts.map((r) => (
@@ -476,7 +620,19 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] text-text">{r.name}</div>
-                <div className="text-[10px] text-text-muted">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <div className="text-[10px] text-text-muted">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
+                  <select
+                    className="rounded border border-border bg-canvas px-1.5 py-1 text-[10px] font-semibold text-text-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    value={r.feld || ''}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { e.stopPropagation(); handleSetReceiptFeld(r.id, e.target.value as BelegFeld); }}
+                  >
+                    {(Object.keys(BELEG_FELD_LABEL) as BelegFeld[]).map((f) => (
+                      <option key={f} value={f}>{BELEG_FELD_LABEL[f]}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <button
                 className="del flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded text-danger focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
@@ -513,6 +669,8 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           ref={photoInputRef} id="photoInput" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ''; }}
         />
+        </>
+        )}
 
         <div className="sticky bottom-0 mt-5 flex gap-2.5 border-t border-border bg-surface-2 pt-3.5 pb-0.5">
           <button
