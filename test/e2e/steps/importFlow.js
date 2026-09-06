@@ -37,6 +37,11 @@ async function checkImportFlow(page, dayRows, { testYear, testImportPath }) {
   fs.writeFileSync(testImportPath, JSON.stringify(importPayload));
 
   await page.setInputFiles('#importFileInput', testImportPath);
+  // Seit dem UX-Review vom 06.09.2026 (Punkt 4.1) schreibt eine ausgewählte Datei NICHT mehr
+  // sofort - erst muss der Bestätigungsdialog (Anzahl Einträge + Überschreib-Warnung) bestätigt
+  // werden, siehe components/ImportConfirmDialog.tsx.
+  await page.waitForSelector('#importConfirmDialog', { timeout: 5000 });
+  await page.click('#importConfirmBtn');
   await page.waitForFunction(
     () => document.getElementById('toast')?.textContent?.includes('importiert'),
     undefined,

@@ -46,10 +46,41 @@ export function fmtEUR(n: number | string | undefined | null): string {
   return (cents / 100).toFixed(2).replace('.', ',');
 }
 
-/** Wandelt einen beliebigen numerischen String/Wert sicher in eine Zahl, Fallback 0. */
+/**
+ * Wandelt einen beliebigen numerischen String/Wert sicher in eine Zahl um, Fallback 0.
+ * Akzeptiert sowohl "." als auch "," als Dezimaltrennzeichen (z.B. "12,50" und "12.50"
+ * ergeben beide 12.5) - wichtig für Betrags-/km-Felder, die für deutsche Nutzer:innen
+ * bewusst BEIDE Schreibweisen zulassen (siehe UX-Review 06.09.2026, Punkt 4.2:
+ * <input type="number"> ist NICHT komma-sicher, plain Number()/parseFloat() vorher auch
+ * nicht - eine Eingabe wie "45,50" wurde dadurch lautlos zu 0 bzw. zu 45, ohne jede
+ * Fehlermeldung). Enthält die Eingabe BEIDE Zeichen (z.B. "1.234,56"), gilt das SPÄTERE
+ * Zeichen als Dezimaltrennzeichen, das frühere wird als Tausendertrennzeichen entfernt.
+ */
 export function toNumber(v: string | number | undefined | null): number {
-  const n = Number(v);
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (v === undefined || v === null) return 0;
+  let s = String(v).trim();
+  if (!s) return 0;
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  if (lastComma !== -1 && lastDot !== -1) {
+    s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (lastComma !== -1) {
+    s = s.replace(',', '.');
+  }
+  const n = parseFloat(s);
   return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Filtert Tastatur-/Paste-Eingaben für Betrags-/km-Textfelder auf plausible Zeichen (Ziffern,
+ * Komma, Punkt) - Betragsfelder sind bewusst KEIN <input type="number"> mehr (siehe toNumber-
+ * Kommentar oben), daher übernimmt diese Funktion die Rolle, die der Browser bei type="number"
+ * vorher automatisch übernommen hat (kein Buchstabe etc. im Feld), ohne dabei ein Komma
+ * abzulehnen.
+ */
+export function sanitizeAmountInput(raw: string): string {
+  return raw.replace(/[^0-9.,]/g, '');
 }
 
 /**

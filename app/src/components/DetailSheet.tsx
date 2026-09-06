@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
-import { pad, pauseOptionsFor, fmtHHMM } from '../core/formatters';
+import { pad, pauseOptionsFor, fmtHHMM, toNumber, sanitizeAmountInput } from '../core/formatters';
 import { arbeitszeitMinuten } from '../core/entry';
 import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
@@ -298,7 +298,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   // Zuordnung vorhanden? Rein informativ (siehe BelegMeta.feld-Kommentar), beeinflusst den
   // Export nicht.
   const belegFehltFuer = BELEG_ZUORDENBARE_FELDER.filter((feldName) => {
-    const val = parseFloat(String(entry[feldName]).replace(',', '.'));
+    const val = toNumber(entry[feldName]);
     if (!val || val <= 0) return false;
     return !receipts.some((r) => r.feld === feldName);
   });
@@ -520,20 +520,20 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           <div className="flex gap-2.5">
             <div className="mb-3.5 flex-1">
               <label className={labelCls}>Gefahrene km <span className="font-normal normal-case tracking-normal text-text-faint">(priv. PKW)</span></label>
-              <input className={inputCls} id="f_km" type="number" placeholder="0" value={entry.km} onChange={(e) => update('km', e.target.value)} />
+              <input className={inputCls} id="f_km" type="text" inputMode="decimal" placeholder="0" value={entry.km} onChange={(e) => update('km', sanitizeAmountInput(e.target.value))} />
             </div>
             <div className="mb-3.5 flex-1">
               <label className={labelCls}>Transport € <span className="font-normal normal-case tracking-normal text-text-faint">(Zug, Flug, ...)</span></label>
-              <input className={inputCls} id="f_transport" type="number" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', e.target.value)} />
+              <input className={inputCls} id="f_transport" type="text" inputMode="decimal" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', sanitizeAmountInput(e.target.value))} />
             </div>
           </div>
           <div className="flex gap-2.5">
             <div className="mb-3.5 flex-1"><label className={labelCls}>Hotel €</label>
-              <input className={inputCls} id="f_hotel" type="number" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', e.target.value)} />
+              <input className={inputCls} id="f_hotel" type="text" inputMode="decimal" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', sanitizeAmountInput(e.target.value))} />
             </div>
             <div className="mb-3.5 flex-1">
               <label className={labelCls}>Bewirtung €</label>
-              <input className={inputCls} id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
+              <input className={inputCls} id="f_bewirtung" type="text" inputMode="decimal" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', sanitizeAmountInput(e.target.value))} />
             </div>
           </div>
         </div>
@@ -541,7 +541,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
         <div className="mb-3.5">
           <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(Parken, Taxi, …)</span></label>
-          <input className={inputCls} id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
+          <input className={inputCls} id="f_sonstiges" type="text" inputMode="decimal" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', sanitizeAmountInput(e.target.value))} />
+        </div>
+        <div className="mb-3.5 -mt-2.5 text-[11px] text-text-faint">
+          Beträge akzeptieren „,“ oder „.“ als Trennzeichen zwischen Euro und Cent.
         </div>
 
         {belegFehltFuer.length > 0 && (

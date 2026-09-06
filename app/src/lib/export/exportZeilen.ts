@@ -6,17 +6,17 @@
 import type { TagesEintrag, Reiseart, Reiseland } from '../../core/types';
 import { verpflegungsmehraufwand } from '../../core/vma';
 import { dateKey } from '../../core/holidays';
-import { daysInMonth } from '../../core/formatters';
+import { daysInMonth, toNumber } from '../../core/formatters';
 
 // Rein interne App-Markierung, kein Wert aus der echten Vorlage - muss beim Export wie
 // leer/kein Anspruch behandelt werden (siehe core/vma.ts).
 const INTERNE_MARKIERUNG_REISEART = 'Abwesenheitstag (<8h)';
 
-function toNumber(v: string | undefined): number {
-  if (!v) return 0;
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-}
+// Eigene toNumber()-Kopie ENTFERNT (06.09.2026, UX-Review Punkt 4.2) - nutzte parseFloat()
+// ohne Komma-Unterstützung, unabhängig von core/formatters.ts::toNumber(). Zwei verschiedene
+// Zahl-Parser für dieselben Felder waren die eigentliche Ursache des Komma-Problems (eine
+// Eingabe wie "45,50" hätte hier lautlos zu "45" statt "45,50" geführt). Jetzt EIN zentraler,
+// komma-sicherer Parser für die ganze App.
 
 export interface ExportZeile {
   datum: Date;

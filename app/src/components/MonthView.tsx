@@ -87,6 +87,7 @@ export function MonthView({
         <div className="mt-3.5 flex items-center justify-between">
           <button
             id="prevM"
+            aria-label="Vorheriger Monat"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             onClick={onPrevMonth}
           >
@@ -98,6 +99,7 @@ export function MonthView({
           </div>
           <button
             id="nextM"
+            aria-label="Nächster Monat"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             onClick={onNextMonth}
           >

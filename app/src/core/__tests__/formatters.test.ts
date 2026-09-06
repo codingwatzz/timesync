@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad, daysInMonth, fmtEUR, toNumber, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, kontraststreckung, estimateBase64Bytes, fmtHHMM, istVergangenheit } from '../formatters';
+import { pad, daysInMonth, fmtEUR, toNumber, sanitizeAmountInput, pauseOptionsFor, PAUSE_MINUTEN_SCHRITTE, rgbToGray, kontraststreckung, estimateBase64Bytes, fmtHHMM, istVergangenheit } from '../formatters';
 
 describe('pad', () => {
   it('füllt einstellige Zahlen mit führender Null', () => {
@@ -46,6 +46,31 @@ describe('toNumber', () => {
     expect(toNumber('')).toBe(0);
     expect(toNumber(undefined)).toBe(0);
     expect(toNumber('abc')).toBe(0);
+  });
+  // UX-Review 06.09.2026, Punkt 4.2: <input type="number"> ist NICHT komma-sicher, daher
+  // müssen Betragsfelder als Text-Input BEIDE Dezimaltrennzeichen akzeptieren.
+  it('akzeptiert Komma als Dezimaltrennzeichen (deutsche Schreibweise)', () => {
+    expect(toNumber('45,50')).toBe(45.5);
+    expect(toNumber('7,5')).toBe(7.5);
+    expect(toNumber('0,00')).toBe(0);
+  });
+  it('akzeptiert weiterhin Punkt als Dezimaltrennzeichen (englische Schreibweise)', () => {
+    expect(toNumber('45.50')).toBe(45.5);
+  });
+  it('behandelt eine Zahl mit BEIDEN Zeichen als Tausender- + Dezimaltrennzeichen (spätes Zeichen = Dezimal)', () => {
+    expect(toNumber('1.234,56')).toBe(1234.56);
+    expect(toNumber('1,234.56')).toBe(1234.56);
+  });
+});
+
+describe('sanitizeAmountInput', () => {
+  it('lässt Ziffern, Komma und Punkt unverändert', () => {
+    expect(sanitizeAmountInput('45,50')).toBe('45,50');
+    expect(sanitizeAmountInput('12.30')).toBe('12.30');
+  });
+  it('entfernt Buchstaben und andere unerwartete Zeichen', () => {
+    expect(sanitizeAmountInput('12,5€ abc')).toBe('12,5');
+    expect(sanitizeAmountInput('-5')).toBe('5');
   });
 });
 

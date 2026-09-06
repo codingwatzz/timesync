@@ -2,30 +2,61 @@ import type { TagesEintrag } from '../core/types';
 
 export { dateKey } from '../core/holidays';
 
-export interface ImportResult {
-  count: number;
+export interface ImportCandidate {
+  key: string; // YYYY-MM-DD
+  data: TagesEintrag;
+}
+
+export interface ParseResult {
+  candidates: ImportCandidate[];
   error?: string;
 }
 
 /**
- * Liest eine Export-/Import-JSON-Datei und schreibt jeden enthaltenen Eintrag über
- * saveEntry in den Store. Gibt die Anzahl geschriebener Einträge zurück (oder einen Fehler).
+ * Liest + VALIDIERT eine Import-/Backup-JSON-Datei, schreibt aber noch NICHTS in den Store
+ * (siehe UX-Review 06.09.2026, Punkt 4.1). Vorher schrieb diese Funktion jeden enthaltenen
+ * Eintrag sofort und ohne Rückfrage in den Store - ein falscher Klick im Datei-Picker (z.B.
+ * ein altes Backup) konnte dadurch unbemerkt bestehende Tage überschreiben. Das eigentliche
+ * Schreiben übernimmt jetzt erst lib/importPlan.ts::applyImportPlan(), NACHDEM der Nutzer eine
+ * Übersicht (Anzahl Einträge, wie viele bestehende Tage überschrieben würden) bestätigt hat -
+ * siehe components/ImportConfirmDialog.tsx.
  */
-export async function importFromFile(
-  file: File,
-  saveEntry: (key: string, data: TagesEintrag) => Promise<void>,
-): Promise<ImportResult> {
+export async function parseImportFile(file: File): Promise<ParseResult> {
+  let text: string;
   try {
-    const text = await file.text();
-    const data = JSON.parse(text) as unknown;
-    const list = Array.isArray(data) ? data : (data as { entries?: unknown[] }).entries;
-    if (!Array.isArray(list)) throw new Error('Ungültiges Format: kein "entries"-Array gefunden.');
+    text = await file.text();
+  } catch {
+    return { candidates: [], error: 'Datei konnte nicht gelesen werden.' };
+  }
 
-    let count = 0;
-    for (const raw of list as Record<string, unknown>[]) {
-      const key = raw.date as string | undefined;
-      if (!key) continue;
-      const entry: TagesEintrag = {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return {
+      candidates: [],
+      error: 'Keine gültige JSON-Datei. Bitte nur unveränderte Export-/Backup-Dateien dieser App verwenden.',
+    };
+  }
+
+  const list = Array.isArray(data) ? data : (data as { entries?: unknown[] })?.entries;
+  if (!Array.isArray(list)) {
+    return {
+      candidates: [],
+      error:
+        'Ungültiges Format: kein "entries"-Array gefunden. Erwartet wird eine von dieser App ' +
+        'erzeugte Datei - z.B. "..._Rohdaten-Backup.json" aus dem Monats-Export, oder eine ' +
+        'ältere reine Einträge-JSON mit einem "entries"-Array.',
+    };
+  }
+
+  const candidates: ImportCandidate[] = [];
+  for (const raw of list as Record<string, unknown>[]) {
+    const key = raw.date as string | undefined;
+    if (!key) continue;
+    candidates.push({
+      key,
+      data: {
         typ: (raw.typ as TagesEintrag['typ']) || 'A',
         typManuell: true,
         ho: Boolean(raw.ho),
@@ -38,12 +69,15 @@ export async function importFromFile(
         reiseart: (raw.reiseart as TagesEintrag['reiseart']) || '',
         fr: Boolean(raw.fr), mi: Boolean(raw.mi), ab: Boolean(raw.ab),
         receiptIds: [],
-      };
-      await saveEntry(key, entry);
-      count++;
-    }
-    return { count };
-  } catch (err) {
-    return { count: 0, error: err instanceof Error ? err.message : String(err) };
+      },
+    });
   }
+
+  if (candidates.length === 0) {
+    return {
+      candidates: [],
+      error: 'Die Datei enthält keine gültigen Tageseinträge (jeweils ein "date"-Feld nötig).',
+    };
+  }
+  return { candidates };
 }

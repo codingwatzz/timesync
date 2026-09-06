@@ -9,7 +9,10 @@ import { MonthView } from './components/MonthView';
 import { DetailSheet } from './components/DetailSheet';
 import { ExportView } from './components/ExportView';
 import { Toast } from './components/Toast';
-import { importFromFile } from './lib/exportImport';
+import { ImportConfirmDialog } from './components/ImportConfirmDialog';
+import { parseImportFile } from './lib/exportImport';
+import { buildImportPlan, applyImportPlan } from './lib/importPlan';
+import type { ImportPlan } from './lib/importPlan';
 import type { TagesEintrag } from './core/types';
 
 type View = 'month' | 'detail' | 'export';
@@ -26,6 +29,11 @@ export default function App() {
   // gefüllt, changeMonth() lädt den neuen Monat erst asynchron nach. Ohne diesen Zwischenstand
   // würde kurzzeitig fälschlich ein leerer Tag angezeigt, bevor der neue Monat nachgeladen ist.
   const [crossMonthEntry, setCrossMonthEntry] = useState<TagesEintrag | null>(null);
+  // Import läuft zweistufig (siehe UX-Review 06.09.2026, Punkt 4.1): erst nur parsen +
+  // prüfen, was überschrieben würde (importPlan gesetzt = Bestätigungsdialog offen), erst
+  // NACH expliziter Bestätigung wird tatsächlich geschrieben. Ersetzt das vorherige Verhalten,
+  // bei dem eine ausgewählte Datei sofort und ohne Rückfrage geschrieben wurde.
+  const [importPlan, setImportPlan] = useState<ImportPlan | null>(null);
 
   function openDay(key: string) {
     setCrossMonthEntry(null);
@@ -61,18 +69,34 @@ export default function App() {
     setView('export');
   }
 
+  // Schritt 1: Datei nur parsen + prüfen, was überschrieben würde - noch KEIN Schreibzugriff.
   async function handleImportFile(file: File) {
     if (!store) return;
-    showToast('Importiere…');
-    const result = await importFromFile(file, saveEntry);
-    if (result.error) {
-      showToast('Import fehlgeschlagen – siehe Diagnose im ⚙-Menü');
-    } else {
-      // Erst neu laden, DANN die Erfolgsmeldung zeigen - sonst könnte der Nutzer (oder ein
-      // Test) auf die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
-      await reload();
-      showToast(`${result.count} Einträge importiert`);
+    const parsed = await parseImportFile(file);
+    if (parsed.error) {
+      showToast(parsed.error);
+      return;
     }
+    const plan = await buildImportPlan(store, parsed.candidates);
+    setImportPlan(plan);
+  }
+
+  // Schritt 2: erst NACH expliziter Bestätigung im ImportConfirmDialog wird wirklich
+  // geschrieben.
+  async function handleConfirmImport() {
+    if (!importPlan) return;
+    const plan = importPlan;
+    setImportPlan(null);
+    showToast('Importiere…');
+    const count = await applyImportPlan(plan, saveEntry);
+    // Erst neu laden, DANN die Erfolgsmeldung zeigen - sonst könnte der Nutzer (oder ein
+    // Test) auf die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
+    await reload();
+    const ueberschrieben = plan.overwriteKeys.length;
+    showToast(
+      `${count} Eintrag${count !== 1 ? 'e' : ''} importiert` +
+      (ueberschrieben > 0 ? ` (${ueberschrieben} überschrieben)` : ''),
+    );
   }
 
   const [oy, om, od] = openDayKey ? openDayKey.split('-').map(Number) : [0, 0, 0];
@@ -112,6 +136,11 @@ export default function App() {
       )}
 
       <Toast message={toastMessage} />
+      <ImportConfirmDialog
+        plan={importPlan}
+        onCancel={() => setImportPlan(null)}
+        onConfirm={handleConfirmImport}
+      />
     </div>
   );
 }

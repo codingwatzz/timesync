@@ -11,7 +11,7 @@ import type { KVStore } from '../../store/types';
 import type { TagesEintrag } from '../../core/types';
 import { loadReceipt } from '../../hooks/entryStorage';
 import { dateKey } from '../../core/holidays';
-import { daysInMonth } from '../../core/formatters';
+import { daysInMonth, toNumber } from '../../core/formatters';
 
 export interface BelegMergeBericht {
   eingebundeneBelege: { date: string; name: string }[];
@@ -40,7 +40,11 @@ export async function buildMergedReceiptsPdf(
     const key = dateKey(year, month, d);
     const e = entries[key];
     if (!e) continue;
-    const kosten = ['km', 'transport', 'hotel', 'bewirtung', 'sonstiges'].some((f) => parseFloat((e as unknown as Record<string, string>)[f] || '0') > 0);
+    // Komma-sicheren zentralen Parser nutzen statt eigenem parseFloat() (siehe UX-Review
+    // 06.09.2026, Punkt 4.2 - das war die DRITTE unabhängige, komma-unsichere Zahl-Parser-
+    // Kopie im Projekt, siehe core/formatters.ts::toNumber()).
+    const kosten = (['km', 'transport', 'hotel', 'bewirtung', 'sonstiges'] as const)
+      .some((f) => toNumber((e as unknown as Record<string, string>)[f]) > 0);
     if (!kosten && !e.reiseart) continue;
 
     if (e.receiptIds.length === 0) {
