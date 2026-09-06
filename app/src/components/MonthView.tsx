@@ -76,7 +76,7 @@ export function MonthView({
           <SettingsMenu mode={syncMode} log={log} onImportFile={onImportFile} />
           <h1 className="m-0 text-[19px] font-bold tracking-tight text-text">Zeiterfassung</h1>
           <span
-            className={`ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+            className={`flag ${badge.ok ? 'ho' : 'warn'} ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
               badge.ok ? 'bg-primary-soft text-primary' : 'bg-warning-soft text-warning'
             }`}
           >
@@ -92,7 +92,7 @@ export function MonthView({
           >
             <ChevronLeft size={20} strokeWidth={2.25} />
           </button>
-          <div className="text-center text-[16px] font-bold text-text">
+          <div className="label text-center text-[16px] font-bold text-text">
             {MONATSNAMEN[month - 1]} {year}
             <span className="mt-0.5 block text-[12px] font-normal text-text-muted">{n} Tage</span>
           </div>

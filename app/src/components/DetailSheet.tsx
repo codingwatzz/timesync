@@ -239,7 +239,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+      className="sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div
@@ -436,21 +436,21 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           <div className="mb-3.5">
             <label className={labelCls}>Mahlzeit durch Firma bezahlt?</label>
             <div className="flex gap-2">
-              <div className="flex-1" data-field="fr">
+              <div className="yesno flex-1" data-field="fr">
                 <button
-                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.fr ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.fr ? 'active border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
                   onClick={() => toggleYesNo('fr')}
                 >Frühstück</button>
               </div>
-              <div className="flex-1" data-field="mi">
+              <div className="yesno flex-1" data-field="mi">
                 <button
-                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.mi ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.mi ? 'active border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
                   onClick={() => toggleYesNo('mi')}
                 >Mittag</button>
               </div>
-              <div className="flex-1" data-field="ab">
+              <div className="yesno flex-1" data-field="ab">
                 <button
-                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.ab ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.ab ? 'active border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
                   onClick={() => toggleYesNo('ab')}
                 >Abend</button>
               </div>
