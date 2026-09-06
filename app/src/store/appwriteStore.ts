@@ -142,8 +142,11 @@ export async function createAppwriteStore(
         const file = new File([blob], `${obj.name ?? 'beleg'}.pdf`, { type: 'application/pdf' });
         try {
           await storage.deleteFile({ bucketId: config.bucketId, fileId: rowId });
-        } catch {
-          /* Datei existierte noch nicht - kein Problem */
+        } catch (e) {
+          if (!isNotFoundError(e)) {
+            log(`⚠ Beleg-Upload: Lösch-Versuch vor dem Hochladen fehlgeschlagen (${key}) - ${e instanceof Error ? e.message : e}`);
+          }
+          /* 404 (Datei existierte noch nicht) ist normal und kein Problem. */
         }
         try {
           await storage.createFile({ bucketId: config.bucketId, fileId: rowId, file });
@@ -181,8 +184,11 @@ export async function createAppwriteStore(
     if (key.startsWith('receipt:')) {
       try {
         await storage.deleteFile({ bucketId: config.bucketId, fileId: rowId });
-      } catch {
-        /* Datei existierte nicht - kein Problem */
+      } catch (e) {
+        if (!isNotFoundError(e)) {
+          log(`⚠ Beleg-Löschen fehlgeschlagen (${key}): ${e instanceof Error ? e.message : e}`);
+        }
+        /* 404 (Datei existierte nicht) ist normal und kein Problem. */
       }
     }
     try {
