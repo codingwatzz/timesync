@@ -479,7 +479,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                 <div className="text-[10px] text-text-muted">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
               </div>
               <button
-                className="flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded text-danger focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                className="del flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded text-danger focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 data-rid={r.id}
                 aria-label="Beleg löschen"
                 onClick={(e) => { e.stopPropagation(); handleDeleteReceipt(r.id); }}
