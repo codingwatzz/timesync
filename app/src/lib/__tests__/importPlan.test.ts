@@ -56,10 +56,28 @@ describe('applyImportPlan', () => {
       existing: {}, overwriteKeys: [], newKeys: ['2028-12-01', '2028-12-02'],
       fromKey: '2028-12-01', toKey: '2028-12-02',
     };
-    const count = await applyImportPlan(plan, saveEntry);
-    expect(count).toBe(2);
+    const result = await applyImportPlan(plan, saveEntry);
+    expect(result).toEqual({ succeeded: 2, failedKeys: [] });
     expect(saveEntry).toHaveBeenCalledTimes(2);
     expect(saveEntry).toHaveBeenCalledWith('2028-12-01', plan.candidates[0].data);
+  });
+
+  it('verarbeitet jeden Kandidaten unabhängig - ein Fehlschlag blockiert nicht die restlichen', async () => {
+    const saveEntry = vi.fn(async (key: string) => {
+      if (key === '2028-12-02') throw new Error('Netzwerkfehler');
+    });
+    const plan = {
+      candidates: [
+        { key: '2028-12-01', data: makeEntry() },
+        { key: '2028-12-02', data: makeEntry() },
+        { key: '2028-12-03', data: makeEntry() },
+      ],
+      existing: {}, overwriteKeys: [], newKeys: ['2028-12-01', '2028-12-02', '2028-12-03'],
+      fromKey: '2028-12-01', toKey: '2028-12-03',
+    };
+    const result = await applyImportPlan(plan, saveEntry);
+    expect(result).toEqual({ succeeded: 2, failedKeys: ['2028-12-02'] });
+    expect(saveEntry).toHaveBeenCalledTimes(3); // auch der dritte Kandidat wird noch versucht
   });
 });
 

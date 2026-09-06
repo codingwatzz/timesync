@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from './hooks/useStore';
 import { useMonthEntries } from './hooks/useMonthEntries';
 import { useToast } from './hooks/useToast';
@@ -19,8 +19,16 @@ type View = 'month' | 'detail' | 'export';
 
 export default function App() {
   const { store, mode, log } = useStore();
-  const { year, month, entries, changeMonth, saveEntry, reload } = useMonthEntries();
+  const { year, month, entries, loadError, changeMonth, saveEntry, reload } = useMonthEntries();
   const { toastMessage, showToast } = useToast();
+
+  // NEU (Engineering-Review 07.09.2026, Punkt 2): store.get()/set() werfen jetzt bei echten
+  // Fehlern, statt sie lautlos zu verschlucken - ein fehlgeschlagenes Laden des Monats muss
+  // also sichtbar gemacht werden, sonst bliebe die Monatsansicht einfach leer/lädt ewig, ohne
+  // dass der Nutzer erfährt, warum.
+  useEffect(() => {
+    if (loadError) showToast(`Laden fehlgeschlagen: ${loadError}`);
+  }, [loadError, showToast]);
 
   const [view, setView] = useState<View>('month');
   const [openDayKey, setOpenDayKey] = useState<string | null>(null);
@@ -50,7 +58,18 @@ export default function App() {
     if (!sameMonth) {
       // Direkt laden statt auf den Monats-Reload zu warten - vermeidet ein kurzes
       // fälschliches "leerer Tag" während changeMonth() im Hintergrund nachlädt.
-      const loaded = store ? await loadEntry(store, newKey) : null;
+      let loaded: TagesEintrag | null = null;
+      if (store) {
+        try {
+          loaded = await loadEntry(store, newKey);
+        } catch (e) {
+          // store.get() wirft jetzt bei echten Fehlern (siehe useMonthEntries.ts) - hier
+          // bewusst NICHT die Navigation abbrechen (der Tag wird dann leer/mit
+          // Standardwerten gezeigt), aber den Nutzer informieren, damit ein evtl. echt
+          // vorhandener Eintrag nicht fälschlich für "leer" gehalten wird.
+          showToast(`Tag konnte nicht geladen werden: ${e instanceof Error ? e.message : e}`);
+        }
+      }
       setCrossMonthEntry(loaded);
       changeMonth(delta);
     } else {
@@ -77,8 +96,14 @@ export default function App() {
       showToast(parsed.error);
       return;
     }
-    const plan = await buildImportPlan(store, parsed.candidates);
-    setImportPlan(plan);
+    try {
+      const plan = await buildImportPlan(store, parsed.candidates);
+      setImportPlan(plan);
+    } catch (e) {
+      // buildImportPlan liest je Kandidat den bestehenden Stand (store.get) - das kann jetzt
+      // bei einem echten Fehler werfen (siehe useMonthEntries.ts-Kommentar oben).
+      showToast(`Import-Prüfung fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   // Schritt 2: erst NACH expliziter Bestätigung im ImportConfirmDialog wird wirklich
@@ -88,15 +113,25 @@ export default function App() {
     const plan = importPlan;
     setImportPlan(null);
     showToast('Importiere…');
-    const count = await applyImportPlan(plan, saveEntry);
-    // Erst neu laden, DANN die Erfolgsmeldung zeigen - sonst könnte der Nutzer (oder ein
-    // Test) auf die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
+    const { succeeded, failedKeys } = await applyImportPlan(plan, saveEntry);
+    // Erst neu laden, DANN die Meldung zeigen - sonst könnte der Nutzer (oder ein Test) auf
+    // die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
     await reload();
     const ueberschrieben = plan.overwriteKeys.length;
-    showToast(
-      `${count} Eintrag${count !== 1 ? 'e' : ''} importiert` +
-      (ueberschrieben > 0 ? ` (${ueberschrieben} überschrieben)` : ''),
-    );
+    if (failedKeys.length === 0) {
+      showToast(
+        `${succeeded} Eintrag${succeeded !== 1 ? 'e' : ''} importiert` +
+        (ueberschrieben > 0 ? ` (${ueberschrieben} überschrieben)` : ''),
+      );
+    } else {
+      // applyImportPlan verarbeitet jeden Tag unabhängig - ein Fehlschlag blockiert nicht
+      // die restlichen, guten Einträge. Das explizit sagen statt nur "Import fehlgeschlagen",
+      // das den echten Teilerfolg verschleiern würde.
+      showToast(
+        `${succeeded} importiert, ${failedKeys.length} fehlgeschlagen: ${failedKeys.slice(0, 3).join(', ')}` +
+        (failedKeys.length > 3 ? '…' : ''),
+      );
+    }
   }
 
   const [oy, om, od] = openDayKey ? openDayKey.split('-').map(Number) : [0, 0, 0];

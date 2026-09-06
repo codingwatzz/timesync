@@ -58,15 +58,29 @@ export function downloadPreImportBackup(plan: ImportPlan): void {
   triggerDownload(blob, `Sicherheitskopie-vor-Import-${new Date().toISOString().slice(0, 10)}.json`);
 }
 
-/** Schreibt einen zuvor vom Nutzer bestätigten Plan tatsächlich in den Store. */
+/** Schreibt einen zuvor vom Nutzer bestätigten Plan tatsächlich in den Store. Verarbeitet
+ * JEDEN Kandidaten unabhängig (ein einzelner Fehlschlag blockiert nicht die restlichen, gute
+ * Einträge) und meldet am Ende, wie viele wirklich ankamen und welche Schlüssel fehlschlugen -
+ * saveEntry() kann seit dem Engineering-Review 07.09.2026 (Punkt 2) bei einem echten
+ * Speicherfehler werfen, statt lautlos "erfolgreich" zu tun. */
+export interface ApplyImportResult {
+  succeeded: number;
+  failedKeys: string[];
+}
+
 export async function applyImportPlan(
   plan: ImportPlan,
   saveEntry: (key: string, data: TagesEintrag) => Promise<void>,
-): Promise<number> {
-  let count = 0;
+): Promise<ApplyImportResult> {
+  let succeeded = 0;
+  const failedKeys: string[] = [];
   for (const c of plan.candidates) {
-    await saveEntry(c.key, c.data);
-    count++;
+    try {
+      await saveEntry(c.key, c.data);
+      succeeded++;
+    } catch {
+      failedKeys.push(c.key);
+    }
   }
-  return count;
+  return { succeeded, failedKeys };
 }

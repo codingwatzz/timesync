@@ -43,9 +43,20 @@ export async function buildBackupJson(
   Object.values(entries).forEach((e) => (e.receiptIds || []).forEach((rid) => receiptIds.add(rid)));
 
   const receipts: BackupJson['receipts'] = {};
-  for (const rid of receiptIds) {
-    const row = await store.get(`receipt:${rid}`);
-    if (!row) continue; // Beleg-Referenz zeigt ins Leere (z.B. schon gelöscht) - überspringen
+  // Parallel statt seriell nachladen (Engineering-Review 07.09.2026, Punkt 4/5) - bei vielen
+  // Belegen im Monat addierte sich eine Schleife mit `await` pro Beleg zu spürbarer,
+  // vermeidbarer Wartezeit. Einzelne Fehlschläge (store.get() kann jetzt bei echten Fehlern
+  // werfen, siehe appwriteStore.ts) brechen NICHT das ganze Backup ab - der betroffene Beleg
+  // fehlt dann einfach, statt den kompletten Export zu verhindern.
+  const geladen = await Promise.all([...receiptIds].map(async (rid) => {
+    try {
+      return { rid, row: await store.get(`receipt:${rid}`) };
+    } catch {
+      return { rid, row: null };
+    }
+  }));
+  for (const { rid, row } of geladen) {
+    if (!row) continue; // Beleg-Referenz zeigt ins Leere (gelöscht, oder Ladefehler) - überspringen
     const meta = JSON.parse(row.value) as BelegMetaShape;
     receipts[rid] = { name: meta.name, dataUrl: meta.dataUrl ?? null };
   }

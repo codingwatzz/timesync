@@ -94,8 +94,12 @@ export async function createAppwriteStore(
       try {
         row = await tablesDB.getRow({ databaseId: config.databaseId, tableId: config.tableId, rowId });
       } catch (e) {
-        if (!isNotFoundError(e)) log(`get(${key}) fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
-        return null;
+        if (isNotFoundError(e)) return null;
+        // ECHTER Fehler (Netzwerk, Berechtigung, ...) - NICHT als "existiert nicht" werten.
+        // Vorher gab get() hier fälschlich `null` zurück, ununterscheidbar von einem
+        // tatsächlich fehlenden Eintrag (siehe Engineering-Review 07.09.2026, Punkt 2).
+        log(`get(${key}) fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+        throw e;
       }
       const meta = JSON.parse(row.value as string) as BelegMetaShape;
       try {
@@ -112,6 +116,11 @@ export async function createAppwriteStore(
         const blob = await resp.blob();
         meta.dataUrl = await blobToDataURL(blob);
       } catch (e) {
+        // Bewusst KEIN throw hier: die Metadaten-Zeile selbst wurde erfolgreich gelesen, nur
+        // der Datei-Download (separate Anfrage, z.B. CDN-Hiccup) ist fehlgeschlagen. Aufrufer
+        // (z.B. DetailSheet::handleOpenReceipt) prüfen bereits explizit auf `dataUrl == null`
+        // und zeigen dann eine eigene Meldung - ein Totalausfall des gesamten get() wäre hier
+        // unverhältnismäßig, da die Metadaten (Name, Datum) ja trotzdem nutzbar sind.
         log(`get(${key}) – Beleg-Datei-Download fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
         meta.dataUrl = null;
       }
@@ -122,8 +131,9 @@ export async function createAppwriteStore(
       const row: Models.DefaultRow = await tablesDB.getRow({ databaseId: config.databaseId, tableId: config.tableId, rowId });
       return { key, value: row.value as string };
     } catch (e) {
-      if (!isNotFoundError(e)) log(`get(${key}) fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
-      return null;
+      if (isNotFoundError(e)) return null;
+      log(`get(${key}) fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      throw e;
     }
   }
 
@@ -144,14 +154,23 @@ export async function createAppwriteStore(
           await storage.deleteFile({ bucketId: config.bucketId, fileId: rowId });
         } catch (e) {
           if (!isNotFoundError(e)) {
+            // Best-effort: ein fehlgeschlagenes Löschen VOR dem Hochladen ist bewusst kein
+            // Abbruchgrund (die alte Datei bleibt dann einfach liegen, kann später als
+            // Karteileiche aufgeräumt werden - siehe CLAUDE_CHECKLIST.md) - anders als ein
+            // fehlgeschlagenes createFile weiter unten, DAS ist ein echter Datenverlust.
             log(`⚠ Beleg-Upload: Lösch-Versuch vor dem Hochladen fehlgeschlagen (${key}) - ${e instanceof Error ? e.message : e}`);
           }
-          /* 404 (Datei existierte noch nicht) ist normal und kein Problem. */
         }
         try {
           await storage.createFile({ bucketId: config.bucketId, fileId: rowId, file });
         } catch (e) {
+          // ECHTER Fehler: die Datei selbst ist NICHT hochgeladen worden. Vorher wurde das
+          // nur geloggt, die Metadaten-Zeile aber TROTZDEM geschrieben - der Aufrufer glaubte
+          // dadurch, der Beleg sei gesichert, obwohl die eigentliche Datei fehlt (siehe
+          // Engineering-Review 07.09.2026, Punkt 2). Jetzt: werfen, BEVOR die Metadaten-Zeile
+          // geschrieben wird.
           log(`⚠ Beleg-Upload fehlgeschlagen (${key}): ${e instanceof Error ? e.message : e}`);
+          throw e;
         }
       }
       finalValue = JSON.stringify(meta);
@@ -164,7 +183,15 @@ export async function createAppwriteStore(
         rowId,
         data: { value: finalValue },
       });
-    } catch {
+    } catch (e) {
+      if (!isNotFoundError(e)) {
+        // ECHTER Fehler beim Update (z.B. Netzwerk, Berechtigung) - NICHT blind auf createRow
+        // ausweichen (das würde bei einer bereits existierenden Zeile ohnehin nur erneut
+        // fehlschlagen und den ursprünglichen Fehler verschleiern). Nur "Zeile existiert noch
+        // nicht" (404) rechtfertigt den Fallback auf createRow.
+        log(`⚠ set(${key}) fehlgeschlagen (update): ${e instanceof Error ? e.message : e}`);
+        throw e;
+      }
       try {
         await tablesDB.createRow({
           databaseId: config.databaseId,
@@ -173,7 +200,8 @@ export async function createAppwriteStore(
           data: { value: finalValue },
         });
       } catch (e2) {
-        log(`⚠ set(${key}) fehlgeschlagen – weder update noch create möglich: ${e2 instanceof Error ? e2.message : e2}`);
+        log(`⚠ set(${key}) fehlgeschlagen (weder update noch create möglich): ${e2 instanceof Error ? e2.message : e2}`);
+        throw e2;
       }
     }
     return { key, value: finalValue };
@@ -186,15 +214,19 @@ export async function createAppwriteStore(
         await storage.deleteFile({ bucketId: config.bucketId, fileId: rowId });
       } catch (e) {
         if (!isNotFoundError(e)) {
+          // Best-effort wie beim Upload: eine liegen gebliebene Datei ohne Referenz ist eine
+          // bekannte, akzeptierte Karteileiche (siehe CLAUDE_CHECKLIST.md) - kein Grund, das
+          // Löschen der eigentlichen Datensatz-Zeile unten zu verhindern.
           log(`⚠ Beleg-Löschen fehlgeschlagen (${key}): ${e instanceof Error ? e.message : e}`);
         }
-        /* 404 (Datei existierte nicht) ist normal und kein Problem. */
       }
     }
     try {
       await tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.tableId, rowId });
     } catch (e) {
+      if (isNotFoundError(e)) return { key, deleted: true }; // war schon weg - kein Fehler
       log(`delete(${key}) fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      throw e;
     }
     return { key, deleted: true };
   }

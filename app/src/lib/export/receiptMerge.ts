@@ -51,8 +51,18 @@ export async function buildMergedReceiptsPdf(
       bericht.tageOhneBeleg.push(key);
       continue;
     }
-    for (const rid of e.receiptIds) {
-      const meta = await loadReceipt(store, rid);
+    // Belege EINES Tages parallel nachladen statt seriell (Engineering-Review 07.09.2026,
+    // Punkt 4/5) - die Reihenfolge innerhalb des Arrays bleibt dabei erhalten (Promise.all
+    // löst in Eingabe-Reihenfolge auf), das Zusammenfügen ins PDF bleibt darunter sequenziell
+    // und damit deterministisch über alle Tage hinweg.
+    const geladen = await Promise.all(e.receiptIds.map(async (rid) => {
+      try {
+        return { rid, meta: await loadReceipt(store, rid) };
+      } catch {
+        return { rid, meta: null };
+      }
+    }));
+    for (const { rid, meta } of geladen) {
       if (!meta || !meta.dataUrl) {
         bericht.fehlendeBelege.push({ date: key, rid });
         continue;
@@ -63,7 +73,7 @@ export async function buildMergedReceiptsPdf(
         const seiten = await zusammengefuehrt.copyPages(belegPdf, belegPdf.getPageIndices());
         seiten.forEach((seite) => zusammengefuehrt.addPage(seite));
         bericht.eingebundeneBelege.push({ date: key, name: meta.name });
-      } catch (err) {
+      } catch {
         bericht.fehlendeBelege.push({ date: key, rid });
       }
     }

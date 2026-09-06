@@ -120,14 +120,25 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     if (debounceTimer.current) { clearTimeout(debounceTimer.current); debounceTimer.current = null; }
     if (!hasUnsavedRef.current) return;
     const toSave = entryRef.current;
+    try {
+      await onSave(dateKey, toSave);
+    } catch (e) {
+      // hasUnsavedRef ABSICHTLICH nicht auf false setzen (siehe Engineering-Review
+      // 07.09.2026, Punkt 2 - onSave/store.set() kann jetzt bei echten Fehlern werfen,
+      // statt lautlos "erfolgreich" zurückzugeben). Bleibt hasUnsavedRef true, versucht der
+      // nächste Debounce-Tick oder der Unmount-Flush es erneut, statt Daten stillschweigend
+      // als "gespeichert" zu markieren, obwohl sie es nicht sind.
+      showToast(`Speichern fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      return;
+    }
     hasUnsavedRef.current = false;
     savedRef.current = toSave;
-    await onSave(dateKey, toSave);
     // Rückmeldung bei jedem ECHTEN Speichern (Auto-Save nach Tippen ODER expliziter Klick) -
     // vorher speicherte Auto-Save komplett unsichtbar im Hintergrund, was laut UI-Review
     // (02.09.2026) Unsicherheit erzeugen kann ("hat sich das jetzt wirklich gespeichert?").
-    // Beim stillen Schließen/Unmount (silent:true) KEIN Toast - der wäre ohnehin kaum noch
-    // sichtbar und beim Wegnavigieren nicht hilfreich.
+    // Beim stillen Schließen/Unmount (silent:true) KEIN Erfolgs-Toast - der wäre ohnehin kaum
+    // noch sichtbar und beim Wegnavigieren nicht hilfreich. Ein FEHLER wird aber auch im
+    // stillen Fall oben immer gezeigt.
     if (!opts.silent) showToast('Gespeichert');
   }
 
@@ -148,9 +159,17 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   useEffect(() => {
     if (!store) return;
     let cancelled = false;
-    Promise.all(entry.receiptIds.map((id) => loadReceipt(store, id))).then((list) => {
-      if (!cancelled) setReceipts(list.filter((r): r is BelegMeta => r !== null));
-    });
+    Promise.all(entry.receiptIds.map((id) => loadReceipt(store, id)))
+      .then((list) => {
+        if (!cancelled) setReceipts(list.filter((r): r is BelegMeta => r !== null));
+      })
+      .catch((e) => {
+        // loadReceipt() kann jetzt bei einem echten Fehler werfen statt lautlos `null`
+        // zurückzugeben (siehe Engineering-Review 07.09.2026, Punkt 2) - ohne diesen Catch
+        // bliebe das eine unbehandelte Promise-Ablehnung, die Beleg-Liste würde einfach
+        // stehen bleiben, ohne dass der Nutzer erfährt, warum sie evtl. veraltet ist.
+        if (!cancelled) showToast(`Belege konnten nicht geladen werden: ${e instanceof Error ? e.message : e}`);
+      });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, entry.receiptIds.join(',')]);
@@ -229,46 +248,84 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     // dazwischen unterbrochen wird, kann die Verknüpfung beim nächsten App-Start nachgeholt
     // werden (siehe pendingReceiptLinks.ts).
     markPendingReceiptLink(dateKey, rid);
-    await saveReceipt(store, rid, meta);
+    try {
+      await saveReceipt(store, rid, meta);
+    } catch (e) {
+      // Datei-Upload selbst fehlgeschlagen (siehe appwriteStore.ts::set()) - es existiert
+      // nichts, das später repariert werden müsste, Vermerk kann sofort wieder entfernt werden.
+      clearPendingReceiptLink(dateKey, rid);
+      showToast(`Beleg-Upload fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      return;
+    }
     const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
     setEntry(nextEntry);
-    await onSave(dateKey, nextEntry);
-    markSaved(nextEntry);
-    clearPendingReceiptLink(dateKey, rid);
-    showToast('Beleg gespeichert');
+    try {
+      await onSave(dateKey, nextEntry);
+      markSaved(nextEntry);
+      clearPendingReceiptLink(dateKey, rid);
+      showToast('Beleg gespeichert');
+    } catch (e) {
+      // Beleg-Datei ist sicher gespeichert, nur die Verknüpfung mit dem Tageseintrag ist
+      // (noch) nicht persistiert - genau der Fall, für den pendingReceiptLinks.ts gebaut
+      // wurde. Vermerk bewusst STEHEN LASSEN, repairPendingReceiptLinks holt das beim
+      // nächsten App-Start automatisch nach.
+      showToast(`Beleg hochgeladen, Verknüpfung wird beim nächsten Start nachgeholt (${e instanceof Error ? e.message : e})`);
+    }
   }
 
   async function handlePhotoUpload(file: File) {
     if (!store) return;
     showToast('Wird verarbeitet…');
+    let rid: string;
+    let meta: BelegMeta;
     try {
       const pdfDataUrl = await photoToPdf(file);
-      const rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
+      rid = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
       const name = `Foto-${new Date().toISOString().slice(0, 10)}.pdf`;
-      const meta: BelegMeta = { id: rid, name, mime: 'application/pdf', dataUrl: pdfDataUrl, createdAt: Date.now(), date: dateKey };
-      // Absicht VOR den beiden Appwrite-Schreibvorgängen synchron vermerken - genau dieser
-      // Pfad (native Kamera-App via capture="environment") kann die Seite dazwischen
-      // pausieren/neu laden. Siehe pendingReceiptLinks.ts.
-      markPendingReceiptLink(dateKey, rid);
+      meta = { id: rid, name, mime: 'application/pdf', dataUrl: pdfDataUrl, createdAt: Date.now(), date: dateKey };
+    } catch {
+      showToast('Fehler bei PDF-Erstellung');
+      return;
+    }
+    // Absicht VOR den beiden Appwrite-Schreibvorgängen synchron vermerken - genau dieser
+    // Pfad (native Kamera-App via capture="environment") kann die Seite dazwischen
+    // pausieren/neu laden. Siehe pendingReceiptLinks.ts.
+    markPendingReceiptLink(dateKey, rid);
+    try {
       await saveReceipt(store, rid, meta);
-      const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
-      setEntry(nextEntry);
+    } catch (e) {
+      clearPendingReceiptLink(dateKey, rid);
+      showToast(`Beleg-Upload fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      return;
+    }
+    const nextEntry = { ...entry, receiptIds: [...entry.receiptIds, rid] };
+    setEntry(nextEntry);
+    try {
       await onSave(dateKey, nextEntry);
       markSaved(nextEntry);
       clearPendingReceiptLink(dateKey, rid);
       showToast('Beleg gespeichert');
-    } catch {
-      showToast('Fehler bei PDF-Erstellung');
+    } catch (e) {
+      showToast(`Beleg hochgeladen, Verknüpfung wird beim nächsten Start nachgeholt (${e instanceof Error ? e.message : e})`);
     }
   }
 
   async function handleDeleteReceipt(rid: string) {
     if (!store) return;
-    await deleteReceiptFromStore(store, rid);
+    try {
+      await deleteReceiptFromStore(store, rid);
+    } catch (e) {
+      showToast(`Beleg-Löschen fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+      return;
+    }
     const nextEntry = { ...entry, receiptIds: entry.receiptIds.filter((id) => id !== rid) };
     setEntry(nextEntry);
-    await onSave(dateKey, nextEntry);
-    markSaved(nextEntry);
+    try {
+      await onSave(dateKey, nextEntry);
+      markSaved(nextEntry);
+    } catch (e) {
+      showToast(`Beleg gelöscht, aber Tageseintrag konnte nicht aktualisiert werden: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   async function handleOpenReceipt(r: BelegMeta) {
@@ -312,7 +369,14 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     if (!current) return;
     const updated = { ...current, feld };
     setReceipts((prev) => prev.map((r) => (r.id === rid ? updated : r)));
-    await saveReceipt(store, rid, updated);
+    try {
+      await saveReceipt(store, rid, updated);
+    } catch (e) {
+      // Optimistisches UI-Update oben bleibt bewusst stehen (Feld-Zuordnung ist rein
+      // informativ, siehe BelegMeta.feld-Kommentar) - der Nutzer wird nur informiert, dass
+      // die Zuordnung beim nächsten Laden evtl. wieder verschwindet.
+      showToast(`Zuordnung konnte nicht gespeichert werden: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   return (
