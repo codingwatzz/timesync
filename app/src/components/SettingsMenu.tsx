@@ -27,7 +27,7 @@ export function SettingsMenu({ mode, log, onImportFile }: SettingsMenuProps) {
       <button
         id="settingsBtn"
         title="Einstellungen"
-        className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text"
+        className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
         onClick={() => setMenuOpen((o) => !o)}
       >
         <Settings size={19} strokeWidth={2} />
@@ -39,20 +39,20 @@ export function SettingsMenu({ mode, log, onImportFile }: SettingsMenuProps) {
           <div className="settings-dropdown absolute left-0 top-[calc(100%+4px)] z-[96] flex min-w-[180px] flex-col overflow-hidden rounded-lg border border-border bg-surface-2 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
             <button
               id="themeToggleBtn"
-              className="flex items-center gap-2 px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface"
+              className="flex min-h-11 items-center gap-2 px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:-outline-offset-2 focus-visible:outline-none"
               onClick={() => { toggleTheme(); setMenuOpen(false); }}
             >
               {theme === 'dark' ? <Sun size={15} strokeWidth={2.25} /> : <Moon size={15} strokeWidth={2.25} />}
               {theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
             </button>
             <button
-              className="flex items-center gap-2 border-t border-border px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface"
+              className="flex min-h-11 items-center gap-2 border-t border-border px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:-outline-offset-2 focus-visible:outline-none"
               onClick={() => { setMenuOpen(false); importInputRef.current?.click(); }}
             >
               <Upload size={15} strokeWidth={2.25} /> Importieren
             </button>
             <button
-              className="flex items-center gap-2 border-t border-border px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface"
+              className="flex min-h-11 items-center gap-2 border-t border-border px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:-outline-offset-2 focus-visible:outline-none"
               onClick={() => { setMenuOpen(false); setDiagnoseOpen(true); }}
             >
               <Wrench size={15} strokeWidth={2.25} /> Diagnose

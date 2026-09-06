@@ -9,8 +9,21 @@ import { fileToDataURL, photoToPdf } from '../lib/pdf';
 import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
 import { useSwipe } from '../hooks/useSwipe';
 import { useSwipeDown } from '../hooks/useSwipeDown';
-import { Paperclip, Camera, FileText, X, Plus, AlertTriangle } from 'lucide-react';
+import { Paperclip, Camera, FileText, X, Plus, AlertTriangle, Info } from 'lucide-react';
 import type { TagesEintrag, Wochentyp, BelegMeta } from '../core/types';
+
+// Kurzform-Labels nur für die Dropdown-ANZEIGE (Werte selbst bleiben unverändert, siehe
+// core/constants.ts::REISEARTEN - die Exportlogik matcht auf die vollen Werte). Grund:
+// "Abwesenheitstag (>8h)" vs. "(24h)" unterscheiden sich erst am Ende und wurden im
+// schmalen Select abgeschnitten (nicht mehr unterscheidbar, siehe UX-Audit 05.09.2026).
+const REISEART_LABEL: Record<string, string> = {
+  '': '– keine –',
+  Anreisetag: 'Anreisetag',
+  Abreisetag: 'Abreisetag',
+  'Abwesenheitstag (<8h)': 'Abwesend (<8h)',
+  'Abwesenheitstag (>8h)': 'Abwesend (>8h)',
+  'Abwesenheitstag (24h)': 'Abwesend (24h)',
+};
 
 // ---------------------------------------------------------------------
 // Styling-Konstanten (Tailwind, Design-System "Slate & Teal", dark-first).
@@ -24,8 +37,8 @@ const inputCls =
 const sectionTitleCls =
   'mt-4 mb-2 border-t border-border pt-3 text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted';
 const secondaryBtnCls =
-  'mb-3.5 w-full rounded-lg border border-border bg-surface px-2 py-2.5 text-sm font-semibold ' +
-  'text-text-muted transition-colors hover:border-primary hover:text-primary';
+  'mb-3.5 min-h-11 w-full rounded-lg border border-border bg-surface px-2 py-2.5 text-sm font-semibold ' +
+  'text-text-muted transition-colors hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none';
 
 const TAB_BG: Record<Wochentyp, string> = {
   A: 'bg-tab-a', W: 'bg-tab-w', F: 'bg-tab-f', U: 'bg-tab-u', K: 'bg-tab-k', G: 'bg-tab-g',
@@ -51,6 +64,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   const [zweiteSchichtOffen, setZweiteSchichtOffen] = useState(
     Boolean(initialEntry.start2 || initialEntry.ende2 || initialEntry.pause2),
   );
+  const [legendeOffen, setLegendeOffen] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -240,7 +254,29 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         <h2 className="m-0 text-[17px] font-semibold text-text">{dow}, {pad(d)}.{pad(m)}.{y}</h2>
         <div className="mb-4 text-xs text-text-muted">Tageseintrag bearbeiten{feiertag ? ' · ' + feiertag : ''}</div>
 
-        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted">Tagestyp</div>
+        <div className="mb-2 flex items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted">Tagestyp</span>
+          <button
+            type="button"
+            id="typLegendBtn"
+            aria-label="Legende zu den Tagestyp-Kürzeln anzeigen"
+            aria-expanded={legendeOffen}
+            className="flex h-[22px] w-[22px] items-center justify-center rounded-full text-text-faint transition-colors hover:bg-surface hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            onClick={() => setLegendeOffen((o) => !o)}
+          >
+            <Info size={14} strokeWidth={2.25} />
+          </button>
+        </div>
+        {legendeOffen && (
+          <div className="mb-2.5 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-3 py-2.5 text-xs text-text-muted">
+            {(Object.keys(TYP_LABEL) as Wochentyp[]).map((t) => (
+              <div key={t} className="flex items-center gap-1.5">
+                <span className={`inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[9px] font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-text-on-accent'}`}>{t}</span>
+                {TYP_LABEL[t]}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap gap-1.5" id="typPick">
           {(Object.keys(TYP_LABEL) as Wochentyp[]).map((t) => {
             const active = t === entry.typ;
@@ -251,8 +287,8 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                 onClick={() => setTyp(t)}
                 className={
                   active
-                    ? `active ${t} rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-text-on-accent'}`
-                    : 'rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-bold text-text-muted transition-colors hover:border-primary hover:text-text'
+                    ? `active ${t} flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-transparent px-3 text-sm font-bold ${TAB_BG[t]} ${t === 'F' ? 'text-canvas' : 'text-text-on-accent'}`
+                    : 'flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-border bg-surface px-3 text-sm font-bold text-text-muted transition-colors hover:border-primary hover:text-text focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none'
                 }
               >
                 {t}
@@ -261,12 +297,19 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           })}
         </div>
 
-        <div className="mt-3.5 flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5">
+        <div
+          className="mt-3.5 flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          role="switch"
+          aria-checked={entry.ho}
+          aria-label="Homeoffice"
+          tabIndex={0}
+          onClick={() => update('ho', !entry.ho)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); update('ho', !entry.ho); } }}
+        >
           <div className="text-sm font-semibold text-text">Homeoffice</div>
           <div
             id="hoSwitch"
-            className={`relative h-[26px] w-[46px] flex-shrink-0 cursor-pointer rounded-full border border-border transition-colors ${entry.ho ? 'on bg-primary' : 'bg-text-faint/35'}`}
-            onClick={() => update('ho', !entry.ho)}
+            className={`relative h-[26px] w-[46px] flex-shrink-0 rounded-full border border-border transition-colors ${entry.ho ? 'on bg-primary' : 'bg-text-faint/35'}`}
           >
             <div className={`absolute top-0.5 h-[22px] w-[22px] rounded-full border border-border bg-text-on-accent shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition-[left] duration-150 ${entry.ho ? 'left-[22px]' : 'left-0.5'}`} />
           </div>
@@ -280,10 +323,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         </div>
         <div className="flex gap-2">
           <div className="flex-1"><label className={labelCls}>Start</label>
-            <input className={inputCls} id="f_start" type="time" value={entry.start} onChange={(e) => update('start', e.target.value)} />
+            <input className={inputCls} id="f_start" type="time" lang="de-DE" value={entry.start} onChange={(e) => update('start', e.target.value)} />
           </div>
           <div className="flex-1"><label className={labelCls}>Ende</label>
-            <input className={inputCls} id="f_ende" type="time" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
+            <input className={inputCls} id="f_ende" type="time" lang="de-DE" value={entry.ende} onChange={(e) => update('ende', e.target.value)} />
           </div>
           <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
             <select className={inputCls} id="f_pause" value={entry.pause || '0'} onChange={(e) => update('pause', e.target.value)}>
@@ -297,10 +340,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             <div className="mb-2 mt-3.5 border-t border-dashed border-border pt-2.5 text-[10px] font-bold uppercase tracking-wide text-primary">2. Schicht</div>
             <div className="flex gap-2">
               <div className="flex-1"><label className={labelCls}>Start</label>
-                <input className={inputCls} id="f_start2" type="time" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
+                <input className={inputCls} id="f_start2" type="time" lang="de-DE" value={entry.start2} onChange={(e) => update('start2', e.target.value)} />
               </div>
               <div className="flex-1"><label className={labelCls}>Ende</label>
-                <input className={inputCls} id="f_ende2" type="time" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
+                <input className={inputCls} id="f_ende2" type="time" lang="de-DE" value={entry.ende2} onChange={(e) => update('ende2', e.target.value)} />
               </div>
               <div className="flex-1"><label className={labelCls}>Pause (Min)</label>
                 <select className={inputCls} id="f_pause2" value={entry.pause2 || '0'} onChange={(e) => update('pause2', e.target.value)}>
@@ -330,7 +373,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         )}
 
         <div className="mb-3.5">
-          <label className={labelCls}>Notiz / Beschreibung</label>
+          <label className={labelCls}>Beschreibung / Notiz</label>
           <textarea
             className={`${inputCls} min-h-[44px] resize-y`}
             id="f_beschreibung"
@@ -340,18 +383,15 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           />
         </div>
 
-        <div className="mb-3.5">
-          <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(z.B. Bahncard, Deutschlandticket - unabhängig vom Tagestyp)</span></label>
-          <input className={inputCls} id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
-        </div>
-
         <div id="travelSection" style={{ display: showTravel ? '' : 'none' }}>
           <div className={sectionTitleCls}>Fahrt &amp; Kosten</div>
           <div className="flex gap-2.5">
-            <div className="mb-3.5 flex-1"><label className={labelCls}>Gefahrene km</label>
+            <div className="mb-3.5 flex-1">
+              <label className={labelCls}>Gefahrene km <span className="font-normal normal-case tracking-normal text-text-faint">(priv. PKW)</span></label>
               <input className={inputCls} id="f_km" type="number" placeholder="0" value={entry.km} onChange={(e) => update('km', e.target.value)} />
             </div>
-            <div className="mb-3.5 flex-1"><label className={labelCls}>Transport €</label>
+            <div className="mb-3.5 flex-1">
+              <label className={labelCls}>Transport € <span className="font-normal normal-case tracking-normal text-text-faint">(z.B. Zug, Flug, …)</span></label>
               <input className={inputCls} id="f_transport" type="number" placeholder="0,00" value={entry.transport} onChange={(e) => update('transport', e.target.value)} />
             </div>
           </div>
@@ -360,11 +400,18 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
               <input className={inputCls} id="f_hotel" type="number" placeholder="0,00" value={entry.hotel} onChange={(e) => update('hotel', e.target.value)} />
             </div>
             <div className="mb-3.5 flex-1">
-              <label className={labelCls}>Bewirtung € <span className="font-normal normal-case tracking-normal text-text-faint">(+Beleg)</span></label>
+              <label className={labelCls}>Bewirtung €</label>
               <input className={inputCls} id="f_bewirtung" type="number" placeholder="0,00" value={entry.bewirtung} onChange={(e) => update('bewirtung', e.target.value)} />
             </div>
           </div>
+        </div>
 
+        <div className="mb-3.5">
+          <label className={labelCls}>Sonstiges € <span className="font-normal normal-case tracking-normal text-text-faint">(z.B. Parken, Taxi, … - unabhängig vom Tagestyp)</span></label>
+          <input className={inputCls} id="f_sonstiges" type="number" placeholder="0,00" value={entry.sonstiges} onChange={(e) => update('sonstiges', e.target.value)} />
+        </div>
+
+        <div style={{ display: showTravel ? '' : 'none' }}>
           <div className={sectionTitleCls}>Verpflegungsmehraufwand</div>
           {!entry.reiseart && (
             <div id="reiseartWarn" className="mb-3.5 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2.5 text-xs font-semibold text-warning">
@@ -382,7 +429,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             <div className="mb-3.5 flex-1">
               <label className={labelCls}>Art des Reisetages</label>
               <select className={inputCls} id="f_reiseart" value={entry.reiseart} onChange={(e) => update('reiseart', e.target.value as TagesEintrag['reiseart'])}>
-                {REISEARTEN.map((a) => <option key={a} value={a}>{a || '– keine –'}</option>)}
+                {REISEARTEN.map((a) => <option key={a} value={a}>{REISEART_LABEL[a]}</option>)}
               </select>
             </div>
           </div>
@@ -391,19 +438,19 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             <div className="flex gap-2">
               <div className="flex-1" data-field="fr">
                 <button
-                  className={`w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors ${entry.fr ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.fr ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
                   onClick={() => toggleYesNo('fr')}
                 >Frühstück</button>
               </div>
               <div className="flex-1" data-field="mi">
                 <button
-                  className={`w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors ${entry.mi ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.mi ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
                   onClick={() => toggleYesNo('mi')}
                 >Mittag</button>
               </div>
               <div className="flex-1" data-field="ab">
                 <button
-                  className={`w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors ${entry.ab ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
+                  className={`min-h-11 w-full rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${entry.ab ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted'}`}
                   onClick={() => toggleYesNo('ab')}
                 >Abend</button>
               </div>
@@ -416,7 +463,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           {receipts.map((r) => (
             <div
               key={r.id}
-              className="receipt-item flex cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2.5 transition-colors hover:border-primary active:bg-surface-2"
+              className="receipt-item flex cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2.5 transition-colors hover:border-primary active:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
               data-rid={r.id}
               onClick={() => handleOpenReceipt(r)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenReceipt(r); } }}
@@ -432,7 +479,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                 <div className="text-[10px] text-text-muted">{new Date(r.createdAt).toLocaleDateString('de-DE')}</div>
               </div>
               <button
-                className="rounded px-1.5 py-1 text-danger"
+                className="flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded text-danger focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 data-rid={r.id}
                 aria-label="Beleg löschen"
                 onClick={(e) => { e.stopPropagation(); handleDeleteReceipt(r.id); }}
@@ -445,14 +492,14 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         <div className="flex gap-2">
           <button
             id="uploadPdfBtn"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent px-3 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-surface"
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent px-3 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             onClick={() => pdfInputRef.current?.click()}
           >
             <Paperclip size={15} strokeWidth={2.25} /> PDF hochladen
           </button>
           <button
             id="takePhotoBtn"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent px-3 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-surface"
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-transparent px-3 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             onClick={() => photoInputRef.current?.click()}
           >
             <Camera size={15} strokeWidth={2.25} /> Foto aufnehmen
@@ -469,12 +516,12 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
 
         <div className="sticky bottom-0 mt-5 flex gap-2.5 border-t border-border bg-surface-2 pt-3.5 pb-0.5">
           <button
-            className="flex-1 rounded-lg border border-border bg-surface px-3 py-3 text-sm font-bold text-text transition-colors hover:border-primary"
+            className="min-h-11 flex-1 rounded-lg border border-border bg-surface px-3 py-3 text-sm font-bold text-text transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             id="closeBtn"
             onClick={handleClose}
           >Schließen</button>
           <button
-            className="flex-1 rounded-lg bg-primary px-3 py-3 text-sm font-bold text-text-on-accent shadow-[0_4px_16px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-primary-strong"
+            className="min-h-11 flex-1 rounded-lg bg-primary px-3 py-3 text-sm font-bold text-text-on-accent shadow-[0_4px_16px_-2px_rgba(99,102,241,0.4)] transition-colors hover:bg-primary-strong focus-visible:ring-2 focus-visible:ring-text focus-visible:outline-none"
             id="saveBtn"
             onClick={handleSave}
           >Speichern</button>

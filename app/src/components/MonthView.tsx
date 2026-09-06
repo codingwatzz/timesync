@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Cloud, TriangleAlert } from 'lucide-react';
 import { MONATSNAMEN } from '../core/constants';
 import { daysInMonth, fmtEUR } from '../core/formatters';
@@ -36,6 +37,11 @@ export function MonthView({
 }: MonthViewProps) {
   const n = daysInMonth(year, month);
   const days = Array.from({ length: n }, (_, i) => i + 1);
+  // Solange ein Vorschau-Panel (Spesen/Arbeitszeiten) aufgeklappt ist, wird der Export-Button
+  // NICHT mehr schwebend dargestellt - er würde sonst Tabelleninhalte permanent verdecken,
+  // egal wie weit gescrollt wird (siehe UX-Audit 05.09.2026, Punkt 13). Stattdessen erscheint
+  // er dann als normaler Button direkt im Textfluss unter den Panels.
+  const [previewOffen, setPreviewOffen] = useState(false);
 
   let nonHoCount = 0;
   let kmSum = 0;
@@ -59,6 +65,10 @@ export function MonthView({
   // gängige Konvention aus Kalender-/Foto-Apps.
   const swipeHandlers = useSwipe(onNextMonth, onPrevMonth);
 
+  const exportBtnCls =
+    'rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-text-on-accent shadow-[0_6px_20px_-4px_rgba(99,102,241,0.5)] ' +
+    'transition-colors hover:bg-primary-strong focus-visible:ring-2 focus-visible:ring-text focus-visible:outline-none';
+
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-border bg-surface-2 px-4 pb-2 pt-4">
@@ -77,7 +87,7 @@ export function MonthView({
         <div className="mt-3.5 flex items-center justify-between">
           <button
             id="prevM"
-            className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             onClick={onPrevMonth}
           >
             <ChevronLeft size={20} strokeWidth={2.25} />
@@ -88,7 +98,7 @@ export function MonthView({
           </div>
           <button
             id="nextM"
-            className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             onClick={onNextMonth}
           >
             <ChevronRight size={20} strokeWidth={2.25} />
@@ -125,18 +135,21 @@ export function MonthView({
             />
           );
         })}
-        <MonthPreviews year={year} month={month} entries={entries} />
+        <MonthPreviews year={year} month={month} entries={entries} onOffenChange={setPreviewOffen} />
+        {previewOffen && (
+          <button id="exportBtn" className={`mb-6 w-full ${exportBtnCls}`} onClick={onExport}>
+            Monat exportieren →
+          </button>
+        )}
       </main>
 
-      <div className="fixed bottom-[22px] left-1/2 flex w-[min(452px,calc(100%-32px))] -translate-x-1/2 justify-center pointer-events-none">
-        <button
-          id="exportBtn"
-          className="pointer-events-auto rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-text-on-accent shadow-[0_6px_20px_-4px_rgba(99,102,241,0.5)] transition-colors hover:bg-primary-strong"
-          onClick={onExport}
-        >
-          Monat exportieren →
-        </button>
-      </div>
+      {!previewOffen && (
+        <div className="fixed bottom-[22px] left-1/2 flex w-[min(452px,calc(100%-32px))] -translate-x-1/2 justify-center pointer-events-none">
+          <button id="exportBtn" className={`pointer-events-auto px-6 ${exportBtnCls}`} onClick={onExport}>
+            Monat exportieren →
+          </button>
+        </div>
+      )}
     </>
   );
 }

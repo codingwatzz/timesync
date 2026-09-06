@@ -38,7 +38,7 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
   const vorOrt = istVorOrtTag(entry);
   if (vorOrt) {
     flags.push(
-      <span key="trip" className={`flag trip ${flagBase} bg-secondary-soft text-secondary`}>
+      <span key="trip" className={`flag trip ${flagBase} bg-info-soft text-info`}>
         <Plane size={11} strokeWidth={2.5} /> extern
       </span>,
     );
@@ -60,10 +60,13 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
       </span>,
     );
   }
+  // "km" ist ein reiner MESSWERT (kein Status wie "extern"/"Homeoffice") - bewusst neutral
+  // gehalten statt einer weiteren Akzentfarbe, damit Statusfarben eindeutig Status bedeuten
+  // (siehe UX-Audit 05.09.2026, Punkt 12).
   const km = toNumber(entry?.km);
   if (km > 0) {
     flags.push(
-      <span key="km" className={`flag km ${flagBase} bg-secondary-soft text-secondary`}>{km} km</span>,
+      <span key="km" className={`flag km ${flagBase} border border-border text-text`}>{km} km</span>,
     );
   }
   if (entry?.receiptIds?.length) {

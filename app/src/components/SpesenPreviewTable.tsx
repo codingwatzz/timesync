@@ -22,7 +22,10 @@ export function SpesenPreviewTable({ zeilen }: { zeilen: ExportZeile[] }) {
           zeilen.map((z) => (
             <tr key={z.datum.toISOString()}>
               <td className={td}>{String(z.datum.getDate()).padStart(2, '0')}.{String(z.datum.getMonth() + 1).padStart(2, '0')}.</td>
-              <td className={`${td} max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-sans`}>
+              <td
+                className={`${td} max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-sans landscape:max-w-[280px]`}
+                title={z.beschreibung || undefined}
+              >
                 {z.beschreibung || '–'}
               </td>
               <td className={td}>{z.km || '–'}</td>

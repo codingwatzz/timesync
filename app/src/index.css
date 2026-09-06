@@ -50,11 +50,12 @@
   /* Text (dark) */
   --color-text: #edeff7;
   --color-text-muted: #98a0be;
-  --color-text-faint: #5f6784;
+  --color-text-faint: #8290b3;
   --color-text-on-accent: #ffffff;
 
-  /* Primär: Indigo (dark) */
-  --color-primary: #6366f1;
+  /* Primär: Indigo (dark) - #5457db statt #6366f1: identischer Farbeindruck, aber weißer
+     Button-Text erreicht damit WCAG-AA (4.47:1 -> 5.58:1), siehe UX-Audit 05.09.2026. */
+  --color-primary: #5457db;
   --color-primary-strong: #818cf8;
   --color-primary-soft: #201f3d;
 
@@ -62,6 +63,11 @@
   --color-secondary: #3b82f6;
   --color-secondary-strong: #60a5fa;
   --color-secondary-soft: #14213d;
+
+  /* Info: eigenständig von Sekundär entkoppelt (Status-Flags wie "extern"), damit sich der
+     Ton unabhängig von der U-Tagestyp-Badge-Füllung auf 4.5:1+ abstimmen lässt. */
+  --color-info: #60a5fa;
+  --color-info-soft: #14213d;
 
   /* Semantisch (dark) */
   --color-success: #34d399;
@@ -72,7 +78,7 @@
   --color-danger-soft: #3d1414;
 
   /* Kategorien / Tagestypen (dark) */
-  --color-tab-a: #6366f1; /* Arbeit = Primär */
+  --color-tab-a: #5457db; /* Arbeit = Primär */
   --color-tab-w: #5b6482; /* Wochenende = neutral */
   --color-tab-f: #f5b759; /* Feiertag = warmes Gold */
   --color-tab-u: #3b82f6; /* Urlaub = Sekundär (Reise/Himmel-Assoziation) */
@@ -91,7 +97,7 @@
 
   --color-text: #1a1d2e;
   --color-text-muted: #5b6482;
-  --color-text-faint: #9aa1bc;
+  --color-text-faint: #646b87;
   --color-text-on-accent: #ffffff;
 
   --color-primary: #4f46e5;
@@ -101,6 +107,9 @@
   --color-secondary: #2563eb;
   --color-secondary-strong: #1d4ed8;
   --color-secondary-soft: #eaf2fe;
+
+  --color-info: #2563eb;
+  --color-info-soft: #eaf2fe;
 
   --color-success: #16a34a;
   --color-success-soft: #e9f9ef;
