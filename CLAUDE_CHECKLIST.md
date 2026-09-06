@@ -45,6 +45,15 @@ in der Freigabeliste) - Workaround: Ergebnis als Datei im selben Workflow-Lauf z
 committen (wie `e2e-test.yml` es ohnehin für `last-result.json` tut) und über die normale
 Contents-API (`GET .../contents/<pfad>?ref=<branch>`) abholen.
 
+**UPDATE (06.09.2026): Das gilt nicht mehr pauschal.** Der Nutzer hat inzwischen bei Bedarf
+ein Token MIT `Actions: Read and write`-Berechtigung erstellt - damit funktioniert
+`workflow_dispatch` per direktem API-Call, kein Temp-Branch-Umweg mehr nötig. **Vor der
+Arbeit einfach kurz `workflow_dispatch` probieren** (z.B. für einen E2E-Testlauf) - schlägt es
+mit 403 fehl, erst dann auf den Temp-Branch-Workaround zurückfallen. Nicht mehr automatisch
+vom alten, eingeschränkten Token-Typ ausgehen. (Fine-grained PATs lassen sich nicht
+nachträglich um Scopes erweitern - für einen fehlenden Scope braucht der Nutzer ein
+komplett neues Token, siehe Abschnitt 3.)
+
 **Contents-API hat ein ~1-MB-Limit für Inline-Inhalte** (real erlebt 02.09.2026 beim
 Abholen heruntergeladener Beleg-PDFs): bei größeren Dateien liefert die Antwort
 `encoding: "none"` und ein leeres `content`-Feld, ohne Fehlermeldung. Workaround: die `sha`
@@ -207,6 +216,35 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   Fehler steckte unbemerkt im E2E-Test, weil E2E seit 02.09.2026 nicht mehr bei jedem Push
   laeuft - bei neuen Formularfeld-Aenderungen (Text-Input -> Select o.ae.) aktiv pruefen, ob
   betroffene E2E-Schritte noch `fill()` statt `selectOption()`/`check()` verwenden.
+- **UI-Redesign (05.-06.09.2026) hat FÜNFMAL denselben Fehler gemacht: CSS-Klassen entfernt,
+  die nur noch als E2E-Selektor dienten** (`.label`, `.sheet-backdrop`, `.yesno`+`active`,
+  `.del`, Sync-Badge `flag ho/warn`) - jedes Mal erst durch einen echten E2E-Absturz bemerkt,
+  nie vorher. **Verbindliche Regel ab sofort: vor JEDER Aufgabe, die Klassennamen an
+  bestehenden Komponenten ändert/entfernt** (Restyling, Refactoring, Icon-Umbau, egal wie
+  klein) - ALLE Selektoren aus `test/e2e/*.js` + `test/e2e/steps/*.js` per grep extrahieren
+  (aus den tatsächlichen `.locator()`/`.click()`/`querySelector()`-Aufrufen, nicht nur die
+  Datei überfliegen) und JEDEN einzeln gegen den neuen Code prüfen. Ein einzelner Treffer im
+  rohen grep-Ergebnis reicht nicht - jeden Treffer aktiv gegenprüfen, nicht nur registrieren.
+  Danach trotzdem einen echten E2E-Lauf einplanen, nicht nur der eigenen Prüfung vertrauen.
+- **Tailwind v4: Utility-Klasse für mehrteilige Theme-Token-Namen ist der VOLLE Suffix nach
+  `--color-`.** `--color-text-on-accent` → Klasse `text-text-on-accent` (Textfarbe) bzw.
+  `bg-text-on-accent` (Hintergrund) - NICHT `text-on-accent`. Bei projektweitem
+  Suchen-Ersetzen für Token-Umbenennungen IMMER das volle Präfix (`bg-`/`text-`/`border-`)
+  ins Suchmuster aufnehmen, sonst werden andere, schon korrekte Verwendungen (z.B.
+  `bg-text-on-accent`) versehentlich mit-verändert (real passiert: `bg-text-on-accent` wurde
+  zu `bg-text-text-on-accent` verdoppelt).
+- **`git push` nach Deploy-/E2E-Läufen routinemäßig als "rejected" erwarten, nicht als
+  Fehler werten.** Deploy-Workflow und E2E-Läufe committen automatisch zurück
+  (`[skip ci]`-Commits für Build-Output/Testergebnisse). Vor JEDEM eigenen Push:
+  `git fetch origin main && git rebase origin/main`, dann erst pushen.
+- **Fine-grained GitHub-PATs sind nach dem Erstellen nicht mehr um weitere Scopes
+  erweiterbar** - für einen zusätzlichen Scope (z.B. nachträglich `Actions: Read and write`)
+  muss der Nutzer ein komplett neues Token erstellen, das alte bleibt auf seinem
+  ursprünglichen Berechtigungsstand.
+- **`core/entry.ts::emptyEntry()` setzt `ho: true` als Standard für JEDEN Tag**, unabhängig
+  vom Tagestyp - kein echtes Nutzer-Signal. Bei Prüfungen "hat dieser Tag schon echte Daten"
+  NIEMALS `ho` alleine werten (führte einmal zu einer fast fehlerhaften Freischalt-Logik,
+  vor dem Zeigen selbst gefunden und korrigiert - siehe `DetailSheet.tsx::hatVersteckbareDaten()`).
 
 ## 4. Parallele Sitzungen
 

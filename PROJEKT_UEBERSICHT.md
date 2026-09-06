@@ -1,8 +1,10 @@
 # Projekt: Zeiterfassung & Spesenabrechnung
 
-**Stand: 05.09.2026 – Übergabe nach vollständigem Architektur-Review und Test-Ergänzung.
-Alle Fakten direkt am frischen Repo/System verifiziert (npm run verify lokal, letzter E2E
-06:13 UTC heute grün). Diese Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
+**Stand: 06.09.2026 – Übergabe nach abgeschlossenem UI-Redesign (Tailwind + Indigo & Ocean
+Design-System, alle Screens migriert, 20-Punkte-UX/UI-Audit umgesetzt, Beleg-Upload-Bug
+behoben, 3 Feature-Wünsche umgesetzt). Alle Fakten direkt am frischen Repo/System verifiziert
+(npm run verify lokal, letzter manueller E2E-Lauf `pass: true, failedChecks: []`). Diese
+Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
 
 ## Ziel
 
@@ -12,11 +14,24 @@ Web-App (PWA) zur Erfassung von Arbeitszeiten, Homeoffice-Tagen, Reisekosten und
 **Repo:** https://github.com/codingwatzz/timesync (öffentlich, main-Branch)
 **Nutzer:** Raoul Hübner, sqior medical GmbH
 
-## Für Claude: erster Schritt in jeder Sitzung
+## Für Claude: erster Schritt in DIESEM nächsten Thread
 
-➡️ **`CLAUDE_CHECKLIST.md`** lesen – verbindliche Arbeitsroutine (lokale Prüfung vor
-Live-Zyklen, GitHub-Token-Hinweise, bekannte Fallstricke, Tool-Zeit-Effizienz).
+Der Nutzer möchte, dass dieser Thread mit einem **neutralen, kritischen UX/UI-Review**
+beginnt – exakt derselbe Bewertungsauftrag wie am Ende der letzten Sitzung, diesmal aber
+gegen den JETZT fertigen Stand (nicht den Zwischenstand von damals). Der volle Prompt-Wortlaut
+(1:1 verwenden, nicht zusammenfassen):
 
+> Du bist ein erfahrenes Team aus Senior UX Designer und Senior UI Designer. Bewerte die
+> vorliegende Software/App ganzheitlich und kritisch aus Sicht professioneller UX- und
+> UI-Gestaltung. Bewerte nicht nach persönlichem Geschmack, sondern anhand etablierter
+> Prinzipien für Usability, User Experience, Interface Design, Accessibility und moderne
+> Softwaregestaltung. [... vollständiger Auftrag: 1. UX – Nutzung und Funktion, 2. UI –
+> Visuelle Gestaltung und Interface Design, 3. UX und UI gemeinsam betrachten, 4. Kritische
+> Bewertung mit Schweregrad-Einstufung (🔴🟠🟡🟢), 5. Abschlussbewertung mit Top-10-Listen
+> und Gesamtbewertung – siehe Chatverlauf der Sitzung vom 06.09.2026 für den exakten,
+> vollständigen Wortlaut, falls dieser hier gekürzt wirkt.]
+
+Erst DANACH normal mit `CLAUDE_CHECKLIST.md` weiterarbeiten (verbindliche Arbeitsroutine).
 **Falls kein GitHub-Token bekannt ist**: aktiv danach fragen, bevor größere Arbeit beginnt.
 
 ## Architektur
@@ -46,14 +61,22 @@ app/src/
     createStore.ts          Factory: wählt Appwrite oder IndexedDB
     types.ts                KVStore-Interface
 
-  components/               UI-Komponenten, je mit eigenem __tests__/ vorhanden
-    MonthView.tsx           Kalender-Monatsansicht (Haupt-View) + SettingsMenu + Swipe
+  components/               UI-Komponenten, je mit eigenem __tests__/ vorhanden. ALLE auf
+                            Tailwind + Design-System umgestellt (siehe eigenes Kapitel oben).
+    MonthView.tsx           Kalender-Monatsansicht (Haupt-View) + SettingsMenu + Swipe.
+                            Export-Button wird zu normalem (nicht-schwebendem) Button,
+                            sobald ein Vorschau-Panel offen ist (verdeckte sonst Inhalte)
     DayRow.tsx              Eine Tages-Zeile inkl. Flags (Homeoffice, Reiseart fehlt,
-                            ⚠ Keine Arbeitszeit erfasst für vergangene Arbeitstage)
-    DetailSheet.tsx         Tages-Detailformular (409 Zeilen – größte Datei, bewusst
-                            zurückgestellt, Refactoring-Empfehlung siehe "Offene Punkte")
+                            ⚠ Keine Arbeitszeit erfasst für vergangene Arbeitstage). "km"
+                            neutral (kein Akzent), "extern" nutzt eigene info-Farbe
+    DetailSheet.tsx         Tages-Detailformular (653 Zeilen – größte Datei, gewachsen durch
+                            3 neue Features 06.09.2026, Refactoring-Empfehlung siehe "Offene
+                            Punkte"). Enthält: Tagestyp-Legende (ⓘ-Popover), Bestätigungs-
+                            dialog bei Tagestyp-Wechsel mit Bestandsdaten, Freischalt-Logik
+                            für Nicht-Arbeitstage (alles außer Sonstiges+Notiz eingeklappt),
+                            Beleg-zu-Feld-Zuordnung (`BelegMeta.feld`)
     ExportView.tsx          Export-Vorschau + ZIP-Download-Trigger
-    SettingsMenu.tsx        Zahnrad-Menü oben links (Import, Diagnose)
+    SettingsMenu.tsx        Zahnrad-Menü oben links (Light/Dark-Umschalter, Import, Diagnose)
     MonthPreviews.tsx       Ausklappbare Akkordeon-Vorschau in der Monatsansicht
     SpesenPreviewTable.tsx  Wiederverwendbare Spesen-Tabelle (ExportView + MonthPreviews)
     ArbeitszeitPreviewTable.tsx  Wiederverwendbare Arbeitszeiten-Tabelle (MonthPreviews)
@@ -67,6 +90,9 @@ app/src/
     useAuth.ts              Appwrite-Session-Verwaltung (checking/loggedIn/loggedOut/
                             offlineUnknown)
     useStore.ts             StoreContext-Hook
+    useTheme.ts             Light/Dark-Umschalter (Klasse "light" auf <html>, Präferenz
+                            in localStorage - reine UI-Präferenz, bewusst nicht über
+                            Appwrite synchronisiert)
     useSwipe.ts             Horizontale Wisch-Geste (Monatswechsel)
     useSwipeDown.ts         Wisch nach unten am Sheet-Griff (Sheet schließen)
     useToast.ts             Toast-Benachrichtigungen
@@ -110,7 +136,20 @@ TagesEintrag {
   fr, mi, ab,                  // Mahlzeiten von Firma bezahlt
   receiptIds: string[],
 }
+
+BelegMeta {
+  id, name, mime, createdAt, date, dataUrl?,
+  feld?: '' | 'transport' | 'hotel' | 'bewirtung' | 'sonstiges',
+  // NEU (06.09.2026): rein informative Zuordnung zu einem Kostenfeld, steuert nur die
+  // "Kein Beleg zugeordnet"-Warnung in DetailSheet.tsx - fließt NICHT in den Export ein.
+}
 ```
+
+**Wichtige Eigenheit:** `emptyEntry()` (core/entry.ts) setzt `ho: true` als Standard für
+JEDEN neuen Tag, unabhängig vom Tagestyp - das ist kein Nutzer-Signal, sondern reiner
+Default. Bei Prüfungen wie "hat dieser Tag schon echte Daten?" NIEMALS `ho` alleine als
+Signal werten (siehe `DetailSheet.tsx::hatVersteckbareDaten()` für ein korrektes Beispiel -
+prüft bewusst NICHT `ho`).
 
 ## Backend (Appwrite Cloud, Frankfurt)
 
@@ -181,10 +220,11 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
 
 ## Testing
 
-- **240 Unit-Tests** (Vitest, 30 Dateien). `cd app && npm run test`. `npm run verify`
+- **241 Unit-Tests** (Vitest, 30 Dateien). `cd app && npm run test`. `npm run verify`
   bündelt Test+Lint+Build – IMMER vor einem Push, der einen Live-Zyklus auslöst.
-- **E2E-Test** (Playwright, GitHub Actions) – nur täglich 06:00 UTC oder manuell.
-  Letzter Lauf: 05.09.2026 06:13 UTC, `pass: true`, alle 16 Prüfungen grün.
+- **E2E-Test** (Playwright, GitHub Actions) – nur täglich 06:00 UTC oder manuell per
+  `workflow_dispatch` (Token mit Actions-Scope vorhanden, direkt auslösbar ohne
+  Temp-Branch-Umweg). Letzter Lauf: 06.09.2026, `pass: true, failedChecks: []`.
   WICHTIG: Cron-Mails gehen an den GitHub-Account, der die cron:-Zeile zuletzt committete.
   Falls die Mails wieder ausbleiben → Nutzer muss die Zeile selbst im Browser-Editor
   anfassen (siehe CLAUDE_CHECKLIST.md, Abschnitt 0b).
@@ -217,34 +257,84 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
   nutzen oder explizit einen weit künftigen Monat ansteuern – NIE `dayRows.first()` im
   aktuellen Monat. (05.09.2026: Repro-Skript schrieb in echten 01.09. → Nutzer musste
   manuell aufräumen.)
+- **CSS-Klassen, die NUR noch als E2E-Test-Selektor dienen, beim Restyling übersehen**: Beim
+  UI-Redesign (05.-06.09.2026) wurden fünfmal Klassennamen entfernt, die keine Styling-
+  Funktion mehr hatten, aber von `test/e2e/` per `.locator()`/`querySelector()` gebraucht
+  wurden (`.label`, `.sheet-backdrop`, `.yesno`+`active`, `.del`, Sync-Badge `flag ho/warn`).
+  Jedes Mal erst durch einen tatsächlichen E2E-Absturz bemerkt. **Regel: vor JEDER
+  Komponenten-Restyle-Aufgabe alle Selektoren aus `test/e2e/*.js` + `test/e2e/steps/*.js`
+  extrahieren** (per grep aus den tatsächlichen `locator/click/querySelector`-Aufrufen, nicht
+  nur den Dateiinhalt überfliegen) **und einzeln gegen den neuen Code verifizieren** - danach
+  trotzdem einen echten E2E-Lauf zur Bestätigung einplanen, nicht nur der eigenen Prüfung
+  vertrauen.
+- **Tailwind v4: Utility-Name für mehrteilige Theme-Token-Namen ist der VOLLE Suffix nach
+  `--color-`, nicht gekürzt.** `--color-text-on-accent` erzeugt die Klasse `text-text-on-accent`
+  (für Textfarbe) bzw. `bg-text-on-accent` (für Hintergrund) - NICHT `text-on-accent`. Ein
+  blindes projektweites Suchen-Ersetzen von `text-on-accent` → `text-text-on-accent` (um den
+  ersten Fehler zu beheben) hat dabei versehentlich auch das schon korrekte `bg-text-on-accent`
+  zu `bg-text-text-on-accent` verdoppelt (zweiter, selbst verursachter Bug, sofort gefunden).
+  Bei ähnlichen Token-Umbenennungen: Suchen-Ersetzen IMMER mit vollständigem Klassen-Präfix
+  (`bg-`/`text-`/`border-`) im Suchmuster, nie nur den Token-Namen alleine.
+- **`git push` nach Deploy/E2E-Läufen routinemäßig als "rejected (non-fast-forward)" erwarten**:
+  Der Deploy-Workflow UND die geplanten/manuellen E2E-Läufe committen automatisch zurück ins
+  Repo (`[skip ci]`-Commits für Build-Output und `test/last-result.json`). Vor jedem eigenen
+  Push: `git fetch origin main && git rebase origin/main`, dann erst pushen - kein Sonderfall,
+  sondern der Normalfall bei aktiver gleichzeitiger CI-Aktivität.
+- **Fine-grained GitHub-PATs lassen sich nicht nachträglich um weitere Berechtigungen
+  erweitern** - für einen zusätzlichen Scope (z.B. `Actions: Read and write`, um
+  `workflow_dispatch` direkt statt über den Temp-Branch-Umweg auszulösen) muss der Nutzer ein
+  KOMPLETT NEUES Token erstellen, nicht das bestehende bearbeiten.
 
-## Frontend / Design (für nächste Sitzung)
+## Design-System (Tailwind + "Indigo & Ocean", fertig seit 06.09.2026)
 
-Der Nutzer möchte als nächstes das UI-Design verbessern. Relevante Ausgangslage:
+**Komplettes UI-Redesign abgeschlossen** – alle Screens (Tagesansicht, Monatsübersicht,
+Export-Ansicht, Login) von der alten Plain-CSS-"Papier"-Optik auf Tailwind CSS v4 +
+ein neues, skalierbares Token-System umgestellt. Kein Zwischenzustand mehr, kein Screen
+läuft mehr auf dem alten Look.
 
-**CSS-Architektur:** Eine einzige Datei `app/src/index.css` (~230 Zeilen), kein CSS-Framework.
-Alle Farben als CSS-Variablen in `:root`:
+**Tokens** (`app/src/index.css`, `@theme`-Block + `:root.light`-Override):
 ```
---ink: #1c2521         (Text)
---paper: #f6f3ec       (Hintergrund)
---card: #ffffff        (Karten/Sheets)
---line: #dcd6c8        (Trennlinien, Rahmen)
---teal / --teal-dark   (Primärfarbe Buttons, Tabs)
---amber / --amber-soft (Warn-/Reise-Akzente)
---red                  (Fehler, Krank-Tab)
---grey                 (Beschriftungen, Placeholder)
---tab-a/w/f/u/k/g      (Tab-Farben je Tagestyp)
+--color-canvas/surface/surface-2/border   Oberflächen-Ebenen
+--color-text/text-muted/text-faint/text-on-accent   Textfarben
+--color-primary/primary-strong/primary-soft   Indigo (Haupt-CTA, Tagestyp "A")
+--color-secondary/secondary-strong/secondary-soft   Ocean Blue (Tagestyp "U")
+--color-info/info-soft   Status-Flags (z.B. "extern") - bewusst von secondary entkoppelt,
+                          damit sich der Ton unabhängig von der U-Tagestyp-Füllung auf
+                          WCAG-AA abstimmen lässt
+--color-success/warning/danger (+ -soft)   Semantische Zustände
+--color-tab-a/w/f/u/k/g   Tagestyp-Farben
 ```
-Sämtliche Abstände, Radien und Typografie sind direkte px/em-Werte, keine Tokens.
+**Light/Dark-Mode**: Umschalter im Zahnrad-Menü (`useTheme.ts`-Hook, Präferenz in
+localStorage). Toggeln setzt/entfernt nur die Klasse `light` auf `<html>` -
+Farb-Tokens sind dieselben Variablennamen in beiden Modi, kein Component-Code
+unterscheidet zwischen den Modi.
 
-**Wichtig:** `npm run verify` vor jedem Push (Lint + Build), CSS-Änderungen lösen **keinen
-Deploy** aus – nur Pushes auf Dateien unter `app/**` tun das (und auch nur dann, wenn der
-geänderte Pfad im Deploy-Workflow greift). Reine CSS-Verbesserungen können also direkt
-committet werden, ohne ein aufwändiges E2E-Verifikations-Setup.
+**Icons**: durchgängig `lucide-react` statt Emoji (Settings/Upload/Wrench/Cloud/
+ChevronLeft-Right-Up-Down/Home/Plane/AlertTriangle/Receipt/BarChart3/ArrowLeft/Download/
+Sun/Moon/Info/ShieldAlert/FileText/X/Plus/Paperclip/Camera).
+
+**Accessibility-Konventionen** (gelten projektweit für neue UI):
+- Touch-Targets mindestens 44×44px (`min-h-11 min-w-11` o.ä.)
+- `focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none` auf JEDEM
+  interaktiven Element (Buttons, Karten mit onClick, nicht nur Inputs)
+- Platzhalter-/Sekundärtext (`text-faint`) auf WCAG-AA-Kontrast (≥4.5:1) geeicht
+
+**⚠️ WICHTIGSTE LEHRE aus dem Redesign** (mehrfach real passiert, siehe
+CLAUDE_CHECKLIST.md): Beim Umstylen einer Komponente werden alte CSS-Klassennamen entfernt,
+die AUSSCHLIESSLICH noch als E2E-Test-Selektor dienten (keine Styling-Funktion mehr) - das
+bricht `test/e2e/` lautlos, oft erst beim nächsten geplanten Lauf bemerkt. **Vor JEDER
+Komponenten-Restyle-Aufgabe:** alle Selektoren aus `test/e2e/*.js` und `test/e2e/steps/*.js`
+extrahieren (Klassen UND IDs, aus den tatsächlichen `locator/click/querySelector`-Aufrufen,
+nicht nur überfliegen) und einzeln gegen den neuen Code prüfen.
+
+`npm run verify` vor jedem Push (Lint + Build). CSS-/Component-Änderungen lösen einen Deploy
+aus (alles unter `app/**`), aber KEINEN automatischen E2E-Lauf mehr (nur täglich 06:00 UTC
+oder manuell per `workflow_dispatch` - inzwischen per Token mit Actions-Scope direkt
+auslösbar, kein Temp-Branch-Umweg mehr nötig, siehe CLAUDE_CHECKLIST.md Abschnitt 0).
 
 ## Offene Punkte / nächste Schritte
 
-1. **`DetailSheet.tsx` (416 Zeilen)** – Formular-UI, AutoSave-Debounce und Beleg-Upload in
+1. **`DetailSheet.tsx` (653 Zeilen)** – Formular-UI, AutoSave-Debounce und Beleg-Upload in
    einer Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer,
    aber echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
    Formularfeld eingebaut wird**, nie auf Vorrat.
