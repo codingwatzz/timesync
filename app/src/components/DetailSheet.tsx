@@ -9,7 +9,7 @@ import { fileToDataURL, photoToPdf } from '../lib/pdf';
 import { markPendingReceiptLink, clearPendingReceiptLink } from '../lib/pendingReceiptLinks';
 import { useSwipe } from '../hooks/useSwipe';
 import { useSwipeDown } from '../hooks/useSwipeDown';
-import { Paperclip, Camera, FileText, X, Plus, AlertTriangle, Info, ShieldAlert } from 'lucide-react';
+import { Paperclip, Camera, FileText, X, Plus, AlertTriangle, HelpCircle, ShieldAlert } from 'lucide-react';
 import type { TagesEintrag, Wochentyp, BelegMeta, BelegFeld } from '../core/types';
 
 // Kurzform-Labels nur für die Dropdown-ANZEIGE (Werte selbst bleiben unverändert, siehe
@@ -431,10 +431,12 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
             id="typLegendBtn"
             aria-label="Legende zu den Tagestyp-Kürzeln anzeigen"
             aria-expanded={legendeOffen}
-            className="flex h-[22px] w-[22px] items-center justify-center rounded-full text-text-faint transition-colors hover:bg-surface hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
+              ${legendeOffen ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-surface text-text-muted hover:border-primary/50 hover:text-primary'}`}
             onClick={() => setLegendeOffen((o) => !o)}
           >
-            <Info size={14} strokeWidth={2.25} />
+            <HelpCircle size={13} strokeWidth={2.25} />
+            Legende
           </button>
         </div>
         {legendeOffen && (
