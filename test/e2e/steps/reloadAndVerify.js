@@ -57,6 +57,24 @@ async function reloadAndVerifyEntry(page, dayRows, { TEST_NOTE, day1RowId, month
   results.receiptPersisted = countAfterReload === 1;
   log(`Beleg nach Reload noch vorhanden: ${results.receiptPersisted}`);
 
+  // NEU (07.09.2026, nach real aufgetretenem Cross-Origin-Credentials-Bug): receiptPersisted
+  // prüft NUR, ob die receiptId noch referenziert ist - NICHT, ob der Beleg-INHALT tatsächlich
+  // ladbar ist. Genau diese Lücke ließ einen Bug unbemerkt, bei dem der Datei-Download in der
+  // echten App lautlos fehlschlug (fehlendes credentials:'include' bei einem Cross-Origin-
+  // Fetch), obwohl "receiptPersisted" durchgehend grün war. Hier: Beleg tatsächlich öffnen und
+  // prüfen, dass KEINE der beiden Fehler-Toasts aus DetailSheet::handleOpenReceipt erscheint.
+  if (countAfterReload === 1) {
+    await page.locator('.receipt-item').first().click();
+    await sleep(1200); // fetch(dataUrl) + window.open brauchen einen Moment
+    const toastText = await page.locator('#toast').textContent().catch(() => '');
+    results.receiptOpenedWithoutError =
+      !toastText.includes('Beleg konnte nicht geladen werden') &&
+      !toastText.includes('Beleg konnte nicht geöffnet werden');
+    log(`Beleg ohne Fehler geöffnet: ${results.receiptOpenedWithoutError} (Toast: "${toastText}")`);
+  } else {
+    results.receiptOpenedWithoutError = false;
+  }
+
   // clearAllReceipts statt eines einzelnen .click() - ein einzelner Klick auf einen Locator,
   // der mehrere Elemente trifft (falls doch mal mehr als 1 Beleg vorhanden ist), löst in
   // Playwright einen "strict mode violation"-Fehler aus und scheiterte dadurch bisher

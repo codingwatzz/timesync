@@ -112,7 +112,17 @@ export async function createAppwriteStore(
         // nutzt). Ein bei jedem Aufruf neuer Query-Parameter macht die URL fuer JEDE
         // Caching-Ebene eindeutig und erzwingt so zuverlaessig eine frische Antwort.
         const url = `${storage.getFileDownload({ bucketId: config.bucketId, fileId: rowId })}&_cb=${Date.now()}`;
-        const resp = await fetch(url, { cache: 'no-store' });
+        // KRITISCH: getFileDownload() liefert nur eine URL zurück, der eigentliche fetch()
+        // hier ist ein ROHER Browser-Fetch, der NICHT durch das Appwrite-SDK läuft (das SDK
+        // selbst würde bei seinen eigenen Aufrufen automatisch die Session mitschicken). Ohne
+        // `credentials: 'include'` sendet der Browser das Appwrite-Session-Cookie NICHT mit,
+        // weil die App-Domain (GitHub Pages) und die Appwrite-Domain unterschiedliche Origins
+        // sind (Standard-Verhalten von fetch() ist `credentials: 'same-origin'`). Vor der
+        // Appwrite-Absicherung (05.09.2026, Bucket auf "Any"-Rolle) fiel das nicht auf, weil
+        // unautorisierte Downloads trotzdem funktionierten - seitdem schlug JEDER Beleg-
+        // Download in der echten App lautlos fehl (siehe get()-Fehlerbehandlung oben), auch
+        // frisch hochgeladene Belege waren betroffen (07.09.2026 real aufgetreten).
+        const resp = await fetch(url, { cache: 'no-store', credentials: 'include' });
         // KRITISCH: fetch() schlägt NUR bei echten Netzwerkfehlern fehl, nicht bei HTTP-
         // Fehlercodes (401/404/...) - resp.ok MUSS geprüft werden, bevor der Body als Datei-
         // Inhalt interpretiert wird. Ohne diese Prüfung wurde eine Appwrite-Fehler-JSON-Antwort

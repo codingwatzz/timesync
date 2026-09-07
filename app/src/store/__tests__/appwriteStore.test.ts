@@ -90,6 +90,21 @@ describe('createAppwriteStore', () => {
     vi.unstubAllGlobals();
   });
 
+  it('get(): sendet die Appwrite-Session per credentials:"include" mit (Cross-Origin-Fix 07.09.2026)', async () => {
+    const store = await createAppwriteStore(CONFIG, () => {});
+    getRow.mockResolvedValueOnce({ value: JSON.stringify({ id: 'r1', name: 'beleg.pdf' }) });
+    const fetchMock = vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x'], { type: 'application/pdf' }) }));
+    vi.stubGlobal('fetch', fetchMock);
+    await store.get('receipt:r1');
+    // getFileDownload() liefert nur eine URL - der anschließende rohe fetch() läuft NICHT
+    // durch das Appwrite-SDK und muss das Session-Cookie deshalb explizit per
+    // credentials:'include' mitschicken, da App- und Appwrite-Domain unterschiedliche Origins
+    // sind (sonst schlägt JEDER Beleg-Download in der echten App lautlos fehl, siehe
+    // real aufgetretener Bug 07.09.2026).
+    expect(fetchMock).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ credentials: 'include' }));
+    vi.unstubAllGlobals();
+  });
+
   it('get(): wirft, wenn der Beleg-Datei-Download einen HTTP-Fehler liefert, statt die Fehlerantwort als Dateiinhalt zu übernehmen', async () => {
     const store = await createAppwriteStore(CONFIG, () => {});
     getRow.mockResolvedValueOnce({ value: JSON.stringify({ id: 'r1', name: 'beleg.pdf' }) });

@@ -27,7 +27,8 @@ const CRITICAL_CHECKS = [
   'loaded', 'loggedIn', 'syncActive', 'testMonthIsDecember',
   'homeofficeDefaultActive', 'travelSectionVisible', 'reiseartWarningVisibleBefore',
   'receiptUploaded', 'fieldsSurvivedReceiptUpload', 'allFieldsPersisted', 'receiptPersisted',
-  'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered', 'importWorked',
+  'receiptOpenedWithoutError', 'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered',
+  'importWorked',
 ];
 
 async function attemptRun() {
