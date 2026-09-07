@@ -160,4 +160,27 @@ describe('DayRow', () => {
     expect(screen.getByText('extern')).toBeInTheDocument();
     expect(screen.queryByText('Vor Ort')).not.toBeInTheDocument();
   });
+
+  it('zeigt die geleistete Arbeitszeit als HH:MM, wenn Start/Ende erfasst sind', () => {
+    const entry = { ...emptyEntry(2026, 9, 17), start: '08:00', ende: '16:30', pause: '30' };
+    render(<DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />);
+    expect(screen.getByText('08:00')).toBeInTheDocument();
+  });
+
+  it('zeigt KEINE Arbeitszeit, wenn keine Start/Ende-Zeiten erfasst sind', () => {
+    const entry = emptyEntry(2026, 9, 17);
+    const { container } = render(
+      <DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(container.querySelector('.stunden')).not.toBeInTheDocument();
+  });
+
+  it('zeigt Arbeitszeit UND Kostenbetrag gemeinsam, wenn beides erfasst ist', () => {
+    const entry = { ...emptyEntry(2026, 9, 17), start: '08:00', ende: '16:00', transport: '20' };
+    const { container } = render(
+      <DayRow year={2026} month={9} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(container.querySelector('.stunden')).toHaveTextContent('08:00');
+    expect(container.querySelector('.sum')).toHaveTextContent('20,00');
+  });
 });

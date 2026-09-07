@@ -1,6 +1,6 @@
 import { WOCHENTAGE, TYP_LABEL } from '../core/constants';
-import { pad, toNumber, istVergangenheit } from '../core/formatters';
-import { tagesKosten, istVorOrtTag, fehltArbeitszeit } from '../core/entry';
+import { pad, toNumber, istVergangenheit, fmtHHMM } from '../core/formatters';
+import { tagesKosten, istVorOrtTag, fehltArbeitszeit, arbeitszeitMinuten } from '../core/entry';
 import { fmtEUR } from '../core/formatters';
 import { Home, Plane, AlertTriangle, Receipt } from 'lucide-react';
 import type { TagesEintrag, Wochentyp } from '../core/types';
@@ -80,18 +80,23 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
 
   const desc = entry?.beschreibung || feiertag || '';
   const sum = entry ? tagesKosten(entry) : 0;
+  // Geleistete Arbeitszeit direkt in der Monatsübersicht sichtbar (Nutzerwunsch 07.09.2026,
+  // UI/UX-Abstimmung) - HH:MM statt Dezimalstunden, damit es zum Format der Arbeitszeiten-
+  // Übersicht/des Exports passt. Wie beim Kostenbetrag: nur anzeigen, wenn wirklich > 0
+  // Minuten erfasst sind, sonst Rauschen an Urlaubs-/Kranktagen/Wochenenden.
+  const minuten = entry ? arbeitszeitMinuten(entry) : 0;
 
   return (
     <div
       className={`day-row${isWeekend ? ' weekend' : ''}${isToday ? ' today' : ''}
-        flex items-stretch overflow-hidden rounded-xl border bg-surface mb-2 cursor-pointer transition-colors
+        flex items-stretch overflow-hidden rounded-xl border bg-surface mb-1.5 cursor-pointer transition-colors
         ${isWeekend ? 'bg-canvas/60 border-border' : 'border-border hover:border-primary/50'}
         ${isToday ? 'ring-1 ring-primary border-primary' : ''}`}
       onClick={onClick}
     >
       <div className={`tab ${typ} w-1.5 flex-shrink-0 ${TAB_BG[typ]}`} />
-      <div className={`day-body flex flex-1 items-center gap-2.5 ${isWeekend ? 'py-1 px-3' : 'py-2.5 px-3'}`}>
-        <div className={`day-date flex-shrink-0 ${isWeekend ? 'flex items-baseline gap-1.5' : 'w-11'}`}>
+      <div className={`day-body flex flex-1 items-center gap-2.5 ${isWeekend ? 'py-1 px-3' : 'py-2 px-3'}`}>
+        <div className={`day-date flex-shrink-0 leading-tight ${isWeekend ? 'flex items-baseline gap-1.5' : 'w-11'}`}>
           <div className={`dow text-text-faint uppercase ${isWeekend ? 'text-[9px]' : 'text-[10px]'}`}>{dow}</div>
           <div
             className={`num font-mono font-bold text-text ${isWeekend ? 'text-[13px]' : 'text-[17px]'}
@@ -102,13 +107,14 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
           </div>
         </div>
         <div className="day-mid min-w-0 flex-1">
-          <div className={`desc truncate text-[13px] ${desc ? 'text-text' : 'italic text-text-faint'} ${isWeekend ? 'text-[11px]' : ''}`}>
+          <div className={`desc truncate leading-snug text-[13px] ${desc ? 'text-text' : 'italic text-text-faint'} ${isWeekend ? 'text-[11px]' : ''}`}>
             {desc || TYP_LABEL[typ]}
           </div>
           {flags.length > 0 && <div className="day-flags mt-0.5 flex flex-wrap gap-1">{flags}</div>}
         </div>
         <div className="day-right flex-shrink-0 text-right text-[12px] text-text-muted">
-          {sum > 0 && <div className="sum font-mono text-[13px] font-bold text-text">{fmtEUR(sum)}&nbsp;€</div>}
+          {minuten > 0 && <div className="stunden font-mono text-[13px] font-bold text-text">{fmtHHMM(minuten)}</div>}
+          {sum > 0 && <div className={`sum font-mono text-[13px] font-bold text-text ${minuten > 0 ? 'mt-0.5' : ''}`}>{fmtEUR(sum)}&nbsp;€</div>}
         </div>
       </div>
     </div>
