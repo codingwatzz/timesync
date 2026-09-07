@@ -113,6 +113,15 @@ export async function createAppwriteStore(
         // Caching-Ebene eindeutig und erzwingt so zuverlaessig eine frische Antwort.
         const url = `${storage.getFileDownload({ bucketId: config.bucketId, fileId: rowId })}&_cb=${Date.now()}`;
         const resp = await fetch(url, { cache: 'no-store' });
+        // KRITISCH: fetch() schlägt NUR bei echten Netzwerkfehlern fehl, nicht bei HTTP-
+        // Fehlercodes (401/404/...) - resp.ok MUSS geprüft werden, bevor der Body als Datei-
+        // Inhalt interpretiert wird. Ohne diese Prüfung wurde eine Appwrite-Fehler-JSON-Antwort
+        // (bei einem vorübergehenden Berechtigungs-/Netzwerk-Hiccup beim Download) selbst als
+        // vermeintlicher PDF-Inhalt in dataUrl geladen - real aufgetreten 07.09.2026: die
+        // "Beleg-Feld-Zuordnung"-Funktion lud diesen fälschlich geladenen "Beleg" anschließend
+        // erneut hoch und hat damit die ECHTE PDF-Datei dauerhaft mit einer Fehlermeldung
+        // überschrieben (nicht mehr wiederherstellbar, Nutzer musste den Beleg neu hochladen).
+        if (!resp.ok) throw new Error(`Datei-Download fehlgeschlagen: HTTP ${resp.status}`);
         const blob = await resp.blob();
         meta.dataUrl = await blobToDataURL(blob);
       } catch (e) {
@@ -149,6 +158,14 @@ export async function createAppwriteStore(
       if (dataUrl) {
         const resp = await fetch(dataUrl);
         const blob = await resp.blob();
+        // Zusätzliche Absicherung (Engineering-Nachtrag 07.09.2026, zum Fund oben): Belege
+        // sind IMMER PDFs (direkter Upload oder Foto->PDF-Konvertierung, siehe pdf.ts) - ein
+        // Blob mit einem klar falschen Typ (z.B. "application/json", wie es bei der oben
+        // beschriebenen Datei-Korruption der Fall war) wird NICHT hochgeladen, sondern wirft
+        // hier, statt eine echte Datei stillschweigend mit Datenmüll zu überschreiben.
+        if (blob.type && blob.type !== 'application/pdf' && blob.size > 0) {
+          throw new Error(`Beleg-Inhalt hat unerwarteten Typ "${blob.type}" statt "application/pdf" - Upload abgebrochen, um die bestehende Datei nicht zu überschreiben.`);
+        }
         const file = new File([blob], `${obj.name ?? 'beleg'}.pdf`, { type: 'application/pdf' });
         try {
           await storage.deleteFile({ bucketId: config.bucketId, fileId: rowId });
