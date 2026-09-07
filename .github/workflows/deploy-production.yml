@@ -1,5 +1,14 @@
 name: Build and Deploy (Production)
 
+# Engineering-Review 07.09.2026, Punkt 3: nutzt jetzt die offizielle GitHub-Pages-Actions-
+# Bereitstellung (actions/upload-pages-artifact + actions/deploy-pages) statt den Build in den
+# main-Branch-Root zu committen. Vorher musste jede neue Root-Datei/jedes neue Root-Verzeichnis
+# manuell in eine Ausnahmeliste eingetragen werden (sonst beim naechsten Deploy geloescht - genau
+# das ist am 01.09. und 02.09.2026 real passiert, siehe CLAUDE_CHECKLIST.md). Diese Ausnahmeliste
+# UND das Risiko fallen mit dem Wechsel komplett weg, main enthaelt jetzt nur noch Quellcode.
+# Voraussetzung (einmalig, manuell): Repo-Settings -> Pages -> Source auf "GitHub Actions"
+# umgestellt.
+
 on:
   push:
     branches: [main]
@@ -9,11 +18,19 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # nur fuer den CI-Log-Commit bei einem Fehlschlag unten noetig
     steps:
       - uses: actions/checkout@v4
 
@@ -47,10 +64,10 @@ jobs:
         if: steps.build.outcome == 'success'
         run: sed -i "s/const CACHE_NAME = 'zeiterfassung-__BUILD_ID__'/const CACHE_NAME = 'zeiterfassung-${{ github.sha }}'/" app/dist/service-worker.js
 
-      # Schreibt bei einem Fehlschlag die vollständige Ausgabe als Datei zurück ins Repo.
+      # Schreibt bei einem Fehlschlag die vollstaendige Ausgabe als Datei zurueck ins Repo.
       # Grund: Ich (Claude) kann GitHubs Log-/Artefakt-Download nicht direkt erreichen
       # (Netzwerksperre meiner Sandbox), aber Dateien im Repo ganz normal per API lesen.
-      # Damit brauche ich für die Fehlersuche keine Screenshots mehr von dir.
+      # Damit brauche ich fuer die Fehlersuche keine Screenshots mehr von dir.
       - name: CI-Log bei Fehlschlag ins Repo committen
         if: steps.unit_tests.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
         run: |
@@ -85,35 +102,24 @@ jobs:
         if: steps.unit_tests.outcome == 'failure' || steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
         run: exit 1
 
-      - name: Build in Root kopieren (dort liegt GitHub Pages)
-        run: |
-          # Alles außer app/, test/, tools/, .github/, .git, ci-logs UND den Dokumentations-
-          # Dateien im Root leeren, dann frisch befüllen. WICHTIG: README.md/
-          # CLAUDE_CHECKLIST.md/PROJEKT_UEBERSICHT.md liegen bewusst im Root (nicht in app/)
-          # und wurden hier bisher bei JEDEM Deploy versehentlich mitgelöscht (Bug gefunden +
-          # behoben am 01.09.2026). PROJEKT_UEBERSICHT.md kam am 01.09. abends dazu.
-          # tools/ (Spesenabrechnung-Export-Werkzeuge) kam am 02.09. dazu und wurde durch
-          # denselben Bug ebenfalls versehentlich geloescht (samt .gitignore) - hier ebenso
-          # ergaenzt. Bei jedem neuen Root-Verzeichnis/jeder neuen Root-Datei: hier in die
-          # Ausnahmeliste aufnehmen.
-          find . -maxdepth 1 -mindepth 1 \
-            ! -name 'app' ! -name 'test' ! -name 'tools' ! -name '.github' ! -name '.git' ! -name 'ci-logs' \
-            ! -name 'README.md' ! -name 'CLAUDE_CHECKLIST.md' ! -name 'PROJEKT_UEBERSICHT.md' \
-            ! -name '.gitignore' \
-            -exec rm -rf {} +
-          cp -r app/dist/. .
+      - name: Pages vorbereiten
+        uses: actions/configure-pages@v5
 
-      - name: Änderungen committen und pushen
-        run: |
-          git config user.name "production-deploy-bot"
-          git config user.email "actions@github.com"
-          git add -A
-          git diff --staged --quiet && echo "keine Änderung" && exit 0
-          git commit -m "[skip ci] Produktions-Build aktualisiert"
-          for i in 1 2 3 4 5; do
-            git fetch origin main
-            git rebase -X ours origin/main && break
-            git rebase --abort || true
-            sleep $((RANDOM % 5 + 2))
-          done
-          git push
+      - name: Build-Ordner als Pages-Artefakt hochladen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Nach GitHub Pages deployen
+        id: deployment
+        uses: actions/deploy-pages@v4

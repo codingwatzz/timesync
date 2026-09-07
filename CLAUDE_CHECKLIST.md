@@ -158,18 +158,18 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   früheren Lauf die Prüfung fälschlich bestand. Fix: Zeitstempel-Vergleich (`runStartTime`).
   Bei ähnlichen "nicht überschreiben, außer..."-Sicherheitschecks künftig IMMER an einem
   Zeitstempel/einer Lauf-ID festmachen, nicht an bloßer Gültigkeit.
-- **Der Deploy-Workflow löscht bei JEDEM Deploy das komplette Root-Verzeichnis außer einer
-  Ausnahmeliste, dann kopiert er den frischen Build rein.** Root-Dateien wie `README.md`/
-  `CLAUDE_CHECKLIST.md`, die NICHT Teil des App-Builds sind, wurden dadurch beim ersten Deploy
-  nach ihrer Erstellung automatisch mitgelöscht (gefunden + behoben 01.09.2026, siehe
-  `.github/workflows/deploy-production.yml`, Ausnahmeliste im `find`-Befehl).
-  **Derselbe Bug ist am 02.09.2026 ERNEUT aufgetreten**, diesmal mit einem ganzen
-  Root-VERZEICHNIS (`tools/spesenabrechnung/` samt `.gitignore`) - ein `app/**`-Push loeste
-  einen Deploy aus, der `tools/` komplett geloescht hat (ueber Git-History wiederhergestellt,
-  keine dauerhaften Daten verloren, aber vermeidbar gewesen). **Bei JEDER neuen Root-Datei
-  ODER JEDEM neuen Root-Verzeichnis, das nicht Teil des App-Builds ist: SOFORT in die
-  Ausnahmeliste in `deploy-production.yml` eintragen, nicht erst wenn es zum zweiten Mal
-  weh tut.** Am besten direkt beim Anlegen des neuen Root-Eintrags, nicht als Nachgedanke.
+- **VERALTET seit 07.09.2026, nur zur Einordnung:** Der Deploy-Workflow löschte früher bei
+  JEDEM Deploy das komplette Root-Verzeichnis außer einer Ausnahmeliste, dann kopierte er den
+  frischen Build rein - direkt in den `main`-Branch committet. Root-Dateien wie `README.md`/
+  `CLAUDE_CHECKLIST.md` wurden dadurch zweimal versehentlich mitgelöscht (01.09. + 02.09.2026,
+  letzteres traf `tools/spesenabrechnung/` samt `.gitignore` - beides über Git-History
+  wiederhergestellt, kein dauerhafter Datenverlust). **Engineering-Review 07.09.2026, Block 3:
+  komplett durch die offizielle GitHub-Pages-Actions-Bereitstellung ersetzt**
+  (`actions/upload-pages-artifact` + `actions/deploy-pages`, siehe
+  `.github/workflows/deploy-production.yml`) - `main` enthält jetzt nur noch Quellcode, kein
+  Build-Output mehr, die ganze Ausnahmeliste UND das zugehörige Risiko sind komplett
+  entfallen, nicht nur behoben. Bei neuen Root-Dateien/-Verzeichnissen ist seitdem NICHTS mehr
+  zu beachten.
 - **`navigateToSafeTestMonth()` rundet den gewählten Zufalls-Zeitpunkt immer auf den nächsten
   Dezember auf** (garantiert Feiertage 25./26.12. für den Test). Der ursprüngliche
   MONTHS_FORWARD-Bereich (60-84) ließ dadurch nur 3 erreichbare Ziel-Dezember zu - bei mehreren
