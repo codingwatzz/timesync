@@ -11,62 +11,45 @@ Verlauf liegen). Konkrete Regeln daraus:
 ## 0. GitHub-Zugangsdaten (WICHTIG, zuerst prüfen)
 
 Für alles, was über reines Lesen des öffentlichen Repo-Inhalts hinausgeht - Commits pushen,
-Workflows auslösen, per GitHub-API mit vernünftigem Rate-Limit arbeiten, oder über einen
-CI-Lauf einen echten Browser mit Appwrite-Zugriff starten (z.B. um Appwrite Storage direkt zu
-prüfen) - wird ein **GitHub Personal Access Token** gebraucht (Scopes: Contents read/write,
-Workflows read/write).
+Workflows auslösen, Secrets verwalten, Pages-Einstellungen ändern, per GitHub-API mit
+vernünftigem Rate-Limit arbeiten, oder über einen CI-Lauf einen echten Browser mit
+Appwrite-Zugriff starten - wird ein **GitHub Personal Access Token** gebraucht.
 
 **Falls kein Token im aktuellen Chat bekannt ist: den Nutzer aktiv danach fragen**, bevor
-größere Arbeit begonnen wird, statt stillschweigend nur mit eingeschränktem (unauthentifiziertem,
-z.B. 60 statt 5000 Anfragen/Stunde) Zugriff weiterzuarbeiten. Das Token gehört NIEMALS in eine
-Projekt-Datei, eine Commit-Message oder sonst einen dauerhaften, geteilten Ort - immer nur
-direkt im Chat vom Nutzer übergeben lassen.
+größere Arbeit begonnen wird. Das Token gehört NIEMALS in eine Projekt-Datei, eine
+Commit-Message oder sonst einen dauerhaften Ort - immer nur direkt im Chat vom Nutzer
+übergeben lassen. **Nach jeder Sitzung, in der ein Token geteilt wurde: dem Nutzer empfehlen,
+es zu rotieren/widerrufen** (GitHub → Settings → Developer settings → Personal access
+tokens) - der Chatverlauf selbst ist nicht flüchtig, ein geteiltes Token sollte behandelt
+werden, als wäre es kurzzeitig exponiert gewesen.
 
-**Nach jeder Sitzung, in der ein Token geteilt wurde: dem Nutzer empfehlen, es zu
-rotieren/widerrufen** (GitHub → Settings → Developer settings → Personal access tokens) -
-auch wenn es nie in eine Datei/einen Commit geschrieben wurde. Der Chatverlauf selbst ist
-nicht flüchtig (bleibt bestehen, wie diese Datei hier beweist) - ein einmal im Chat geteiltes
-Token sollte behandelt werden, als wäre es kurzzeitig exponiert gewesen.
+**Fine-grained PATs sind nach dem Erstellen nicht mehr um weitere Scopes erweiterbar** - für
+einen zusätzlich benötigten Scope muss der Nutzer ein komplett neues Token erstellen.
+`Contents`, `Actions`, `Workflows`, `Secrets` und `Pages` sind jeweils EIGENE, unabhängige
+Berechtigungskategorien - ein Token mit `Actions: Read and write` kann trotzdem an
+`GET/DELETE .../actions/secrets` oder `PUT .../pages` mit 403 scheitern. Vor einer Aufgabe,
+die eine dieser Kategorien betrifft, kurz überlegen, ob das aktuelle Token sie wahrscheinlich
+hat, statt erst beim 403 danach zu fragen (real erlebt 07.09.2026: Secrets-Löschung und
+Pages-Quelle-Umstellung brauchten beide ein zusätzliches Scope, das ursprüngliche
+Actions-Token allein reichte nicht).
 
-(Dieser Abschnitt existiert, weil genau das am 01.09.2026 vergessen wurde: eine Chat-Sitzung
-hatte ein Token und konnte damit vieles verifizieren; die Übergabe an die nächste Sitzung
-erwähnte nirgends, dass dafür überhaupt ein Token nötig ist - die neue Sitzung stieß dadurch
-unerwartet auf Rate-Limits und konnte Appwrite Storage nicht prüfen.)
+**Falls ein Token (noch) keinen `Actions`-Scope hat:** `workflow_dispatch` per API und
+`GET/DELETE .../actions/secrets` schlagen mit 403 fehl, ebenso `GET .../runs/{id}/logs`
+(scheitert zusätzlich an der Sandbox-Netzwerksperre, Redirect auf
+`results-receiver.actions.githubusercontent.com`). Workaround für `workflow_dispatch`: einen
+temporären Branch mit einem `push`-getriggerten Workflow anlegen. Workaround für Logs:
+Ergebnis als Datei im selben Workflow-Lauf zurück ins Repo committen (wie `e2e-test.yml` es
+für `last-result.json` tut) und über die Contents-API abholen.
 
-**Praktische Einschränkung, real erlebt (01.09.2026):** Ein vom Nutzer im Chat geteiltes Token
-ist typischerweise ein **fine-grained PAT ohne `actions`-Scope** - `workflow_dispatch` per API
-und `POST .../actions/runs/{id}/rerun` schlagen dann mit 403 "Resource not accessible by
-personal access token" fehl, ebenso `GET .../actions/variables` bzw. `/secrets`. Workaround:
-temporären Branch mit einem Workflow anlegen, der auf `push` statt `workflow_dispatch`
-reagiert - ein normaler `git push` auf den Branch triggert ihn ganz regulär, ganz ohne
-Actions-API-Berechtigung. Außerdem scheitert `GET .../runs/{id}/logs` an der
-Sandbox-Netzwerksperre (Redirect auf `results-receiver.actions.githubusercontent.com`, nicht
-in der Freigabeliste) - Workaround: Ergebnis als Datei im selben Workflow-Lauf zurück ins Repo
-committen (wie `e2e-test.yml` es ohnehin für `last-result.json` tut) und über die normale
-Contents-API (`GET .../contents/<pfad>?ref=<branch>`) abholen.
+**Contents-API hat ein ~1-MB-Limit für Inline-Inhalte** (z.B. bei größeren Beleg-PDFs): die
+Antwort liefert dann `encoding: "none"` und ein leeres `content`-Feld, ohne Fehlermeldung.
+Workaround: die `sha` aus der Contents-Antwort nehmen und die Git-Blobs-API verwenden
+(funktioniert bis 100 MB): `GET /repos/<repo>/git/blobs/<sha>`.
 
-**UPDATE (06.09.2026): Das gilt nicht mehr pauschal.** Der Nutzer hat inzwischen bei Bedarf
-ein Token MIT `Actions: Read and write`-Berechtigung erstellt - damit funktioniert
-`workflow_dispatch` per direktem API-Call, kein Temp-Branch-Umweg mehr nötig. **Vor der
-Arbeit einfach kurz `workflow_dispatch` probieren** (z.B. für einen E2E-Testlauf) - schlägt es
-mit 403 fehl, erst dann auf den Temp-Branch-Workaround zurückfallen. Nicht mehr automatisch
-vom alten, eingeschränkten Token-Typ ausgehen. (Fine-grained PATs lassen sich nicht
-nachträglich um Scopes erweitern - für einen fehlenden Scope braucht der Nutzer ein
-komplett neues Token, siehe Abschnitt 3.)
-
-**Contents-API hat ein ~1-MB-Limit für Inline-Inhalte** (real erlebt 02.09.2026 beim
-Abholen heruntergeladener Beleg-PDFs): bei größeren Dateien liefert die Antwort
-`encoding: "none"` und ein leeres `content`-Feld, ohne Fehlermeldung. Workaround: die `sha`
-aus der Contents-Antwort nehmen und stattdessen die Git-Blobs-API verwenden (funktioniert
-bis 100 MB): `GET /repos/<repo>/git/blobs/<sha>` liefert denselben Inhalt zuverlässig
-base64-kodiert.
-
-**UPDATE 2 (06.09.2026, Abend): Actions-Scope-Token erneut bestätigt funktionsfähig.**
-`workflow_dispatch` per direktem API-Call lief erneut sauber durch (HTTP 204, kein
-Temp-Branch-Umweg), Push + E2E-Anstoß + Ergebnisabruf über Contents-API in EINEM
-zusammenhängenden Block (ein `sleep 240` statt mehrfachem Polling). Nach dieser Sitzung
-wurde der Nutzer zur Rotation des im Chat geteilten Tokens geraten (siehe oben) - beim
-nächsten Thread ggf. nachfragen, ob das erledigt ist bzw. ob ein neues Token gilt.
+**Empfohlenes Vorgehen für Push + Live-Verifikation in einem Rutsch** (funktioniert
+zuverlässig mit einem Actions-berechtigten Token, zuletzt bestätigt 07.09.2026): Push →
+`workflow_dispatch` → EIN langer `sleep` (z.B. 240s) statt mehrfachem Polling → Ergebnis per
+Contents-API abholen. Danach den Nutzer zur Token-Rotation erinnern.
 
 ## 0b. Tool-/Actions-Zeit ist ein echter Kostenfaktor - effizient verifizieren, nicht im Zweifel doppelt
 
@@ -144,137 +127,94 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
 
 - Appwrite-Schreibvorgänge können einige Sekunden brauchen, bis sie überall konsistent lesbar
   sind ("Eventual Consistency"). Großzügige Wartebudgets sind bereits gesetzt
-  (`test/e2e/steps/importFlow.js`, seit 04.09.2026 bis zu ~140s Gesamtbudget über 10 Versuche
-  mit gedeckeltem Backoff, plus direkter Appwrite-Read als Diagnose ab dem 3. Versuch - siehe
-  Kommentar dort). Nicht erneut als Bug behandeln.
+  (`test/e2e/steps/importFlow.js`, bis zu ~140s über 10 Versuche mit gedeckeltem Backoff, plus
+  direkter Appwrite-Read als Diagnose ab dem 3. Versuch). Nicht erneut als Bug behandeln.
 - `page.waitForFunction(fn, options)` in Playwright ist FALSCH - das Options-Objekt wird sonst
   als Funktionsargument gebunden, das Timeout wird stillschweigend ignoriert. Immer:
-  `page.waitForFunction(fn, undefined, options)`.- Meine Sandbox kann `*.github.io` nicht direkt anfragen (Netzwerk-Freigabeliste). Status der
+  `page.waitForFunction(fn, undefined, options)`.
+- Meine Sandbox kann `*.github.io` nicht direkt anfragen (Netzwerk-Freigabeliste). Status der
   Live-App IMMER über die GitHub-API (Pages-Build-Status) oder über E2E-Testergebnisse
   prüfen, nie per direktem `curl`/`web_fetch` auf die Live-URL.
-- **`test/e2e.js`s "nicht überschreiben"-Sicherheitslogik prüfte nur "ist die Datei gültiges
-  JSON", nicht "stammt sie aus DIESEM Lauf"** - ein sehr früher Absturz (vor jedem
-  Schreibversuch) blieb dadurch unsichtbar, weil eine alte, aber gültige Datei von einem
-  früheren Lauf die Prüfung fälschlich bestand. Fix: Zeitstempel-Vergleich (`runStartTime`).
-  Bei ähnlichen "nicht überschreiben, außer..."-Sicherheitschecks künftig IMMER an einem
-  Zeitstempel/einer Lauf-ID festmachen, nicht an bloßer Gültigkeit.
-- **VERALTET seit 07.09.2026, nur zur Einordnung:** Der Deploy-Workflow löschte früher bei
-  JEDEM Deploy das komplette Root-Verzeichnis außer einer Ausnahmeliste, dann kopierte er den
-  frischen Build rein - direkt in den `main`-Branch committet. Root-Dateien wie `README.md`/
-  `CLAUDE_CHECKLIST.md` wurden dadurch zweimal versehentlich mitgelöscht (01.09. + 02.09.2026,
-  letzteres traf `tools/spesenabrechnung/` samt `.gitignore` - beides über Git-History
-  wiederhergestellt, kein dauerhafter Datenverlust). **Engineering-Review 07.09.2026, Block 3:
-  komplett durch die offizielle GitHub-Pages-Actions-Bereitstellung ersetzt**
-  (`actions/upload-pages-artifact` + `actions/deploy-pages`, siehe
-  `.github/workflows/deploy-production.yml`) - `main` enthält jetzt nur noch Quellcode, kein
-  Build-Output mehr, die ganze Ausnahmeliste UND das zugehörige Risiko sind komplett
-  entfallen, nicht nur behoben. Bei neuen Root-Dateien/-Verzeichnissen ist seitdem NICHTS mehr
-  zu beachten.
-- **`navigateToSafeTestMonth()` rundet den gewählten Zufalls-Zeitpunkt immer auf den nächsten
-  Dezember auf** (garantiert Feiertage 25./26.12. für den Test). Der ursprüngliche
-  MONTHS_FORWARD-Bereich (60-84) ließ dadurch nur 3 erreichbare Ziel-Dezember zu - bei mehreren
-  Testläufen kurz hintereinander (parallele Sitzungen, manuelle Wiederholungen zur Diagnose)
-  kollidieren die mit spürbarer Wahrscheinlichkeit auf demselben Tag und häufen dort
-  Karteileichen an (echt passiert am 01.09.2026). Fix: Bereich auf 60-180 erweitert (~10 statt
-  3 erreichbare Dezember). Bei erneuter Diagnose per manuellem `node test/e2e.js`-Rerun:
-  IMMER daran denken, dass ein Fehlschlag auch von den eigenen vorherigen Wiederholungsläufen
-  auf demselben Testtag stammen kann, nicht zwingend vom untersuchten Code - vor dem
-  Schlussfolgern lieber die betroffene Testzeile direkt in Appwrite gegenprüfen.
-- **Beleg-Upload (PDF- und Foto-Pfad in `DetailSheet.tsx`) macht zwei getrennte,
-  nacheinander abgewartete Appwrite-Schreibvorgänge** (1. Beleg hochladen, 2. Tageseintrag mit
-  neuer receiptId aktualisieren). Wird die Seite dazwischen unterbrochen (z.B. weil der mobile
-  Browser während der nativen Kamera-App via `capture="environment"` pausiert/neu lädt), landet
-  der Beleg sicher in Appwrite, der Tageseintrag verweist aber nie darauf - unsichtbare
-  Karteileiche, real aufgetreten am 01.09.2026. Fix: `pendingReceiptLinks.ts` vermerkt die
-  Absicht synchron in localStorage vor den beiden Schreibvorgängen; `repairPendingReceiptLinks`
-  holt beim nächsten App-Start liegen gebliebene Verknüpfungen automatisch nach.
+- **"Nicht überschreiben, außer..."-Sicherheitschecks IMMER an einem Zeitstempel/einer
+  Lauf-ID festmachen, nicht an bloßer Gültigkeit** (`test/e2e.js` prüfte früher nur "ist die
+  Datei gültiges JSON", eine alte Datei von einem früheren Lauf bestand die Prüfung dadurch
+  fälschlich - behoben mit `runStartTime`-Vergleich).
+- **Deploy läuft seit 07.09.2026 über die offizielle GitHub-Pages-Actions-Bereitstellung**
+  (`actions/deploy-pages`), nicht mehr über einen Build-Commit in den `main`-Root. Der frühere
+  "Root-Ausnahmeliste"-Bug (zweimal versehentlich README/CLAUDE_CHECKLIST/`tools/` gelöscht)
+  ist damit strukturell nicht mehr möglich, nicht nur behoben - bei neuen Root-Einträgen ist
+  seitdem nichts mehr zu beachten.
+- `navigateToSafeTestMonth()` in der E2E-Suite steuert IMMER einen Dezember an (garantiert
+  Feiertage für den Test). Der erreichbare Bereich wurde von 60-84 auf 60-180 Monate erweitert,
+  um Test-Kollisionen bei mehreren Läufen kurz hintereinander zu vermeiden. Bei einem
+  Fehlschlag nach einem manuellen Rerun: erst gegenprüfen, ob er von einem eigenen vorherigen
+  Lauf auf demselben Testtag stammt, bevor auf einen Code-Bug geschlossen wird.
+- **Beleg-Upload macht zwei getrennte, nacheinander abgewartete Appwrite-Schreibvorgänge**
+  (Datei hochladen, dann Tageseintrag mit der neuen `receiptId` aktualisieren) - eine
+  Unterbrechung dazwischen (z.B. mobiler Browser pausiert während der nativen Kamera-App)
+  könnte sonst eine unsichtbare Karteileiche hinterlassen. Abgesichert durch
+  `pendingReceiptLinks.ts`: Absicht wird synchron VOR beiden Schreibvorgängen vermerkt,
+  `repairPendingReceiptLinks` holt liegen gebliebene Verknüpfungen beim nächsten App-Start
+  automatisch nach.
 - **Appwrite-Storage-Datei-IDs für Belege haben das Präfix `receipt_`** (aus `receipt:<rid>`
-  wird über `toAppwriteId()` `receipt_<rid>` - Doppelpunkt -> Unterstrich). Bei DIREKTEN
-  Storage-Zugriffen (eigene Skripte, nicht die App selbst) IMMER dieses Präfix verwenden,
-  nicht den rohen `rid`. Ein Korrekturversuch am 04.09.2026 schrieb zunächst ohne Präfix -
-  landete an einer verwaisten, nie referenzierten Datei, waehrend die echte, vom Nutzer
-  gesehene Datei unangetastet blieb. Eigene Nachpruefung (Re-Download derselben falschen ID)
-  bestaetigte faelschlich "Erfolg", weil sie denselben Fehler wiederholte statt gegen die
-  ECHTE, von der App genutzte ID zu pruefen - bei Verifikation immer die ID-Herleitung selbst
-  hinterfragen, nicht nur "kommt dieselbe Datei zurueck, die ich geschrieben habe" pruefen.
+  wird über `toAppwriteId()` `receipt_<rid>`). Bei DIREKTEN Storage-Zugriffen (eigene
+  Diagnose-Skripte, nicht die App selbst) immer dieses Präfix verwenden, nicht den rohen
+  `rid` - sonst landet man an einer verwaisten Datei, während die echte unangetastet bleibt.
+  Bei Verifikation nach einem Fix immer die ID-Herleitung selbst hinterfragen, nicht nur
+  "kommt dieselbe Datei zurück, die ich geschrieben habe" prüfen (kann denselben Fehler
+  wiederholen statt ihn aufzudecken).
 - **Appwrite Storage-Downloads laufen hinter einem CDN (Varnish)** - `fetch(url, {cache:
-  'no-store'})` beeinflusst nur den LOKALEN Browser-Cache, nicht das CDN. Nach dem Ersetzen
-  einer Datei unter derselben ID/URL kann das CDN weiterhin die alte Version ausliefern,
-  selbst nach explizitem Client-Cache-Leeren durch den Nutzer. Fix: einen sich aendernden
-  Query-Parameter an die URL anhaengen (`&_cb=${Date.now()}`), damit jede Cache-Ebene die
-  Anfrage als neue Ressource behandelt - bereits so in `appwriteStore.ts` implementiert.
-- **GitHub-Email-Benachrichtigung für geplante (cron-)Workflow-Läufe hängt an einem
-  unsichtbaren Detail:** GitHub schickt Fehlschlag-Mails für `schedule:`-Läufe an den
-  GitHub-Account, der die `cron:`-Zeile im Workflow-File ZULETZT committet hat - nicht an
-  den, der den Lauf gerade beobachtet oder manuell auslöst (für `workflow_dispatch`-Läufe
-  gilt eine andere Regel: da zählt der tatsächliche Auslöser). Wenn Claude die Cron-Zeile
-  mit einer Fantasie-Commit-Identität (z.B. `claude@anthropic.com` oder ähnlichem, nicht mit
-  dem echten, verifizierten GitHub-Account des Nutzers verknüpft) anfasst, gehen künftige
-  Ausfall-Mails für den geplanten Lauf ins Leere, OHNE dass das auffällt (echt passiert:
-  eine frühere Sitzung committete unter der Autor-Kennung "production-deploy-bot", danach
-  bekam der Nutzer nur noch für manuell/durch Claude ausgelöste Läufe Mails, nicht mehr für
-  den täglichen 06:00-UTC-Lauf - erst am 05.09.2026 bemerkt). **Regel:** die `cron:`-Zeile in
-  `e2e-test.yml` (oder einem anderen geplanten Workflow) möglichst NICHT von Claude aus
-  committen, sondern den Nutzer bitten, eine minimale Änderung selbst direkt im
-  GitHub-Web-UI zu committen, wenn die Zuordnung mal korrigiert werden muss.
-- **`#f_pause`/`#f_pause2` in `DetailSheet.tsx` sind `<select>`-Dropdowns** (Minuten-Schritte
-  ueber `pauseOptionsFor`), keine Text-Eingabefelder. `page.fill()` in Playwright-Tests wirft
-  darauf einen Fehler ("Element is not an input..."); `page.selectOption()` verwenden. Dieser
-  Fehler steckte unbemerkt im E2E-Test, weil E2E seit 02.09.2026 nicht mehr bei jedem Push
-  laeuft - bei neuen Formularfeld-Aenderungen (Text-Input -> Select o.ae.) aktiv pruefen, ob
-  betroffene E2E-Schritte noch `fill()` statt `selectOption()`/`check()` verwenden.
-- **UI-Redesign (05.-06.09.2026) hat FÜNFMAL denselben Fehler gemacht: CSS-Klassen entfernt,
-  die nur noch als E2E-Selektor dienten** (`.label`, `.sheet-backdrop`, `.yesno`+`active`,
-  `.del`, Sync-Badge `flag ho/warn`) - jedes Mal erst durch einen echten E2E-Absturz bemerkt,
-  nie vorher. **Verbindliche Regel ab sofort: vor JEDER Aufgabe, die Klassennamen an
+  'no-store'})` beeinflusst nur den LOKALEN Browser-Cache, nicht das CDN. Fix: einen sich
+  ändernden Query-Parameter an die URL anhängen (`&_cb=${Date.now()}`) - bereits so in
+  `appwriteStore.ts` implementiert.
+- **GitHub-Email-Benachrichtigung für geplante (`schedule:`-)Workflow-Läufe hängt daran, wer
+  die `cron:`-Zeile zuletzt committet hat** - nicht an dem, der den Lauf beobachtet/auslöst.
+  Committet Claude diese Zeile unter einer Fantasie-Identität (z.B. `claude@anthropic.com`),
+  gehen künftige Ausfall-Mails für den geplanten Lauf ins Leere, ohne dass das auffällt (real
+  passiert, erst nach Tagen bemerkt). **Regel:** die `cron:`-Zeile möglichst NICHT von Claude
+  aus committen, sondern den Nutzer bitten, eine minimale Änderung selbst im GitHub-Web-UI
+  vorzunehmen, wenn die Zuordnung mal korrigiert werden muss.
+- **`#f_pause`/`#f_pause2` in `DetailSheet.tsx` sind `<select>`-Dropdowns**, keine
+  Text-Eingabefelder - `page.fill()` wirft darauf einen Fehler, `page.selectOption()`
+  verwenden. Bei neuen Formularfeld-Änderungen (Text-Input → Select o.ä.) aktiv prüfen, ob
+  betroffene E2E-Schritte noch `fill()` statt `selectOption()`/`check()` verwenden - dieser
+  Fehler blieb einmal unbemerkt, weil E2E nicht mehr bei jedem Push läuft.
+- **UI-Redesigns haben wiederholt denselben Fehler gemacht: CSS-Klassen entfernt, die nur
+  noch als E2E-Selektor dienten** (fünfmal in Folge, jedes Mal erst durch einen echten
+  E2E-Absturz bemerkt). **Verbindliche Regel: vor JEDER Aufgabe, die Klassennamen an
   bestehenden Komponenten ändert/entfernt** (Restyling, Refactoring, Icon-Umbau, egal wie
   klein) - ALLE Selektoren aus `test/e2e/*.js` + `test/e2e/steps/*.js` per grep extrahieren
-  (aus den tatsächlichen `.locator()`/`.click()`/`querySelector()`-Aufrufen, nicht nur die
-  Datei überfliegen) und JEDEN einzeln gegen den neuen Code prüfen. Ein einzelner Treffer im
-  rohen grep-Ergebnis reicht nicht - jeden Treffer aktiv gegenprüfen, nicht nur registrieren.
-  Danach trotzdem einen echten E2E-Lauf einplanen, nicht nur der eigenen Prüfung vertrauen.
+  (aus den tatsächlichen `.locator()`/`.click()`/`querySelector()`-Aufrufen) und JEDEN einzeln
+  gegen den neuen Code prüfen. Danach trotzdem einen echten E2E-Lauf einplanen, nicht nur der
+  eigenen Prüfung vertrauen.
 - **Tailwind v4: Utility-Klasse für mehrteilige Theme-Token-Namen ist der VOLLE Suffix nach
-  `--color-`.** `--color-text-on-accent` → Klasse `text-text-on-accent` (Textfarbe) bzw.
-  `bg-text-on-accent` (Hintergrund) - NICHT `text-on-accent`. Bei projektweitem
-  Suchen-Ersetzen für Token-Umbenennungen IMMER das volle Präfix (`bg-`/`text-`/`border-`)
-  ins Suchmuster aufnehmen, sonst werden andere, schon korrekte Verwendungen (z.B.
-  `bg-text-on-accent`) versehentlich mit-verändert (real passiert: `bg-text-on-accent` wurde
-  zu `bg-text-text-on-accent` verdoppelt).
+  `--color-`.** `--color-text-on-accent` → Klasse `text-text-on-accent`/`bg-text-on-accent`,
+  NICHT `text-on-accent`. Bei projektweitem Suchen-Ersetzen für Token-Umbenennungen immer das
+  volle Präfix (`bg-`/`text-`/`border-`) ins Suchmuster aufnehmen, sonst werden andere, schon
+  korrekte Verwendungen versehentlich mit-verändert.
 - **`git push` nach Deploy-/E2E-Läufen routinemäßig als "rejected" erwarten, nicht als
-  Fehler werten.** Deploy-Workflow und E2E-Läufe committen automatisch zurück
-  (`[skip ci]`-Commits für Build-Output/Testergebnisse). Vor JEDEM eigenen Push:
-  `git fetch origin main && git rebase origin/main`, dann erst pushen.
+  Fehler werten.** Beide committen automatisch zurück (`[skip ci]`-Commits). Vor JEDEM eigenen
+  Push: `git fetch origin main && git rebase origin/main`, dann erst pushen.
 - **Fine-grained GitHub-PATs sind nach dem Erstellen nicht mehr um weitere Scopes
-  erweiterbar** - für einen zusätzlichen Scope (z.B. nachträglich `Actions: Read and write`)
-  muss der Nutzer ein komplett neues Token erstellen, das alte bleibt auf seinem
-  ursprünglichen Berechtigungsstand.
+  erweiterbar** - siehe Abschnitt 0 für Details zu Token-Scopes.
 - **`core/entry.ts::emptyEntry()` setzt `ho: true` als Standard für JEDEN Tag**, unabhängig
   vom Tagestyp - kein echtes Nutzer-Signal. Bei Prüfungen "hat dieser Tag schon echte Daten"
-  NIEMALS `ho` alleine werten (führte einmal zu einer fast fehlerhaften Freischalt-Logik,
-  vor dem Zeigen selbst gefunden und korrigiert - siehe `DetailSheet.tsx::hatVersteckbareDaten()`).
-- **`<input type="number">` ist NICHT komma-sicher** (deutsche Locale/Tastatur kann ein
-  Komma statt Punkt als Dezimaltrennzeichen liefern, HTML5-Zahleneingaben verlangen aber
-  einen Punkt) - betraf alle Betragsfelder (km/Transport/Hotel/Bewirtung/Sonstiges) in
-  `DetailSheet.tsx`, behoben 06.09.2026 (Abend, UX-Review Punkt 4.2): `type="text"
-  inputMode="decimal"` + zentrale, komma-tolerante `core/formatters.ts::toNumber()`.
-- **Bei Zahl-Parsing-Bugs IMMER projektweit grep'en, nicht nur die offensichtliche Stelle
-  fixen** (Checkliste Abschnitt 2, "Bugfix an einer Stelle -> überall prüfen" - hier
-  besonders wörtlich genommen): die Komma-Unsicherheit von oben steckte NICHT nur in
-  `core/formatters.ts::toNumber()`, sondern in ZWEI weiteren, unabhängigen Parser-Kopien
-  (`lib/export/exportZeilen.ts` eigene `toNumber()`, `lib/export/receiptMerge.ts` eigenes
-  Inline-`parseFloat()`) - letztere wurde erst durch gezieltes `grep -rn "parseFloat\|Number("`
-  über den ganzen `src/`-Baum gefunden, NACH dem ersten "fertig" gefühlten Fix. Bei
-  Betrags-/Zahlen-Feldern künftig immer diesen grep machen, bevor ein Parsing-Fix als
-  vollständig gilt - Duplikate an unerwarteten Stellen (hier: PDF-Merge-Logik) sind der
-  Normalfall, nicht die Ausnahme.
-- **Import schrieb früher sofort und ohne Rückfrage** (`lib/exportImport.ts::importFromFile()`
-  rief `saveEntry()` in einer Schleife auf) - behoben 06.09.2026 (Abend, UX-Review Punkt 4.1):
-  zweistufig, `parseImportFile()` (nur parsen) → `importPlan.ts::buildImportPlan()` (prüft
-  Überschreibungen, schreibt nichts) → `components/ImportConfirmDialog.tsx` (Bestätigung +
-  optionale Sicherheitskopie) → erst dann `applyImportPlan()` schreibt wirklich. Bei
-  künftigen "Datei rein → sofort verarbeiten"-Mustern (Import, Restore o.ä.) immer prüfen,
-  ob ein Schreibvorgang OHNE Vorschau/Bestätigung passiert, bevor er als "funktioniert ja"
-  durchgewunken wird - Funktionieren und Sicherheit sind zwei verschiedene Prüfungen.
+  NIEMALS `ho` alleine werten (siehe `DetailSheet.tsx::hatVersteckbareDaten()`).
+- **Bei Zahl-Parsing-Bugs IMMER projektweit grep'en** (`grep -rn "parseFloat\|Number("`),
+  nicht nur die offensichtliche Stelle fixen. Die Komma-Unsicherheit von `<input
+  type="number">` (behoben 06.09.2026: `type="text" inputMode="decimal"` + zentrale
+  `core/formatters.ts::toNumber()`) steckte in DREI unabhängigen Parser-Kopien, die dritte
+  wurde erst nach dem ersten "fertig" gefühlten Fix gefunden. Duplikate an unerwarteten
+  Stellen sind der Normalfall, nicht die Ausnahme.
+- **Bei "Datei rein → sofort verarbeiten"-Mustern (Import, Restore o.ä.) immer prüfen, ob
+  ein Schreibvorgang OHNE Vorschau/Bestätigung passiert** - Funktionieren und Sicherheit sind
+  zwei verschiedene Prüfungen (Import schrieb früher sofort und ohne Rückfrage in den Store,
+  behoben 06.09.2026: zweistufig über `importPlan.ts` + `ImportConfirmDialog.tsx`).
+- **`KVStore.get/set/delete` (`appwriteStore.ts`) werfen bei einem ECHTEN Fehler, geben aber
+  `null` zurück, wenn ein Schlüssel wirklich nicht existiert** (behoben 07.09.2026 - vorher
+  wurden beide Fälle gleich behandelt, ein fehlgeschlagener Beleg-Upload z.B. wurde als
+  Erfolg gemeldet). Beim Ändern dieser Datei: diese Unterscheidung nicht wieder aufweichen,
+  `isNotFoundError()` ist dafür der richtige Test.
 
 ## 4. Parallele Sitzungen
 
@@ -285,20 +225,13 @@ Kollisionen führen (z.B. zwei E2E-Testläufe gleichzeitig auf demselben Testtag
 fremder Commit/Workflow-Lauf auffällt, der nicht aus der eigenen Sitzung stammt: dem Nutzer
 kurz und sachlich Bescheid geben, nicht alarmistisch, und die eigene Arbeit fortsetzen.
 
-## 5. Monats-Export: lebt jetzt in der App, nicht mehr in tools/
+## 5. Monats-Export lebt in der App, nicht in `tools/`
 
-**Veraltet, nur zur Einordnung:** Frühere Versionen dieser Datei beschrieben hier einen
-verbindlichen `tools/spesenabrechnung/xlsx_to_pdf.py`-Standard (Python, LibreOffice-Umweg
-ueber ODS). Das ist seit 04.09.2026 Geschichte - die App erzeugt Spesenabrechnung (.xlsx),
-Belege (.pdf) und Arbeitszeiten (.xlsx) inzwischen komplett client-seitig im Browser
-(`app/src/lib/export/`, Button "Monat exportieren" -> ein .zip mit vier Dateien - seit
-04.09.2026 zusätzlich ein Rohdaten-Backup, siehe PROJEKT_UEBERSICHT.md Abschnitt "Backup").
-Der Python-Umweg wurde im Rahmen eines Architektur-Reviews entfernt, da er danach komplett
-redundant war (siehe `tools/spesenabrechnung/README.md`).
-
-`tools/spesenabrechnung/` enthält nur noch zwei reine Node-Diagnose-Skripte
-(`fetch_month.js`/`fetch_receipts.js`), um Appwrite-Rohdaten bei Bedarf direkt
-nachzusehen - nicht zum Erzeugen der Spesenabrechnung.
+Spesenabrechnung (.xlsx), Belege (.pdf) und Arbeitszeiten (.xlsx) werden komplett
+client-seitig im Browser erzeugt (`app/src/lib/export/`, Button "Monat exportieren" → ein
+.zip mit vier Dateien inkl. Rohdaten-Backup, siehe `PROJEKT_UEBERSICHT.md`). `tools/` enthält
+nur noch zwei reine Node-Diagnose-Skripte (`fetch_month.js`/`fetch_receipts.js`) für direkte
+Appwrite-Abfragen, kein Export-Code mehr.
 
 **Bei einer neuen Änderung am Export:** in `app/src/lib/export/` suchen
 (`xlsxExport.ts`/`receiptMerge.ts`/`arbeitszeitExport.ts`/`zipExport.ts`/`exportZeilen.ts`),
