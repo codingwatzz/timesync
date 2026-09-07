@@ -1,10 +1,11 @@
 # Projekt: Zeiterfassung & Spesenabrechnung
 
-**Stand: 06.09.2026 (Abend) – nach abgeschlossenem UX/UI-Review + 4 daraus umgesetzten Fixes
-(Import-Absicherung, komma-sichere Betragsfelder, aria-labels, Ladefeedback). Alle Fakten
-direkt am frischen Repo/System verifiziert (npm run verify lokal: 255 Tests grün, echter
-E2E-Lauf danach: `pass: true, failedChecks: []`). Diese Datei ist die Quelle der Wahrheit –
-nicht der Chatverlauf.**
+**Stand: 07.09.2026 (Abend) – nach abgeschlossenem Engineering-Review (Architektur/Backend/
+Datenmodell/Frontend/Performance/KI-Freundlichkeit/Testing/Deployment) + priorisierter
+Abarbeitung der Ergebnisliste. Alle Fakten direkt am frischen Repo/System verifiziert
+(npm run verify lokal: 263 Tests grün, `tsc --strict`: 0 Fehler, zwei echte E2E-Läufe
+danach: `pass: true, failedChecks: []`, davon einer gegen die neu umgestellte Live-
+Deployment-Pipeline). Diese Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
 
 ## Ziel
 
@@ -16,54 +17,73 @@ Web-App (PWA) zur Erfassung von Arbeitszeiten, Homeoffice-Tagen, Reisekosten und
 
 ## Für Claude: erster Schritt im nächsten Thread
 
-Der UX/UI-Review-Auftrag von der letzten Übergabe ist **abgearbeitet** - kein offener Auftrag
-mehr für den nächsten Thread. Stattdessen normal mit `CLAUDE_CHECKLIST.md` weiterarbeiten
-(Abschnitt 0: GitHub-Token-Status prüfen, bevor größere Arbeit beginnt) und die "Offene
-Punkte" unten als Ausgangspunkt nehmen, falls der Nutzer nichts Neues vorgibt.
+Der Engineering-Review-Auftrag von der letzten Übergabe ist **abgearbeitet** - kein offener
+Auftrag mehr für den nächsten Thread. Stattdessen normal mit `CLAUDE_CHECKLIST.md`
+weiterarbeiten (Abschnitt 0: GitHub-Token-Status prüfen, bevor größere Arbeit beginnt - u.a.
+prüfen, ob der Appwrite-API-Key + die beiden heute genutzten GitHub-Tokens vom Nutzer schon
+wie angekündigt (Ende der Woche) rotiert/gelöscht wurden) und die "Offene Punkte" unten als
+Ausgangspunkt nehmen, falls der Nutzer nichts Neues vorgibt.
 
-## UX/UI-Review 06.09.2026 – Ergebnis + umgesetzte Fixes
+## Engineering-Review 07.09.2026 – Ergebnis + umgesetzte Fixes
 
-Kritisches Review (Senior-UX/UI-Auftrag) gegen den fertigen Redesign-Stand ergab: Redesign
-insgesamt sehr sauber (durchgängige Focus-Rings, geprüfte Kontraste, 44px-Touch-Targets,
-Bestätigungsdialoge, Auto-Save-Feedback). 6 konkrete Findings, davon 4 auf Nutzerwunsch
-sofort umgesetzt (per Code-Review gefunden, nicht am Live-Build - Sandbox kann
-`*.github.io` nicht erreichen):
+Kritisches Review (Senior-Architect/Backend/Frontend-Auftrag, kalibriert auf "Solo-Dev +
+KI-Weiterentwicklung", explizit NICHT auf Enterprise-Skalierung) ergab insgesamt eine sehr
+solide technische Basis (0 `any`-Verwendungen im ganzen Projekt, saubere Schichtung
+core/→store/→hooks/→components/, durchdachte Loading/Error-States). 10 konkrete Findings,
+priorisiert nach Nutzen/Aufwand und Stück für Stück abgearbeitet:
 
-1. **🔴 Import ohne Bestätigung** (behoben) - Import lief vorher direkt durch (Datei
-   ausgewählt → sofort geschrieben, `saveEntry` pro Zeile, kein Merge/Preview). Jetzt
-   zweistufig: `lib/exportImport.ts::parseImportFile()` parst nur noch (kein Schreibzugriff),
-   `lib/importPlan.ts::buildImportPlan()` prüft je Tag, ob schon Daten vorliegen (würden
-   überschrieben), `components/ImportConfirmDialog.tsx` zeigt Format-Hinweis + Anzahl
-   Einträge/Zeitraum + Überschreib-Warnung + optionalen "Sicherheitskopie herunterladen"-
-   Button (nur die überschriebenen Tage, aktueller Stand VOR dem Import) - erst nach
-   expliziter Bestätigung schreibt `applyImportPlan()`. `App.tsx` orchestriert das
-   zweistufig (`handleImportFile` parst+baut Plan, `handleConfirmImport` schreibt).
-2. **🟠 Komma-unsichere Betragsfelder** (behoben) - `<input type="number">` ist NICHT
-   komma-sicher (deutsche Locale/Tastatur), UND es gab drei unabhängige, komma-unsichere
-   Zahl-Parser im Projekt (`core/formatters.ts::toNumber()`, eine Kopie in
-   `lib/export/exportZeilen.ts`, eine dritte, unentdeckte in `lib/export/receiptMerge.ts`).
-   Alle auf EINE zentrale `core/formatters.ts::toNumber()` vereinheitlicht, die sowohl „,"
-   als auch „." als Dezimaltrennzeichen akzeptiert (bei beiden Zeichen zählt das SPÄTERE als
-   Dezimaltrennzeichen, z.B. "1.234,56" → 1234.56). Die 5 Betragsfelder (km, Transport,
-   Hotel, Bewirtung, Sonstiges) in `DetailSheet.tsx` sind jetzt `type="text"
-   inputMode="decimal"` statt `type="number"`, mit eigenem Zeichenfilter
-   (`sanitizeAmountInput()`) statt Browser-Validierung, plus Hinweistext im Formular.
-3. **🟠 Fehlende aria-label an Monatswechsel-Buttons** (behoben) - `#prevM`/`#nextM` in
-   `MonthView.tsx` hatten nur ein Icon, keinen zugänglichen Namen.
-4. **🟡 Kein Ladefeedback während Session-Prüfung** (behoben) - `AuthGate.tsx` zeigte bei
-   `status === 'checking'` einen komplett leeren Div, jetzt ein Spinner.
+1. **🟠 TypeScript `strict` nicht aktiv** (behoben) - in beiden tsconfigs aktiviert, 0
+   resultierende Fehler dank bereits sauberem Typisierungsstil.
+2. **🟠 `KVStore.get/set/delete` verschluckten echte Fehler** (behoben) - warfen bei
+   Netzwerk-/Berechtigungsfehlern nur ein Log, gaben aber "Erfolg" zurück (ein
+   fehlgeschlagener Beleg-Upload z.B. schrieb trotzdem die Metadaten-Zeile). Jetzt: werfen
+   bei echten Fehlern, `null` nur wenn ein Schlüssel wirklich nicht existiert
+   (`isNotFoundError()` steuert auch den `updateRow`→`createRow`-Upsert-Fallback statt eines
+   blinden Catch-All). Alle 7 betroffenen Aufrufer (`useMonthEntries.ts`, `App.tsx`,
+   `DetailSheet.tsx`, `lib/importPlan.ts`) zeigen Fehler jetzt per Toast, statt sie stumm zu
+   verschlucken - inkl. `hasUnsavedRef`, das bei einem Fehlschlag bewusst `true` bleibt (Retry
+   statt fälschlichem "gespeichert"). Neuer dedizierter Test `store/__tests__/appwriteStore.test.ts`
+   (gemockter Appwrite-Client) - vorher die einzige zentrale Store-Datei ohne eigenen Test.
+3. **🟠 Deploy-Architektur** (behoben) - Build-Output wurde bei jedem Deploy direkt in den
+   `main`-Root committet (Ausnahmeliste für Root-Dateien, zwei echte versehentliche
+   Root-Löschungen 01./02.09.2026). Umgestellt auf die offizielle GitHub-Pages-Actions-
+   Bereitstellung (`actions/upload-pages-artifact` + `actions/deploy-pages`,
+   Repo-Settings → Pages → Source = "GitHub Actions"). `main` enthält jetzt nur noch
+   Quellcode + Doku, die alten Build-Artefakte im Root wurden entfernt. Live per E2E gegen
+   die neu ausgelieferte Seite verifiziert.
+4. **🟡 Serielles Beleg-Nachladen** (behoben) - `backupExport.ts` + `receiptMerge.ts` luden
+   Belege eines Exports nacheinander statt parallel; jetzt `Promise.all`, Reihenfolge bleibt
+   erhalten.
+5. **🟡 Alte Vorfalls-Erzählungen in `CLAUDE_CHECKLIST.md`** (behoben) - von 306 auf 238
+   Zeilen eingedampft, keine Regel verloren, nur erledigte Bug-Geschichten auf die reine,
+   noch handlungsrelevante Regel gekürzt.
+6. **Aufräumarbeiten**: 3 ungenutzte GitHub-Secrets vom verworfenen Auto-Backup-Anlauf
+   gelöscht (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_BACKUP_FOLDER_ID`,
+   `GDRIVE_SERVICE_ACCOUNT_JSON`) - nur noch `APPWRITE_EMAIL`/`APPWRITE_PASSWORD` aktiv.
 
-**Bewusst NICHT angefasst (Nutzerentscheidung):**
-- 🟡 Touch-Target-Ausnahme bei Wochenendzeilen in `DayRow.tsx` (reduziertes Padding, unter
-  dem sonst projektweiten 44px-Standard) - lassen.
-- 🟢 Swipe-Geste zur Tagesnavigation überlappt theoretisch mit Textauswahl in der
-  Beschreibung-Textarea - lassen.
+**Bewusst NICHT angefasst (siehe "Offene Punkte" unten für Details, warum):**
+- 🟡 Kein Schema-Versionsfeld in gespeicherten Einträgen - erst bei tatsächlicher
+  Datenmodell-Änderung einführen, nicht auf Vorrat.
+- 🟢 ExcelJS (~900KB) für `arbeitszeitExport.ts` - bereits lazy-geladen, kein konkreter
+  Leidensdruck, nicht ersetzen ohne Anlass.
+- 🟢 `DetailSheet.tsx`-Aufteilung - weiterhin zurückgestellt bis zur nächsten inhaltlichen
+  Änderung an dieser Datei.
+- Ein-Klick-Restore aus `_Rohdaten-Backup.json` - unverhältnismäßiger Aufwand für den
+  Anlassfall, nur auf expliziten Wunsch bauen.
+
+## UX/UI-Review 06.09.2026 – zur Erinnerung, weiterhin gültig
+
+4 Fixes umgesetzt (Import-Bestätigung, komma-sichere Betragsfelder, aria-labels
+Monatswechsel, Ladefeedback AuthGate) - Details siehe Git-Historie. 2 Punkte bewusst NICHT
+angefasst (Nutzerentscheidung, weiterhin gültig):
+- 🟡 Touch-Target-Ausnahme bei Wochenendzeilen in `DayRow.tsx` - lassen.
+- 🟢 Swipe-Geste zur Tagesnavigation überlappt theoretisch mit Textauswahl - lassen.
 
 ## Architektur
 
-React 19 + TypeScript (Vite-Build). Root der `main`-Branch **ist** gleichzeitig der gebaute
-Produktions-Output (GitHub Pages serviert von main-Root) – `app/` enthält den Quellcode,
-wird bei jedem Deploy neu gebaut und das Ergebnis ins Root kopiert.
+React 19 + TypeScript (Vite-Build, `strict: true` seit 07.09.2026). `app/` enthält den
+gesamten Quellcode. Deployment läuft über GitHub-Pages-Actions-Bereitstellung (siehe eigenes
+Kapitel "Deployment" unten) - `main` enthält KEINEN Build-Output mehr, nur Quellcode + Doku.
 
 ```
 app/src/
@@ -80,8 +100,12 @@ app/src/
                             In-App-Vorschau; optionaler bisDatum-Parameter für Vorschau
     constants.ts            WOCHENTAGE, MONATSNAMEN, TYP_LABEL, REISEARTEN
 
-  store/                    Storage-Adapter: Appwrite (primär) + IndexedDB (Fallback)
-    appwriteStore.ts        Produktiver Appwrite-Adapter mit CDN-Workarounds
+  store/                    Storage-Adapter: Appwrite (primär) + IndexedDB (Fallback).
+                            KVStore-Vertrag seit 07.09.2026: get/set/delete werfen bei
+                            ECHTEN Fehlern, `null` nur wenn ein Schlüssel wirklich nicht
+                            existiert (siehe Engineering-Review-Kapitel oben, Punkt 2)
+    appwriteStore.ts        Produktiver Appwrite-Adapter mit CDN-Workarounds. Jetzt mit
+                            eigenem Unit-Test (gemockter Client), siehe __tests__/
     indexedDbStore.ts       Fallback-Adapter
     appwriteId.ts           toAppwriteId() – Schlüssel-Sanitisierung (WICHTIG: Belege haben
                             Präfix receipt_, sihe CLAUDE_CHECKLIST.md)
@@ -256,12 +280,12 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
 
 ## Testing
 
-- **255 Unit-Tests** (Vitest, 34 Dateien). `cd app && npm run test`. `npm run verify`
-  bündelt Test+Lint+Build – IMMER vor einem Push, der einen Live-Zyklus auslöst.
+- **263 Unit-Tests** (Vitest, 35 Dateien) - `tsc --strict`: 0 Fehler. `cd app && npm run
+  test`. `npm run verify` bündelt Test+Lint+Build – IMMER vor einem Push, der einen
+  Live-Zyklus auslöst.
 - **E2E-Test** (Playwright, GitHub Actions) – nur täglich 06:00 UTC oder manuell per
-  `workflow_dispatch` (Token mit Actions-Scope bestätigt funktionsfähig, direkt auslösbar
-  ohne Temp-Branch-Umweg - erneut getestet 06.09.2026 Abend, HTTP 204). Letzter Lauf:
-  06.09.2026 Abend (nach Import-/Betragsfeld-Fixes), `pass: true, failedChecks: []`.
+  `workflow_dispatch`. Letzter Lauf: 07.09.2026 (nach Deploy-Umstellung, gegen die neu
+  ausgelieferte Live-Seite), `pass: true, failedChecks: []`.
   WICHTIG: Cron-Mails gehen an den GitHub-Account, der die cron:-Zeile zuletzt committete.
   Falls die Mails wieder ausbleiben → Nutzer muss die Zeile selbst im Browser-Editor
   anfassen (siehe CLAUDE_CHECKLIST.md, Abschnitt 0b).
@@ -271,7 +295,67 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
 - **Diagnose im E2E**: nicht mehr über `#debugBtn` (existiert nicht mehr), sondern über
   `#settingsBtn` → Zahnrad-Menü → "Diagnose"-Eintrag klicken.
 
-## Bekannte Fallstricke (nicht erneut debuggen)
+## Deployment
+
+Seit 07.09.2026: offizielle GitHub-Pages-Actions-Bereitstellung
+(`.github/workflows/deploy-production.yml`, zwei Jobs `build`→`deploy`,
+`actions/upload-pages-artifact` + `actions/deploy-pages`). Repo-Settings → Pages → Source =
+"GitHub Actions" (`build_type: "workflow"`, per API bestätigt). Test/Lint/Build +
+CI-Log-bei-Fehlschlag-Mechanik unverändert aus dem alten Workflow übernommen (Grund: Claudes
+Sandbox kann GitHub-Actions-Logs nicht direkt abrufen, siehe CLAUDE_CHECKLIST.md Abschnitt 0).
+
+**Vorteil ggü. der alten Lösung** (Build-Output-Commit in `main`-Root + Ausnahmeliste): main
+enthält jetzt nur noch Quellcode, das zweimal real aufgetretene Root-Lösch-Risiko
+(README/CLAUDE_CHECKLIST/`tools/` versehentlich mitgelöscht) ist strukturell nicht mehr
+möglich, nicht nur behoben.
+
+## Offene Punkte / nächste Schritte
+
+1. **`DetailSheet.tsx`** – Formular-UI, AutoSave-Debounce und Beleg-Upload in einer
+   Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer, aber
+   echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
+   Formularfeld eingebaut wird**, nie auf Vorrat.
+2. **Kein Restore aus `_Rohdaten-Backup.json`** – nur manuell nutzbar, kein Ein-Klick-Restore.
+   Unverhältnismäßiger Aufwand für den Anlassfall (Merge-Logik + Belege re-uploaden) - nur
+   auf expliziten Wunsch bauen, nicht proaktiv.
+3. **Ungenutzter Appwrite-API-Key "backup-timesync"** (läuft 01.01.2029 ab) - muss der Nutzer
+   selbst in der Appwrite-Konsole löschen (kein API-Zugriff dafür). Die 3 zugehörigen
+   GitHub-Secrets sind bereits gelöscht (07.09.2026).
+4. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
+5. **Zwei GitHub-Tokens vom 06./07.09.2026** – im Chat für Push/Secrets/Pages-Umstellung
+   verwendet. Nutzer hat angekündigt, beide **Ende dieser Woche** zu rotieren/widerrufen -
+   beim übernächsten Thread ggf. nachfragen, ob erledigt.
+6. **Kein Schema-Versionsfeld** in gespeicherten `TagesEintrag`-Zeilen (Engineering-Review,
+   Punkt 6) – bewusst NICHT proaktiv eingeführt (kein Overengineering für eine Ein-Personen-
+   App ohne konkreten Anlass). Erst einführen, wenn tatsächlich mal ein Feld
+   umbenannt/entfernt wird, dann als Teil DIESER Änderung.
+7. **`DayRow.tsx`-Touch-Target bei Wochenendzeilen** und **Swipe-/Textauswahl-Überlappung**
+   in `DetailSheet.tsx` (UX-Review, Punkte 5/6) – bewusst nicht angefasst, nicht erneut
+   vorschlagen, außer der Nutzer bringt es selbst wieder auf.
+8. **ExcelJS (~900KB) in `arbeitszeitExport.ts`** (Engineering-Review, Punkt 7) – bewusst
+   nicht ersetzt, bereits lazy-geladen, kein konkreter Leidensdruck. Nur auf expliziten
+   Wunsch/bei echter Beschwerde über langsame Exports angehen.
+
+## Was NICHT mehr offen ist
+
+- Export → fertig (4 Dateien im ZIP, inkl. Backup)
+- Appwrite-Absicherung (Login, Berechtigungen) → fertig, live verifiziert
+- Markierung unerfasster Arbeitstage → fertig
+- Zahnrad-Menü (Import/Diagnose) → fertig
+- In-App-Vorschau (Spesen + Arbeitszeiten) → fertig
+- Beschreibungstext-Overflow-Bug (CSS min-width) → behoben
+- `importWorked`-Flakigkeit → robuster mit Backoff + direktem Appwrite-Read
+- Beleg-Upload/-Persistieren/-Löschen → fertig, per E2E bestätigt
+- Beleg-zu-Feld-Zuordnung, Bestätigungsdialog bei Tagestyp-Wechsel, Felder bei
+  Nicht-Arbeitstagen ausblenden → fertig
+- **UX/UI-Review 06.09.2026** (Import-Bestätigung, komma-sichere Betragsfelder, aria-labels
+  Monatswechsel, Ladefeedback AuthGate) → fertig
+- **Engineering-Review 07.09.2026** (strict TypeScript, Store-Fehlerbehandlung inkl. Test,
+  Deploy-Umstellung auf `actions/deploy-pages`, parallele Beleg-Ladevorgänge,
+  Checkliste eingedampft, 3 ungenutzte GitHub-Secrets gelöscht) → fertig, siehe eigenes
+  Kapitel oben. Kein offener Review-Auftrag mehr für den nächsten Thread.
+
+## Bekannte Fallstricke (nicht erneut debuggen, Details siehe CLAUDE_CHECKLIST.md)
 
 - **Appwrite receipt_-Präfix**: `toAppwriteId('receipt:' + rid)` → `receipt_<rid>`. Bei
   direkten Storage-Zugriffen immer diesen Pfad nehmen.
@@ -283,44 +367,22 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
 - **GitHub Actions Log-Download**: Azure-Redirect, nicht in Allowlist. Workaround: Log per
   Workflow ins Repo committen, über Contents-API abholen.
 - **Node 22** (nicht 20) in Workflows (Vite/jsdom-Kompatibilität).
-- **GitHub Token ohne `actions`-Scope**: `workflow_dispatch` per API → 403. Workaround:
-  temporärer Branch mit `push`-Trigger. Temporäre Branches immer per API bestätigt löschen.
 - **Cron-Email-Zuordnung**: Mails für schedule-Läufe gehen an den Account, der die
-  cron:-Zeile zuletzt committete. Claude committet als `claude@anthropic.com` → nicht
-  verknüpft. Nutzer selbst im Browser-Editor anfassen lassen.
+  cron:-Zeile zuletzt committete. Nutzer selbst im Browser-Editor anfassen lassen.
 - **Diagnose-Pfad**: `#debugBtn` existiert NICHT mehr. Weg: `#settingsBtn` → Dropdown →
   "Diagnose".
-- **Testdaten in echte Monate schreiben**: Diagnose-Skripte etc. müssen `navigateToSafeTestMonth()`
-  nutzen oder explizit einen weit künftigen Monat ansteuern – NIE `dayRows.first()` im
-  aktuellen Monat. (05.09.2026: Repro-Skript schrieb in echten 01.09. → Nutzer musste
-  manuell aufräumen.)
-- **CSS-Klassen, die NUR noch als E2E-Test-Selektor dienen, beim Restyling übersehen**: Beim
-  UI-Redesign (05.-06.09.2026) wurden fünfmal Klassennamen entfernt, die keine Styling-
-  Funktion mehr hatten, aber von `test/e2e/` per `.locator()`/`querySelector()` gebraucht
-  wurden (`.label`, `.sheet-backdrop`, `.yesno`+`active`, `.del`, Sync-Badge `flag ho/warn`).
-  Jedes Mal erst durch einen tatsächlichen E2E-Absturz bemerkt. **Regel: vor JEDER
-  Komponenten-Restyle-Aufgabe alle Selektoren aus `test/e2e/*.js` + `test/e2e/steps/*.js`
-  extrahieren** (per grep aus den tatsächlichen `locator/click/querySelector`-Aufrufen, nicht
-  nur den Dateiinhalt überfliegen) **und einzeln gegen den neuen Code verifizieren** - danach
-  trotzdem einen echten E2E-Lauf zur Bestätigung einplanen, nicht nur der eigenen Prüfung
-  vertrauen.
+- **Testdaten in echte Monate schreiben**: Diagnose-Skripte müssen `navigateToSafeTestMonth()`
+  nutzen oder explizit einen weit künftigen Monat ansteuern – NIE den aktuellen Monat.
+- **CSS-Klassen, die NUR noch als E2E-Test-Selektor dienen, beim Restyling übersehen**:
+  fünfmal real passiert. **Regel: vor JEDER Komponenten-Restyle-Aufgabe alle Selektoren aus
+  `test/e2e/*.js` + `test/e2e/steps/*.js` extrahieren** und einzeln gegen den neuen Code
+  prüfen, danach trotzdem einen echten E2E-Lauf einplanen.
 - **Tailwind v4: Utility-Name für mehrteilige Theme-Token-Namen ist der VOLLE Suffix nach
-  `--color-`, nicht gekürzt.** `--color-text-on-accent` erzeugt die Klasse `text-text-on-accent`
-  (für Textfarbe) bzw. `bg-text-on-accent` (für Hintergrund) - NICHT `text-on-accent`. Ein
-  blindes projektweites Suchen-Ersetzen von `text-on-accent` → `text-text-on-accent` (um den
-  ersten Fehler zu beheben) hat dabei versehentlich auch das schon korrekte `bg-text-on-accent`
-  zu `bg-text-text-on-accent` verdoppelt (zweiter, selbst verursachter Bug, sofort gefunden).
-  Bei ähnlichen Token-Umbenennungen: Suchen-Ersetzen IMMER mit vollständigem Klassen-Präfix
-  (`bg-`/`text-`/`border-`) im Suchmuster, nie nur den Token-Namen alleine.
-- **`git push` nach Deploy/E2E-Läufen routinemäßig als "rejected (non-fast-forward)" erwarten**:
-  Der Deploy-Workflow UND die geplanten/manuellen E2E-Läufe committen automatisch zurück ins
-  Repo (`[skip ci]`-Commits für Build-Output und `test/last-result.json`). Vor jedem eigenen
-  Push: `git fetch origin main && git rebase origin/main`, dann erst pushen - kein Sonderfall,
-  sondern der Normalfall bei aktiver gleichzeitiger CI-Aktivität.
-- **Fine-grained GitHub-PATs lassen sich nicht nachträglich um weitere Berechtigungen
-  erweitern** - für einen zusätzlichen Scope (z.B. `Actions: Read and write`, um
-  `workflow_dispatch` direkt statt über den Temp-Branch-Umweg auszulösen) muss der Nutzer ein
-  KOMPLETT NEUES Token erstellen, nicht das bestehende bearbeiten.
+  `--color-`.** `--color-text-on-accent` → Klasse `text-text-on-accent`/`bg-text-on-accent`,
+  NICHT `text-on-accent`.
+- **`git push` nach Deploy/E2E-Läufen routinemäßig als "rejected" erwarten** - beide committen
+  automatisch zurück. Vor jedem eigenen Push: `git fetch origin main && git rebase origin/main`.
+- **Fine-grained GitHub-PATs**: Details zu Token-Scopes siehe CLAUDE_CHECKLIST.md Abschnitt 0.
 
 ## Design-System (Tailwind + "Indigo & Ocean", fertig seit 06.09.2026)
 
@@ -366,40 +428,4 @@ nicht nur überfliegen) und einzeln gegen den neuen Code prüfen.
 
 `npm run verify` vor jedem Push (Lint + Build). CSS-/Component-Änderungen lösen einen Deploy
 aus (alles unter `app/**`), aber KEINEN automatischen E2E-Lauf mehr (nur täglich 06:00 UTC
-oder manuell per `workflow_dispatch` - inzwischen per Token mit Actions-Scope direkt
-auslösbar, kein Temp-Branch-Umweg mehr nötig, siehe CLAUDE_CHECKLIST.md Abschnitt 0).
-
-## Offene Punkte / nächste Schritte
-
-1. **`DetailSheet.tsx`** – Formular-UI, AutoSave-Debounce und Beleg-Upload in einer
-   Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer, aber
-   echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
-   Formularfeld eingebaut wird**, nie auf Vorrat.
-2. **Kein Restore aus `_Rohdaten-Backup.json`** – nur manuell nutzbar, kein Ein-Klick-Restore.
-   Wäre ein sinnvoller, klar abgegrenzter nächster Schritt wenn gewünscht.
-3. **Ungenutzter Appwrite-API-Key "backup-timesync"** (läuft 01.01.2029 ab) + 3 GitHub-Secrets
-   vom verworfenen automatischen Backup-Anlauf (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_SERVICE_ACCOUNT_JSON`,
-   `GDRIVE_BACKUP_FOLDER_ID`): kein Risiko (rein lesend), aber aufräumen wenn Zeit ist.
-4. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
-5. **GitHub-Token vom 06.09.2026 (Abend)** – wurde im Chat für Push + `workflow_dispatch`
-   verwendet. Nutzer wurde zur Rotation/zum Widerruf geraten (siehe CLAUDE_CHECKLIST.md,
-   Abschnitt 0) - Status beim nächsten Thread ggf. nachfragen, falls relevant.
-6. **`DayRow.tsx`-Touch-Target bei Wochenendzeilen** und **Swipe-/Textauswahl-Überlappung**
-   in `DetailSheet.tsx` (siehe UX-Review-Kapitel oben, Punkte 5/6) – bewusst nicht angefasst,
-   nicht erneut vorschlagen, außer der Nutzer bringt es selbst wieder auf.
-
-## Was NICHT mehr offen ist
-
-- Export → fertig (4 Dateien im ZIP, inkl. Backup)
-- Appwrite-Absicherung (Login, Berechtigungen) → fertig, live verifiziert
-- Markierung unerfasster Arbeitstage → fertig
-- Zahnrad-Menü (Import/Diagnose) → fertig
-- In-App-Vorschau (Spesen + Arbeitszeiten) → fertig
-- Beschreibungstext-Overflow-Bug (CSS min-width) → behoben
-- `importWorked`-Flakigkeit → robuster mit Backoff + direktem Appwrite-Read
-- Beleg-Upload/-Persistieren/-Löschen → fertig, per E2E bestätigt
-- Beleg-zu-Feld-Zuordnung, Bestätigungsdialog bei Tagestyp-Wechsel, Felder bei
-  Nicht-Arbeitstagen ausblenden → fertig
-- **UX/UI-Review 06.09.2026 (Abend) + 4 Fixes** (Import-Bestätigung, komma-sichere
-  Betragsfelder, aria-labels Monatswechsel, Ladefeedback AuthGate) → fertig, siehe eigenes
-  Kapitel oben. Kein offener Review-Auftrag mehr für den nächsten Thread.
+oder manuell per `workflow_dispatch`, siehe CLAUDE_CHECKLIST.md Abschnitt 0).
