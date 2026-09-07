@@ -98,6 +98,12 @@ async function checkImportFlow(page, dayRows, { testYear, testImportPath }) {
     log('⚠⚠ WICHTIG: Appwrite hatte die korrekten Daten (direkt bestätigt), die UI zeigte sie aber selbst nach vollem Wartebudget nicht - das ist KEINE reine Konsistenz-Verzögerung mehr, sondern deutet auf einen echten UI-/Reload-Bug hin. Nicht als bekannte Flakigkeit abtun.');
   }
 
+  // Sheet schließen, bevor die Funktion zurückkehrt - sonst blockiert das offene
+  // .sheet-backdrop-Overlay Klicks in einem nachfolgenden Testschritt (real aufgetreten
+  // 07.09.2026 beim Hinzufügen von checkRestoreFlow direkt danach).
+  await page.click('#closeBtn').catch(() => {});
+  await sleep(500);
+
   return results;
 }
 

@@ -12,6 +12,11 @@ const { log, sleep, MINIMAL_PDF } = require('../utils');
  */
 async function checkRestoreFlow(page, dayRows, { testYear, testImportPath }) {
   const results = {};
+  // Defensiv: falls ein vorheriger Schritt sein Sheet nicht geschlossen hat, blockiert das
+  // offene Overlay sonst jeden weiteren Klick (real aufgetreten 07.09.2026).
+  await page.click('#closeBtn').catch(() => {});
+  await sleep(300);
+
   const restoreDateKey = `${testYear}-12-03`;
   const restoreRid = 'e2e-restore-rid';
   const pdfBase64 = Buffer.from(MINIMAL_PDF).toString('base64');
