@@ -97,7 +97,7 @@ export default function App() {
       return;
     }
     try {
-      const plan = await buildImportPlan(store, parsed.candidates);
+      const plan = await buildImportPlan(store, parsed.candidates, parsed.receipts);
       setImportPlan(plan);
     } catch (e) {
       // buildImportPlan liest je Kandidat den bestehenden Stand (store.get) - das kann jetzt
@@ -109,19 +109,23 @@ export default function App() {
   // Schritt 2: erst NACH expliziter Bestätigung im ImportConfirmDialog wird wirklich
   // geschrieben.
   async function handleConfirmImport() {
-    if (!importPlan) return;
+    if (!importPlan || !store) return;
     const plan = importPlan;
     setImportPlan(null);
     showToast('Importiere…');
-    const { succeeded, failedKeys } = await applyImportPlan(plan, saveEntry);
+    const { succeeded, failedKeys, receiptsSucceeded, receiptsFailed } = await applyImportPlan(store, plan, saveEntry);
     // Erst neu laden, DANN die Meldung zeigen - sonst könnte der Nutzer (oder ein Test) auf
     // die Meldung reagieren, bevor die importierten Daten wirklich sichtbar sind.
     await reload();
     const ueberschrieben = plan.overwriteKeys.length;
+    const belegTeil = plan.receipts
+      ? `, ${receiptsSucceeded} Beleg${receiptsSucceeded !== 1 ? 'e' : ''} wiederhergestellt` +
+        (receiptsFailed.length > 0 ? ` (${receiptsFailed.length} fehlgeschlagen)` : '')
+      : '';
     if (failedKeys.length === 0) {
       showToast(
         `${succeeded} Eintrag${succeeded !== 1 ? 'e' : ''} importiert` +
-        (ueberschrieben > 0 ? ` (${ueberschrieben} überschrieben)` : ''),
+        (ueberschrieben > 0 ? ` (${ueberschrieben} überschrieben)` : '') + belegTeil,
       );
     } else {
       // applyImportPlan verarbeitet jeden Tag unabhängig - ein Fehlschlag blockiert nicht
@@ -129,7 +133,7 @@ export default function App() {
       // das den echten Teilerfolg verschleiern würde.
       showToast(
         `${succeeded} importiert, ${failedKeys.length} fehlgeschlagen: ${failedKeys.slice(0, 3).join(', ')}` +
-        (failedKeys.length > 3 ? '…' : ''),
+        (failedKeys.length > 3 ? '…' : '') + belegTeil,
       );
     }
   }

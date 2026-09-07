@@ -21,6 +21,7 @@ const { fillAndSaveTestEntry } = require('./steps/fillAndSaveEntry');
 const { reloadAndVerifyEntry } = require('./steps/reloadAndVerify');
 const { checkExportFlow } = require('./steps/exportFlow');
 const { checkImportFlow } = require('./steps/importFlow');
+const { checkRestoreFlow } = require('./steps/restoreFlow');
 const { cleanupTestDays } = require('./steps/cleanup');
 
 const CRITICAL_CHECKS = [
@@ -28,7 +29,7 @@ const CRITICAL_CHECKS = [
   'homeofficeDefaultActive', 'travelSectionVisible', 'reiseartWarningVisibleBefore',
   'receiptUploaded', 'fieldsSurvivedReceiptUpload', 'allFieldsPersisted', 'receiptPersisted',
   'receiptOpenedWithoutError', 'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered',
-  'importWorked',
+  'importWorked', 'restoreWorked', 'restoreReceiptPresent', 'restoreReceiptOpenedWithoutError',
 ];
 
 async function attemptRun() {
@@ -102,6 +103,7 @@ async function attemptRun() {
     // ---------- 4. Defensiver Vor-Reset (falls Vorlauf abgebrochen wurde) ----------
     await resetDayToDefault(page, dayRows, 0);
     await resetDayToDefault(page, dayRows, 1);
+    await resetDayToDefault(page, dayRows, 2);
 
     // ---------- 5. Tag 1 befüllen, Beleg hochladen, speichern ----------
     const yearMatch = monthLabel.match(/(\d{4})/);
@@ -126,6 +128,10 @@ async function attemptRun() {
     // ---------- 8. Import ----------
     Object.assign(results, await checkImportFlow(page, dayRows, { testYear, testImportPath }));
     await shot('06_after_import.png');
+
+    // ---------- 8b. Restore (Rohdaten-Backup mit Beleg) ----------
+    Object.assign(results, await checkRestoreFlow(page, dayRows, { testYear, testImportPath }));
+    await shot('06b_after_restore.png');
 
     // ---------- 9. Aufräumen ----------
     await cleanupTestDays(page, dayRows);

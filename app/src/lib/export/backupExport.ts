@@ -16,7 +16,7 @@
 // receiptIds. Diese Backup-Datei ist aktuell ein reines Sicherungs-Archiv zum Nachschauen/
 // manuellen Wiederherstellen im Notfall, kein Ein-Klick-Restore.
 
-import type { TagesEintrag } from '../../core/types';
+import type { TagesEintrag, BelegMeta } from '../../core/types';
 import type { KVStore } from '../../store/types';
 
 export interface BackupJson {
@@ -25,13 +25,7 @@ export interface BackupJson {
   year: number;
   month: number;
   entries: Record<string, TagesEintrag>;
-  receipts: Record<string, { name?: string; dataUrl: string | null }>;
-}
-
-interface BelegMetaShape {
-  name?: string;
-  dataUrl?: string | null;
-  [key: string]: unknown;
+  receipts: Record<string, Omit<BelegMeta, 'id'>>;
 }
 
 /** Baut das Rohdaten-Backup für einen Monat: alle Einträge (so wie sie sind, unverändert)
@@ -57,8 +51,14 @@ export async function buildBackupJson(
   }));
   for (const { rid, row } of geladen) {
     if (!row) continue; // Beleg-Referenz zeigt ins Leere (gelöscht, oder Ladefehler) - überspringen
-    const meta = JSON.parse(row.value) as BelegMetaShape;
-    receipts[rid] = { name: meta.name, dataUrl: meta.dataUrl ?? null };
+    // ALLE Beleg-Metadaten sichern (Fund 07.09.2026 bei der Restore-Planung: vorher wurden
+    // hier nur name+dataUrl übernommen, die Kostenfeld-Zuordnung (`feld`), das ursprüngliche
+    // Erstelldatum (`createdAt`) und der Dateityp (`mime`) gingen beim Export lautlos
+    // verloren - ein Restore hätte diese Informationen also selbst dann nicht
+    // wiederherstellen können, wenn er existiert hätte). `id` bewusst weggelassen, ist
+    // bereits der Objekt-Schlüssel (`rid`), keine Dopplung nötig.
+    const { id: _id, ...meta } = JSON.parse(row.value) as BelegMeta;
+    receipts[rid] = meta;
   }
 
   const backup: BackupJson = {

@@ -46,6 +46,8 @@ describe('buildImportPlan', () => {
 });
 
 describe('applyImportPlan', () => {
+  const dummyStore: KVStore = { get: vi.fn(async () => null), set: vi.fn(async () => ({ key: '', value: '' })), delete: vi.fn() };
+
   it('schreibt jeden Kandidaten über saveEntry und gibt die Anzahl zurück', async () => {
     const saveEntry = vi.fn();
     const plan = {
@@ -56,8 +58,8 @@ describe('applyImportPlan', () => {
       existing: {}, overwriteKeys: [], newKeys: ['2028-12-01', '2028-12-02'],
       fromKey: '2028-12-01', toKey: '2028-12-02',
     };
-    const result = await applyImportPlan(plan, saveEntry);
-    expect(result).toEqual({ succeeded: 2, failedKeys: [] });
+    const result = await applyImportPlan(dummyStore, plan, saveEntry);
+    expect(result).toEqual({ succeeded: 2, failedKeys: [], receiptsSucceeded: 0, receiptsFailed: [] });
     expect(saveEntry).toHaveBeenCalledTimes(2);
     expect(saveEntry).toHaveBeenCalledWith('2028-12-01', plan.candidates[0].data);
   });
@@ -75,9 +77,54 @@ describe('applyImportPlan', () => {
       existing: {}, overwriteKeys: [], newKeys: ['2028-12-01', '2028-12-02', '2028-12-03'],
       fromKey: '2028-12-01', toKey: '2028-12-03',
     };
-    const result = await applyImportPlan(plan, saveEntry);
-    expect(result).toEqual({ succeeded: 2, failedKeys: ['2028-12-02'] });
+    const result = await applyImportPlan(dummyStore, plan, saveEntry);
+    expect(result.succeeded).toBe(2);
+    expect(result.failedKeys).toEqual(['2028-12-02']);
     expect(saveEntry).toHaveBeenCalledTimes(3); // auch der dritte Kandidat wird noch versucht
+  });
+
+  it('stellt bei einem Rohdaten-Backup (plan.receipts gesetzt) zusätzlich die echten Beleg-Dateien wieder her', async () => {
+    const saveEntry = vi.fn();
+    const setSpy = vi.fn(async () => ({ key: '', value: '' }));
+    const store: KVStore = { get: vi.fn(async () => null), set: setSpy, delete: vi.fn() };
+    const plan = {
+      candidates: [{ key: '2028-12-01', data: makeEntry({ receiptIds: ['r1', 'r2'] }) }],
+      existing: {}, overwriteKeys: [], newKeys: ['2028-12-01'],
+      fromKey: '2028-12-01', toKey: '2028-12-01',
+      receipts: {
+        r1: { name: 'taxi.pdf', mime: 'application/pdf', createdAt: 1, date: '2028-12-01', feld: 'transport' as const, dataUrl: 'data:x' },
+        r2: { name: 'hotel.pdf', mime: 'application/pdf', createdAt: 2, date: '2028-12-01', dataUrl: 'data:y' },
+      },
+    };
+    const result = await applyImportPlan(store, plan, saveEntry);
+    expect(result.receiptsSucceeded).toBe(2);
+    expect(result.receiptsFailed).toEqual([]);
+    expect(setSpy).toHaveBeenCalledWith('receipt:r1', expect.stringContaining('"feld":"transport"'));
+    expect(setSpy).toHaveBeenCalledWith('receipt:r2', expect.stringContaining('hotel.pdf'));
+  });
+
+  it('meldet einen fehlgeschlagenen Beleg-Restore, ohne die restlichen zu blockieren', async () => {
+    const saveEntry = vi.fn();
+    const store: KVStore = {
+      get: vi.fn(async () => null),
+      set: vi.fn(async (key: string) => {
+        if (key === 'receipt:r1') throw new Error('Upload fehlgeschlagen');
+        return { key, value: '' };
+      }),
+      delete: vi.fn(),
+    };
+    const plan = {
+      candidates: [{ key: '2028-12-01', data: makeEntry({ receiptIds: ['r1', 'r2'] }) }],
+      existing: {}, overwriteKeys: [], newKeys: ['2028-12-01'],
+      fromKey: '2028-12-01', toKey: '2028-12-01',
+      receipts: {
+        r1: { name: 'kaputt.pdf', mime: 'application/pdf', createdAt: 1, date: '2028-12-01', dataUrl: 'data:x' },
+        r2: { name: 'ok.pdf', mime: 'application/pdf', createdAt: 2, date: '2028-12-01', dataUrl: 'data:y' },
+      },
+    };
+    const result = await applyImportPlan(store, plan, saveEntry);
+    expect(result.receiptsSucceeded).toBe(1);
+    expect(result.receiptsFailed).toEqual(['r1']);
   });
 });
 

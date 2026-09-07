@@ -1,4 +1,4 @@
-import type { TagesEintrag } from '../core/types';
+import type { TagesEintrag, BelegMeta } from '../core/types';
 
 export { dateKey } from '../core/holidays';
 
@@ -7,19 +7,32 @@ export interface ImportCandidate {
   data: TagesEintrag;
 }
 
+/** Beleg-Metadaten aus einem Rohdaten-Backup, key = receipt-ID (ohne Praefix). */
+export type ImportReceipts = Record<string, Omit<BelegMeta, 'id'>>;
+
 export interface ParseResult {
   candidates: ImportCandidate[];
+  /** Nur gesetzt, wenn die Datei ein vollstaendiges Rohdaten-Backup war (Format
+   * "zeiterfassung-backup-v1", siehe backupExport.ts) - enthaelt die echten Beleg-Dateien
+   * (Base64), die beim Bestaetigen mit wiederhergestellt werden sollen. */
+  receipts?: ImportReceipts;
   error?: string;
 }
 
 /**
  * Liest + VALIDIERT eine Import-/Backup-JSON-Datei, schreibt aber noch NICHTS in den Store
- * (siehe UX-Review 06.09.2026, Punkt 4.1). Vorher schrieb diese Funktion jeden enthaltenen
- * Eintrag sofort und ohne Rückfrage in den Store - ein falscher Klick im Datei-Picker (z.B.
- * ein altes Backup) konnte dadurch unbemerkt bestehende Tage überschreiben. Das eigentliche
- * Schreiben übernimmt jetzt erst lib/importPlan.ts::applyImportPlan(), NACHDEM der Nutzer eine
- * Übersicht (Anzahl Einträge, wie viele bestehende Tage überschrieben würden) bestätigt hat -
+ * (siehe UX-Review 06.09.2026, Punkt 4.1). Das eigentliche Schreiben übernimmt erst
+ * lib/importPlan.ts::applyImportPlan(), NACHDEM der Nutzer eine Übersicht bestätigt hat -
  * siehe components/ImportConfirmDialog.tsx.
+ *
+ * Versteht ZWEI Formate:
+ * 1. Das vollständige Rohdaten-Backup (`format: "zeiterfassung-backup-v1"`, aus dem
+ *    Monats-Export) - Einträge liegen hier bereits 1:1 als TagesEintrag vor (kein
+ *    Nachbau/Defaults nötig), inklusive echter Belege (siehe `receipts` oben).
+ * 2. Die ältere, einfachere "entries"-Array-Form ohne Belege (reine Feld-Werte, jedes
+ *    Element mit einem "date"-Feld) - Belege werden hier bewusst NICHT übernommen (das
+ *    Format kennt keine echten Beleg-Dateien, nur die jetzt möglicherweise falschen
+ *    receiptIds aus einer alten Export-Datei wären ohne die Dateien dahinter wertlos).
  */
 export async function parseImportFile(file: File): Promise<ParseResult> {
   let text: string;
@@ -37,6 +50,10 @@ export async function parseImportFile(file: File): Promise<ParseResult> {
       candidates: [],
       error: 'Keine gültige JSON-Datei. Bitte nur unveränderte Export-/Backup-Dateien dieser App verwenden.',
     };
+  }
+
+  if ((data as { format?: string })?.format === 'zeiterfassung-backup-v1') {
+    return parseBackupFormat(data as Record<string, unknown>);
   }
 
   const list = Array.isArray(data) ? data : (data as { entries?: unknown[] })?.entries;
@@ -80,4 +97,17 @@ export async function parseImportFile(file: File): Promise<ParseResult> {
     };
   }
   return { candidates };
+}
+
+function parseBackupFormat(data: Record<string, unknown>): ParseResult {
+  const entriesObj = data.entries as Record<string, TagesEintrag> | undefined;
+  if (!entriesObj || typeof entriesObj !== 'object') {
+    return { candidates: [], error: 'Ungültiges Rohdaten-Backup: kein "entries"-Objekt gefunden.' };
+  }
+  const candidates: ImportCandidate[] = Object.entries(entriesObj).map(([key, entry]) => ({ key, data: entry }));
+  if (candidates.length === 0) {
+    return { candidates: [], error: 'Das Rohdaten-Backup enthält keine Tageseinträge.' };
+  }
+  const receipts = (data.receipts as ImportReceipts | undefined) ?? {};
+  return { candidates, receipts };
 }

@@ -1,7 +1,7 @@
-import type { TagesEintrag } from '../core/types';
+import type { TagesEintrag, BelegMeta } from '../core/types';
 import type { KVStore } from '../store/types';
-import type { ImportCandidate } from './exportImport';
-import { loadEntry } from '../hooks/entryStorage';
+import type { ImportCandidate, ImportReceipts } from './exportImport';
+import { loadEntry, saveReceipt } from '../hooks/entryStorage';
 import { triggerDownload } from './download';
 
 /**
@@ -17,9 +17,15 @@ export interface ImportPlan {
   newKeys: string[];
   fromKey: string | null;
   toKey: string | null;
+  /** Nur bei einem vollständigen Rohdaten-Backup gesetzt (siehe exportImport.ts) - die
+   * tatsächlichen Beleg-Dateien, die zusätzlich zu den Tageseinträgen wiederhergestellt
+   * werden (Restore-Feature 07.09.2026). */
+  receipts?: ImportReceipts;
 }
 
-export async function buildImportPlan(store: KVStore, candidates: ImportCandidate[]): Promise<ImportPlan> {
+export async function buildImportPlan(
+  store: KVStore, candidates: ImportCandidate[], receipts?: ImportReceipts,
+): Promise<ImportPlan> {
   const existingList = await Promise.all(candidates.map((c) => loadEntry(store, c.key)));
   const existing: Record<string, TagesEintrag> = {};
   const overwriteKeys: string[] = [];
@@ -36,6 +42,7 @@ export async function buildImportPlan(store: KVStore, candidates: ImportCandidat
     newKeys: newKeys.sort(),
     fromKey: sortedAllKeys[0] ?? null,
     toKey: sortedAllKeys[sortedAllKeys.length - 1] ?? null,
+    receipts,
   };
 }
 
@@ -59,16 +66,26 @@ export function downloadPreImportBackup(plan: ImportPlan): void {
 }
 
 /** Schreibt einen zuvor vom Nutzer bestätigten Plan tatsächlich in den Store. Verarbeitet
- * JEDEN Kandidaten unabhängig (ein einzelner Fehlschlag blockiert nicht die restlichen, gute
+ * JEDEN Kandidaten unabhängig (ein einzelner Fehlschlag blockiert nicht die restlichen, guten
  * Einträge) und meldet am Ende, wie viele wirklich ankamen und welche Schlüssel fehlschlugen -
  * saveEntry() kann seit dem Engineering-Review 07.09.2026 (Punkt 2) bei einem echten
- * Speicherfehler werfen, statt lautlos "erfolgreich" zu tun. */
+ * Speicherfehler werfen, statt lautlos "erfolgreich" zu tun.
+ *
+ * Restauriert bei einem vollständigen Rohdaten-Backup (plan.receipts gesetzt) zusätzlich die
+ * echten Beleg-Dateien - jeder Beleg-Upload läuft unabhängig von den anderen UND unabhängig
+ * von den Tageseinträgen (Reihenfolge egal, `receiptIds` in den Einträgen selbst zeigen
+ * bereits auf die richtigen IDs), parallel statt seriell (gleiches Prinzip wie beim
+ * Backup-Erstellen selbst, siehe backupExport.ts).
+ */
 export interface ApplyImportResult {
   succeeded: number;
   failedKeys: string[];
+  receiptsSucceeded: number;
+  receiptsFailed: string[];
 }
 
 export async function applyImportPlan(
+  store: KVStore,
   plan: ImportPlan,
   saveEntry: (key: string, data: TagesEintrag) => Promise<void>,
 ): Promise<ApplyImportResult> {
@@ -82,5 +99,24 @@ export async function applyImportPlan(
       failedKeys.push(c.key);
     }
   }
-  return { succeeded, failedKeys };
+
+  let receiptsSucceeded = 0;
+  const receiptsFailed: string[] = [];
+  if (plan.receipts) {
+    const rids = Object.keys(plan.receipts);
+    const results = await Promise.all(rids.map(async (rid) => {
+      try {
+        const meta = plan.receipts![rid];
+        await saveReceipt(store, rid, { id: rid, ...meta } as BelegMeta);
+        return { rid, ok: true };
+      } catch {
+        return { rid, ok: false };
+      }
+    }));
+    for (const r of results) {
+      if (r.ok) receiptsSucceeded++; else receiptsFailed.push(r.rid);
+    }
+  }
+
+  return { succeeded, failedKeys, receiptsSucceeded, receiptsFailed };
 }

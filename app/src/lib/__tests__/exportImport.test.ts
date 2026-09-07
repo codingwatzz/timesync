@@ -61,4 +61,33 @@ describe('parseImportFile', () => {
     expect(result.candidates).toHaveLength(0);
     expect(result.error).toBeTruthy();
   });
+
+  it('erkennt ein vollständiges Rohdaten-Backup (format: "zeiterfassung-backup-v1") und übernimmt Einträge 1:1 ohne Feld-Umbau', async () => {
+    const eintrag = {
+      typ: 'A', typManuell: true, ho: true, start: '08:00', ende: '16:00', pause: '30',
+      start2: '', ende2: '', pause2: '', beschreibung: 'Backup-Tag', km: '', transport: '',
+      hotel: '', bewirtung: '', sonstiges: '', reiseland: 'Deutschland', reiseart: '',
+      fr: false, mi: false, ab: false, receiptIds: ['r1'],
+    };
+    const file = fakeFile({
+      format: 'zeiterfassung-backup-v1',
+      generatedAt: '2026-09-07T00:00:00.000Z',
+      year: 2028, month: 12,
+      entries: { '2028-12-01': eintrag },
+      receipts: { r1: { name: 'taxi.pdf', mime: 'application/pdf', createdAt: 1, date: '2028-12-01', feld: 'transport', dataUrl: 'data:x' } },
+    });
+    const result = await parseImportFile(file);
+    expect(result.error).toBeUndefined();
+    expect(result.candidates).toEqual([{ key: '2028-12-01', data: eintrag }]);
+    expect(result.receipts).toEqual({
+      r1: { name: 'taxi.pdf', mime: 'application/pdf', createdAt: 1, date: '2028-12-01', feld: 'transport', dataUrl: 'data:x' },
+    });
+  });
+
+  it('gibt bei einem Rohdaten-Backup einen Fehler zurück, wenn "entries" fehlt oder kein Objekt ist', async () => {
+    const file = fakeFile({ format: 'zeiterfassung-backup-v1', entries: 'kaputt' });
+    const result = await parseImportFile(file);
+    expect(result.candidates).toHaveLength(0);
+    expect(result.error).toMatch(/entries/);
+  });
 });

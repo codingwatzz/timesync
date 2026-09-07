@@ -46,8 +46,9 @@ export function ImportConfirmDialog({ plan, onCancel, onConfirm }: ImportConfirm
             <Info size={13} strokeWidth={2.5} /> Erwartetes Format
           </div>
           Nur unveränderte Export-/Backup-Dateien dieser App - z. B. das
-          „..._Rohdaten-Backup.json" aus dem Monats-Export, oder eine ältere
-          Einträge-Datei mit einem „entries"-Array. Andere JSON-Dateien werden abgelehnt.
+          „..._Rohdaten-Backup.json" aus dem Monats-Export (stellt Einträge UND echte
+          Beleg-Dateien wieder her), oder eine ältere Einträge-Datei mit einem
+          „entries"-Array (nur Felder, keine Belege). Andere JSON-Dateien werden abgelehnt.
         </div>
 
         <p className="mb-2 text-sm leading-relaxed text-text">
@@ -55,6 +56,11 @@ export function ImportConfirmDialog({ plan, onCancel, onConfirm }: ImportConfirm
           {plan.candidates.length !== 1 ? 'e' : ''}
           {plan.fromKey && plan.toKey && (
             <> (Zeitraum {plan.fromKey} bis {plan.toKey})</>
+          )}
+          {plan.receipts && (
+            <> und <strong>{Object.keys(plan.receipts).length}</strong> Beleg
+              {Object.keys(plan.receipts).length !== 1 ? 'e' : ''} (werden als echte Dateien
+              wiederhergestellt)</>
           )}.
         </p>
 

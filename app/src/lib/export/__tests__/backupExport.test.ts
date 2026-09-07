@@ -50,6 +50,27 @@ describe('buildBackupJson', () => {
     expect(backup.receipts.r2.dataUrl).toBe('data:application/pdf;base64,BBBB');
   });
 
+  it('sichert ALLE Beleg-Metadaten, nicht nur name+dataUrl (Fund 07.09.2026: feld/mime/createdAt gingen vorher verloren)', async () => {
+    const entries: Record<string, TagesEintrag> = {
+      '2026-08-04': eintrag({ receiptIds: ['r1'] }),
+    };
+    const store = mockStore({
+      r1: {
+        id: 'r1', name: 'taxi.pdf', mime: 'application/pdf', createdAt: 1788700000000,
+        date: '2026-08-04', feld: 'transport', dataUrl: 'data:application/pdf;base64,AAAA',
+      } as unknown as { name?: string; dataUrl: string | null },
+    });
+    const blob = await buildBackupJson(2026, 8, entries, store);
+    const backup = JSON.parse(await blob.text());
+
+    expect(backup.receipts.r1.feld).toBe('transport');
+    expect(backup.receipts.r1.mime).toBe('application/pdf');
+    expect(backup.receipts.r1.createdAt).toBe(1788700000000);
+    expect(backup.receipts.r1.date).toBe('2026-08-04');
+    // "id" bewusst NICHT dupliziert - ist bereits der Objekt-Schlüssel (rid).
+    expect(backup.receipts.r1.id).toBeUndefined();
+  });
+
   it('überspringt eine Beleg-Referenz, die ins Leere zeigt (z.B. schon gelöscht), statt abzustürzen', async () => {
     const entries: Record<string, TagesEintrag> = {
       '2026-08-04': eintrag({ receiptIds: ['existiert-nicht'] }),
