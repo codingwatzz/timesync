@@ -63,7 +63,13 @@ async function checkRestoreFlow(page, dayRows, { testYear, testImportPath }) {
 
   const beschreibung = await page.locator('#f_beschreibung').inputValue();
   const transport = await page.locator('#f_transport').inputValue();
-  results.restoreWorked = beschreibung === 'Restore-Test-Eintrag' && Number(transport) === 25.5;
+  // "25,50" (deutsches Komma-Format, wie es echte Einträge auch verwenden) mit Number()
+  // direkt zu vergleichen ergibt NaN - Komma zu Punkt normalisieren, wie es core/formatters.ts
+  // ::toNumber() in der App selbst auch tut.
+  const transportNum = Number(transport.replace(',', '.'));
+  results.restoreWorked = beschreibung === 'Restore-Test-Eintrag' && transportNum === 25.5;
+  results.restoreBeschreibungActual = beschreibung;
+  results.restoreTransportActual = transport;
   log(`Restore: Eintrag korrekt wiederhergestellt: ${results.restoreWorked} (beschreibung="${beschreibung}", transport="${transport}")`);
 
   await page.waitForSelector('.receipt-item', { timeout: 5000 }).catch(() => {});
