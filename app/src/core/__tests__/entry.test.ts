@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten, fehltArbeitszeit } from '../entry';
+import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten, fehltArbeitszeit, schichtUnplausibel } from '../entry';
 
 describe('emptyEntry', () => {
   it('setzt Homeoffice standardmäßig auf true', () => {
@@ -119,5 +119,37 @@ describe('fehltArbeitszeit', () => {
 
   it('ist false, wenn der Tag manuell auf einen Nicht-Arbeitstyp umgestellt wurde', () => {
     expect(fehltArbeitszeit({ ...basis, typ: 'U', typManuell: true }, 'U')).toBe(false);
+  });
+});
+
+// Release-Audit 08.09.2026, Abschnitt 4 "Negative Tests": Ende vor Start bzw. Pause länger
+// als die Schicht wurde bisher lautlos zu 0 Std. gekappt, ohne dass der Nutzer einen Hinweis
+// bekam. schichtUnplausibel() ist die neue Grundlage für eine sichtbare Warnung dazu.
+describe('schichtUnplausibel', () => {
+  it('ist false, wenn Start oder Ende fehlt (unvollständig ist kein "unplausibel")', () => {
+    expect(schichtUnplausibel('', '', '0')).toBe(false);
+    expect(schichtUnplausibel('08:00', '', '0')).toBe(false);
+    expect(schichtUnplausibel('', '16:00', '0')).toBe(false);
+  });
+
+  it('ist false bei einer normalen, plausiblen Schicht', () => {
+    expect(schichtUnplausibel('08:00', '16:00', '30')).toBe(false);
+  });
+
+  it('ist true, wenn Ende vor Start liegt', () => {
+    expect(schichtUnplausibel('16:00', '08:00', '0')).toBe(true);
+  });
+
+  it('ist true, wenn Ende exakt gleich Start ist', () => {
+    expect(schichtUnplausibel('08:00', '08:00', '0')).toBe(true);
+  });
+
+  it('ist true, wenn die Pause mindestens so lang ist wie die Zeitspanne', () => {
+    expect(schichtUnplausibel('08:00', '08:30', '30')).toBe(true);
+    expect(schichtUnplausibel('08:00', '08:30', '45')).toBe(true);
+  });
+
+  it('ist false bei einer knapp positiven Differenz nach Abzug der Pause', () => {
+    expect(schichtUnplausibel('08:00', '08:31', '30')).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
 import { pad, pauseOptionsFor, fmtHHMM, toNumber, sanitizeAmountInput } from '../core/formatters';
-import { arbeitszeitMinuten, hatVersteckbareDaten } from '../core/entry';
+import { arbeitszeitMinuten, hatVersteckbareDaten, schichtUnplausibel } from '../core/entry';
 import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
@@ -513,6 +513,12 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                 </select>
               </div>
             </div>
+            {schichtUnplausibel(entry.start, entry.ende, entry.pause) && (
+              <div id="schicht1Warnung" className="mt-2 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs font-semibold text-warning">
+                <AlertTriangle size={14} className="flex-shrink-0" strokeWidth={2.25} />
+                Ende liegt vor Start (oder die Pause ist zu lang) - diese Zeit zählt als 0 Std.
+              </div>
+            )}
 
             {zweiteSchichtOffen ? (
               <>
@@ -530,6 +536,12 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
                     </select>
                   </div>
                 </div>
+                {schichtUnplausibel(entry.start2, entry.ende2, entry.pause2) && (
+                  <div id="schicht2Warnung" className="mt-2 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs font-semibold text-warning">
+                    <AlertTriangle size={14} className="flex-shrink-0" strokeWidth={2.25} />
+                    Ende liegt vor Start (oder die Pause ist zu lang) - diese Zeit zählt als 0 Std.
+                  </div>
+                )}
                 <button
                   id="removeSecondShiftBtn"
                   className={`${secondaryBtnCls} flex items-center justify-center gap-1.5`}

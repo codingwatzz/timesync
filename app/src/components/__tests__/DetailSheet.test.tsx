@@ -234,6 +234,36 @@ describe('DetailSheet Arbeitszeit-Anzeige', () => {
     expect(container.querySelector('.arbeitszeit-badge')?.textContent).toBe('06:00');
   });
 
+  it('zeigt eine Warnung, wenn Ende vor Start liegt (Release-Audit 08.09.2026)', () => {
+    const entry = { ...emptyEntry(2026, 9, 15), start: '16:00', ende: '08:00', pause: '0' };
+    const { container } = renderSheet({ entry });
+    expect(container.querySelector('#schicht1Warnung')).toBeInTheDocument();
+    expect(container.querySelector('.arbeitszeit-badge')?.textContent).toBe('00:00');
+  });
+
+  it('zeigt eine Warnung, wenn die Pause mindestens so lang ist wie die Schicht', () => {
+    const entry = { ...emptyEntry(2026, 9, 15), start: '08:00', ende: '08:30', pause: '30' };
+    const { container } = renderSheet({ entry });
+    expect(container.querySelector('#schicht1Warnung')).toBeInTheDocument();
+  });
+
+  it('zeigt KEINE Warnung bei einer plausiblen Schicht', () => {
+    const entry = { ...emptyEntry(2026, 9, 15), start: '08:00', ende: '16:00', pause: '30' };
+    const { container } = renderSheet({ entry });
+    expect(container.querySelector('#schicht1Warnung')).not.toBeInTheDocument();
+  });
+
+  it('zeigt eine eigene Warnung für die zweite Schicht, unabhängig von der ersten', () => {
+    const entry = {
+      ...emptyEntry(2026, 9, 15),
+      start: '08:00', ende: '12:00', pause: '0',
+      start2: '19:00', ende2: '17:00', pause2: '0',
+    };
+    const { container } = renderSheet({ entry });
+    expect(container.querySelector('#schicht1Warnung')).not.toBeInTheDocument();
+    expect(container.querySelector('#schicht2Warnung')).toBeInTheDocument();
+  });
+
   it('zeigt 00:00, wenn keine Zeiten eingetragen sind', () => {
     const { container } = renderSheet();
     expect(container.querySelector('.arbeitszeit-badge')?.textContent).toBe('00:00');

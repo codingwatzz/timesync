@@ -63,6 +63,22 @@ export function fehltArbeitszeit(e: TagesEintrag | undefined, typ: Wochentyp): b
   return arbeitszeitMinuten(e) === 0;
 }
 
+/** Erkennt eine unplausible Schicht: Start UND Ende sind beide gesetzt, aber Ende liegt vor
+ * (oder exakt auf) Start, oder die Pause ist mindestens so lang wie die Zeitspanne dazwischen
+ * - arbeitszeitMinuten() kappt das dann lautlos auf 0, ohne dass der Nutzer einen Hinweis
+ * bekommt, WARUM seine eingetragene Zeit nicht gezählt wird (Release-Audit 08.09.2026,
+ * Abschnitt 4 "Negative Tests": genau der Fall "Ende vor Beginn"/"Pause länger als
+ * Arbeitszeit"). Reine Anzeige-Hilfsfunktion, verändert nichts an der Berechnung selbst -
+ * die bleibt bewusst fehlertolerant (kein Absturz, keine negative Zeit). */
+export function schichtUnplausibel(start: string, ende: string, pause: string): boolean {
+  if (!start || !ende) return false;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = ende.split(':').map(Number);
+  if (![sh, sm, eh, em].every(Number.isFinite)) return false;
+  const dauer = (eh * 60 + em) - (sh * 60 + sm) - toNumber(pause);
+  return dauer <= 0;
+}
+
 /** Prüft, ob für einen Tag bereits Daten vorliegen, die bei "kein Arbeitstag" normalerweise
  * ausgeblendet würden (Zeiten/Fahrt&Kosten/Verpflegung/Belege - NICHT Sonstiges oder
  * Beschreibung, die bleiben ohnehin immer sichtbar). "ho" bewusst NICHT geprüft - ist laut
