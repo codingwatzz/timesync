@@ -29,6 +29,18 @@ describe('DayRow', () => {
     expect(screen.getByText('Homeoffice')).toBeInTheDocument();
   });
 
+  it('zeigt das Homeoffice-Flag NICHT an einem Urlaubstag, selbst wenn ho=true gespeichert ist (Regression 07.09.2026: emptyEntry() setzt ho standardmäßig true für JEDEN Tag)', () => {
+    const entry = { ...emptyEntry(2026, 8, 17), ho: true, typ: 'U' as const };
+    render(<DayRow year={2026} month={8} day={17} entry={entry} typ="U" feiertag={null} onClick={() => {}} />);
+    expect(screen.queryByText('Homeoffice')).not.toBeInTheDocument();
+  });
+
+  it('zeigt das Homeoffice-Flag NICHT an einem Kranktag', () => {
+    const entry = { ...emptyEntry(2026, 8, 17), ho: true, typ: 'K' as const };
+    render(<DayRow year={2026} month={8} day={17} entry={entry} typ="K" feiertag={null} onClick={() => {}} />);
+    expect(screen.queryByText('Homeoffice')).not.toBeInTheDocument();
+  });
+
   it('zeigt die Reiseart-Warnung bei "vor Ort"-Tag ohne gesetzte Reiseart', () => {
     const entry = { ...emptyEntry(2026, 8, 17), ho: false, typ: 'A' as const, km: '50' };
     render(<DayRow year={2026} month={8} day={17} entry={entry} typ="A" feiertag={null} onClick={() => {}} />);
@@ -53,6 +65,28 @@ describe('DayRow', () => {
       <DayRow year={2026} month={8} day={15} entry={undefined} typ="W" feiertag={null} onClick={() => {}} />,
     );
     expect(container.querySelector('.day-row.weekend')).toBeInTheDocument();
+  });
+
+  it('stellt Nicht-Arbeitstage kompakt dar, wie Wochenenden (Nutzerwunsch 07.09.2026)', () => {
+    const kleineSchrift = (typ: 'U' | 'K' | 'G' | 'F') => {
+      const { container } = render(
+        <DayRow year={2026} month={8} day={15} entry={undefined} typ={typ} feiertag={typ === 'F' ? 'Test-Feiertag' : null} onClick={() => {}} />,
+      );
+      // Kompakte Darstellung erkennbar an der kleineren Datums-Schriftgröße (13px statt 17px) -
+      // dieselbe Klasse, die Wochenendzeilen schon verwenden.
+      expect(container.querySelector('.num.text-\\[13px\\]')).toBeInTheDocument();
+    };
+    kleineSchrift('U');
+    kleineSchrift('K');
+    kleineSchrift('G');
+    kleineSchrift('F');
+  });
+
+  it('stellt einen echten Arbeitstag NICHT kompakt dar', () => {
+    const { container } = render(
+      <DayRow year={2026} month={8} day={17} entry={undefined} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(container.querySelector('.num.text-\\[17px\\]')).toBeInTheDocument();
   });
 
   it('markiert den heutigen Tag (Datum stimmt mit Systemzeit überein)', () => {
