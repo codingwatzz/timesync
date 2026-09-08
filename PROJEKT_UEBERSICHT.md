@@ -1,11 +1,12 @@
 # Projekt: Zeiterfassung & Spesenabrechnung
 
-**Stand: 07.09.2026 (Abend) – nach abgeschlossenem Engineering-Review (Architektur/Backend/
-Datenmodell/Frontend/Performance/KI-Freundlichkeit/Testing/Deployment) + priorisierter
-Abarbeitung der Ergebnisliste. Alle Fakten direkt am frischen Repo/System verifiziert
-(npm run verify lokal: 263 Tests grün, `tsc --strict`: 0 Fehler, zwei echte E2E-Läufe
-danach: `pass: true, failedChecks: []`, davon einer gegen die neu umgestellte Live-
-Deployment-Pipeline). Diese Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
+**Stand: 07.09.2026 (Nacht) – nach abgeschlossenem Engineering-Review + priorisierter
+Abarbeitung, dazu eine Reihe direkt umgesetzter Nutzerwünsche (kritischer Beleg-Bug,
+Zeilenhöhe/Arbeitsstunden in der Monatsübersicht, Legende-Button, vollständiger Restore aus
+dem Rohdaten-Backup). Alle Fakten direkt am frischen Repo/System verifiziert (npm run verify
+lokal: 274 Tests grün, `tsc --strict`: 0 Fehler, mehrere echte E2E-Läufe: `pass: true,
+failedChecks: []`, zuletzt inkl. vollständigem Restore-Zyklus gegen echtes Appwrite). Diese
+Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
 
 ## Ziel
 
@@ -20,8 +21,9 @@ Web-App (PWA) zur Erfassung von Arbeitszeiten, Homeoffice-Tagen, Reisekosten und
 Der Engineering-Review-Auftrag von der letzten Übergabe ist **abgearbeitet** - kein offener
 Auftrag mehr für den nächsten Thread. Stattdessen normal mit `CLAUDE_CHECKLIST.md`
 weiterarbeiten (Abschnitt 0: GitHub-Token-Status prüfen, bevor größere Arbeit beginnt - u.a.
-prüfen, ob der Appwrite-API-Key + die beiden heute genutzten GitHub-Tokens vom Nutzer schon
-wie angekündigt (Ende der Woche) rotiert/gelöscht wurden) und die "Offene Punkte" unten als
+prüfen, ob die beiden heute genutzten GitHub-Tokens vom Nutzer schon wie angekündigt (Ende
+der Woche) rotiert wurden; der Appwrite-API-Key ist bereits gelöscht) und die "Offene
+Punkte" unten als
 Ausgangspunkt nehmen, falls der Nutzer nichts Neues vorgibt.
 
 ## Engineering-Review 07.09.2026 – Ergebnis + umgesetzte Fixes
@@ -315,24 +317,18 @@ möglich, nicht nur behoben.
    Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer, aber
    echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
    Formularfeld eingebaut wird**, nie auf Vorrat.
-2. **Kein Restore aus `_Rohdaten-Backup.json`** – nur manuell nutzbar, kein Ein-Klick-Restore.
-   Unverhältnismäßiger Aufwand für den Anlassfall (Merge-Logik + Belege re-uploaden) - nur
-   auf expliziten Wunsch bauen, nicht proaktiv.
-3. **Ungenutzter Appwrite-API-Key "backup-timesync"** (läuft 01.01.2029 ab) - muss der Nutzer
-   selbst in der Appwrite-Konsole löschen (kein API-Zugriff dafür). Die 3 zugehörigen
-   GitHub-Secrets sind bereits gelöscht (07.09.2026).
-4. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
-5. **Zwei GitHub-Tokens vom 06./07.09.2026** – im Chat für Push/Secrets/Pages-Umstellung
+2. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
+3. **Zwei GitHub-Tokens vom 06./07.09.2026** – im Chat für Push/Secrets/Pages-Umstellung
    verwendet. Nutzer hat angekündigt, beide **Ende dieser Woche** zu rotieren/widerrufen -
    beim übernächsten Thread ggf. nachfragen, ob erledigt.
-6. **Kein Schema-Versionsfeld** in gespeicherten `TagesEintrag`-Zeilen (Engineering-Review,
+4. **Kein Schema-Versionsfeld** in gespeicherten `TagesEintrag`-Zeilen (Engineering-Review,
    Punkt 6) – bewusst NICHT proaktiv eingeführt (kein Overengineering für eine Ein-Personen-
    App ohne konkreten Anlass). Erst einführen, wenn tatsächlich mal ein Feld
    umbenannt/entfernt wird, dann als Teil DIESER Änderung.
-7. **`DayRow.tsx`-Touch-Target bei Wochenendzeilen** und **Swipe-/Textauswahl-Überlappung**
+5. **`DayRow.tsx`-Touch-Target bei Wochenendzeilen** und **Swipe-/Textauswahl-Überlappung**
    in `DetailSheet.tsx` (UX-Review, Punkte 5/6) – bewusst nicht angefasst, nicht erneut
    vorschlagen, außer der Nutzer bringt es selbst wieder auf.
-8. **ExcelJS (~900KB) in `arbeitszeitExport.ts`** (Engineering-Review, Punkt 7) – bewusst
+6. **ExcelJS (~900KB) in `arbeitszeitExport.ts`** (Engineering-Review, Punkt 7) – bewusst
    nicht ersetzt, bereits lazy-geladen, kein konkreter Leidensdruck. Nur auf expliziten
    Wunsch/bei echter Beschwerde über langsame Exports angehen.
 
@@ -352,8 +348,28 @@ möglich, nicht nur behoben.
   Monatswechsel, Ladefeedback AuthGate) → fertig
 - **Engineering-Review 07.09.2026** (strict TypeScript, Store-Fehlerbehandlung inkl. Test,
   Deploy-Umstellung auf `actions/deploy-pages`, parallele Beleg-Ladevorgänge,
-  Checkliste eingedampft, 3 ungenutzte GitHub-Secrets gelöscht) → fertig, siehe eigenes
-  Kapitel oben. Kein offener Review-Auftrag mehr für den nächsten Thread.
+  Checkliste eingedampft, 3 ungenutzte GitHub-Secrets gelöscht) → fertig
+- **Ungenutzter Appwrite-API-Key "backup-timesync"** → vom Nutzer in der Appwrite-Konsole
+  gelöscht (07.09.2026, Abend). Aufräum-Kapitel damit komplett abgeschlossen.
+- **KRITISCHER Beleg-Bug (07.09.2026, Abend)**: ein Beleg war durch einen Fehler beim
+  Download beschädigt worden (Appwrite-Fehlerantwort wurde als Dateiinhalt übernommen,
+  `appwriteStore.ts::get()` prüfte `resp.ok` nicht). Direkte Folgeursache gefunden und
+  behoben: der Datei-Download lief über einen rohen `fetch()` ohne
+  `credentials: 'include'` - schlug seit der Appwrite-Absicherung (05.09.2026) für JEDEN
+  Beleg fehl, nicht nur den einen beschädigten. E2E hat jetzt einen eigenen Check
+  (`receiptOpenedWithoutError`), der das wirkliche Öffnen prüft, nicht nur die Persistenz.
+- **Kompaktere Tageszeilen + Arbeitsstunden in der Monatsübersicht** (07.09.2026) - Padding/
+  Zeilenabstand reduziert (bleibt über der 44px-Touch-Target-Grenze), geleistete Arbeitszeit
+  (HH:MM) wird jetzt zusätzlich zum Kostenbetrag angezeigt.
+- **Legende-Button in `DetailSheet.tsx`** (07.09.2026) - von reinem Icon zu einem erkennbaren
+  Chip (Icon + "Legende"-Text) umgestaltet.
+- **Restore aus `_Rohdaten-Backup.json`** (07.09.2026) - `parseImportFile()` erkennt das
+  vollständige Backup-Format automatisch, stellt Einträge UND echte Beleg-Dateien wieder her
+  (inkl. Kostenfeld-Zuordnung). Nutzt dieselbe Bestätigungs-Infrastruktur wie der normale
+  Import. Dabei nebenbei eine unabhängige Lücke im Export selbst gefunden und behoben:
+  `backupExport.ts` sicherte bisher nur `name`+`dataUrl` pro Beleg, nicht `feld`/`mime`/
+  `createdAt` - jetzt werden alle Beleg-Metadaten gesichert. Per echtem E2E-Test gegen
+  Appwrite verifiziert (kompletter Restore-Zyklus inkl. Beleg-Öffnen).
 
 ## Bekannte Fallstricke (nicht erneut debuggen, Details siehe CLAUDE_CHECKLIST.md)
 
