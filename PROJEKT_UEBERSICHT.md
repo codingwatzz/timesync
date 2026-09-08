@@ -1,97 +1,80 @@
 # Projekt: Zeiterfassung & Spesenabrechnung
 
-**Stand: 07.09.2026 (Nacht) – nach abgeschlossenem Engineering-Review + priorisierter
-Abarbeitung, dazu eine Reihe direkt umgesetzter Nutzerwünsche (kritischer Beleg-Bug,
-Zeilenhöhe/Arbeitsstunden in der Monatsübersicht, Legende-Button, vollständiger Restore aus
-dem Rohdaten-Backup). Alle Fakten direkt am frischen Repo/System verifiziert (npm run verify
-lokal: 274 Tests grün, `tsc --strict`: 0 Fehler, mehrere echte E2E-Läufe: `pass: true,
-failedChecks: []`, zuletzt inkl. vollständigem Restore-Zyklus gegen echtes Appwrite). Diese
-Datei ist die Quelle der Wahrheit – nicht der Chatverlauf.**
+**🎉 Version 01 – 08.09.2026, offiziell eingefroren (Git-Tag `v0.1.0`).** Release-Audit
+bestanden (siehe Kapitel "V01 Release-Audit" unten). Alle Fakten direkt am frischen
+Repo/System verifiziert (npm run verify lokal: 296 Tests grün, `tsc --strict`: 0 Fehler,
+mehrere echte E2E-Läufe: `pass: true, failedChecks: []`). Diese Datei ist die Quelle der
+Wahrheit – nicht der Chatverlauf.
 
 ## Ziel
 
-Web-App (PWA) zur Erfassung von Arbeitszeiten, Homeoffice-Tagen, Reisekosten und Belegen.
+Web-App (PWA) zur Erfassung von Arbeitszeiten, Homeoffice-Tagen, Reisekosten und Belegen -
+inkl. Beleg-Zuordnung zu Reisen/Terminen und Unterstützung der Reisekostenabrechnung.
 
 **Live:** https://codingwatzz.github.io/timesync/
-**Repo:** https://github.com/codingwatzz/timesync (öffentlich, main-Branch)
+**Repo:** https://github.com/codingwatzz/timesync (öffentlich, main-Branch, Tag `v0.1.0`)
 **Nutzer:** Raoul Hübner, sqior medical GmbH
 
 ## Für Claude: erster Schritt im nächsten Thread
 
-Der Engineering-Review-Auftrag von der letzten Übergabe ist **abgearbeitet** - kein offener
-Auftrag mehr für den nächsten Thread. Stattdessen normal mit `CLAUDE_CHECKLIST.md`
-weiterarbeiten (Abschnitt 0: GitHub-Token-Status prüfen, bevor größere Arbeit beginnt - u.a.
-prüfen, ob die beiden heute genutzten GitHub-Tokens vom Nutzer schon wie angekündigt (Ende
-der Woche) rotiert wurden; der Appwrite-API-Key ist bereits gelöscht) und die "Offene
-Punkte" unten als
-Ausgangspunkt nehmen, falls der Nutzer nichts Neues vorgibt.
+**V01 ist fertig und eingefroren - kein aktiver Entwicklungsauftrag mehr.** Der Nutzer
+sammelt neue Ideen/Wünsche ab jetzt zunächst nur in "V02-Backlog" (siehe unten), um sie
+irgendwann gebündelt anzugehen - nicht sofort einzeln umsetzen, außer er sagt das explizit.
+Erster Schritt trotzdem: `CLAUDE_CHECKLIST.md` Abschnitt 0 (GitHub-Token-Status prüfen -
+zwei Tokens vom 06./07.09.2026 sollten laut Ankündigung "Ende der Woche" rotiert worden
+sein, kurz nachfragen falls relevant).
 
-## Engineering-Review 07.09.2026 – Ergebnis + umgesetzte Fixes
+## V01 Release-Audit (08.09.2026) – Ergebnis
 
-Kritisches Review (Senior-Architect/Backend/Frontend-Auftrag, kalibriert auf "Solo-Dev +
-KI-Weiterentwicklung", explizit NICHT auf Enterprise-Skalierung) ergab insgesamt eine sehr
-solide technische Basis (0 `any`-Verwendungen im ganzen Projekt, saubere Schichtung
-core/→store/→hooks/→components/, durchdachte Loading/Error-States). 10 konkrete Findings,
-priorisiert nach Nutzen/Aufwand und Stück für Stück abgearbeitet:
+Finaler, adversarialer Release-Audit (Rolle: QA Engineer + Architekt + UX-Reviewer,
+Auftrag: "wie könnte ich diese App kaputtmachen", explizit KEIN Feature-Ausbau) vor dem
+Einfrieren als V01. Ergebnis: **RELEASE V01** – 0 kritische, 0 hohe, 3 mittlere (dokumentiert
+für V02, siehe dort), 4 niedrige Punkte (kein Handlungsbedarf).
 
-1. **🟠 TypeScript `strict` nicht aktiv** (behoben) - in beiden tsconfigs aktiviert, 0
-   resultierende Fehler dank bereits sauberem Typisierungsstil.
-2. **🟠 `KVStore.get/set/delete` verschluckten echte Fehler** (behoben) - warfen bei
-   Netzwerk-/Berechtigungsfehlern nur ein Log, gaben aber "Erfolg" zurück (ein
-   fehlgeschlagener Beleg-Upload z.B. schrieb trotzdem die Metadaten-Zeile). Jetzt: werfen
-   bei echten Fehlern, `null` nur wenn ein Schlüssel wirklich nicht existiert
-   (`isNotFoundError()` steuert auch den `updateRow`→`createRow`-Upsert-Fallback statt eines
-   blinden Catch-All). Alle 7 betroffenen Aufrufer (`useMonthEntries.ts`, `App.tsx`,
-   `DetailSheet.tsx`, `lib/importPlan.ts`) zeigen Fehler jetzt per Toast, statt sie stumm zu
-   verschlucken - inkl. `hasUnsavedRef`, das bei einem Fehlschlag bewusst `true` bleibt (Retry
-   statt fälschlichem "gespeichert"). Neuer dedizierter Test `store/__tests__/appwriteStore.test.ts`
-   (gemockter Appwrite-Client) - vorher die einzige zentrale Store-Datei ohne eigenen Test.
-3. **🟠 Deploy-Architektur** (behoben) - Build-Output wurde bei jedem Deploy direkt in den
-   `main`-Root committet (Ausnahmeliste für Root-Dateien, zwei echte versehentliche
-   Root-Löschungen 01./02.09.2026). Umgestellt auf die offizielle GitHub-Pages-Actions-
-   Bereitstellung (`actions/upload-pages-artifact` + `actions/deploy-pages`,
-   Repo-Settings → Pages → Source = "GitHub Actions"). `main` enthält jetzt nur noch
-   Quellcode + Doku, die alten Build-Artefakte im Root wurden entfernt. Live per E2E gegen
-   die neu ausgelieferte Seite verifiziert.
-4. **🟡 Serielles Beleg-Nachladen** (behoben) - `backupExport.ts` + `receiptMerge.ts` luden
-   Belege eines Exports nacheinander statt parallel; jetzt `Promise.all`, Reihenfolge bleibt
-   erhalten.
-5. **🟡 Alte Vorfalls-Erzählungen in `CLAUDE_CHECKLIST.md`** (behoben) - von 306 auf 238
-   Zeilen eingedampft, keine Regel verloren, nur erledigte Bug-Geschichten auf die reine,
-   noch handlungsrelevante Regel gekürzt.
-6. **Aufräumarbeiten**: 3 ungenutzte GitHub-Secrets vom verworfenen Auto-Backup-Anlauf
-   gelöscht (`APPWRITE_BACKUP_API_KEY`, `GDRIVE_BACKUP_FOLDER_ID`,
-   `GDRIVE_SERVICE_ACCOUNT_JSON`) - nur noch `APPWRITE_EMAIL`/`APPWRITE_PASSWORD` aktiv.
+**Einziger im Audit selbst gefundener + behobener Fund:** "Ende vor Start" bzw. "Pause
+länger als Schicht" wurde von `arbeitszeitMinuten()` zwar schon korrekt auf 0 Minuten
+gekappt (kein Absturz, keine negative Zeit) - aber ohne jede Rückmeldung, WARUM die
+eingetragene Zeit nicht zählt. Neue, sichtbare Warnung direkt im Formular
+(`core/entry.ts::schichtUnplausibel()`, unabhängig für beide Schichten).
 
-**Bewusst NICHT angefasst (siehe "Offene Punkte" unten für Details, warum):**
-- 🟡 Kein Schema-Versionsfeld in gespeicherten Einträgen - erst bei tatsächlicher
-  Datenmodell-Änderung einführen, nicht auf Vorrat.
-- 🟢 ExcelJS (~900KB) für `arbeitszeitExport.ts` - bereits lazy-geladen, kein konkreter
-  Leidensdruck, nicht ersetzen ohne Anlass.
-- 🟢 `DetailSheet.tsx`-Aufteilung - weiterhin zurückgestellt bis zur nächsten inhaltlichen
-  Änderung an dieser Datei.
-- Ein-Klick-Restore aus `_Rohdaten-Backup.json` - unverhältnismäßiger Aufwand für den
-  Anlassfall, nur auf expliziten Wunsch bauen.
+Alle anderen kritischen Kategorien (Datenverlust, Persistenz-Race-Conditions, falsche
+Berechnungen) waren bereits durch die beiden vorangegangenen Reviews abgedeckt - siehe
+"Historie bis V01" unten für die Details dazu.
 
-## UX/UI-Review 06.09.2026 – zur Erinnerung, weiterhin gültig
+## Historie bis V01 (kondensiert - Details siehe Git-Historie)
 
-4 Fixes umgesetzt (Import-Bestätigung, komma-sichere Betragsfelder, aria-labels
-Monatswechsel, Ladefeedback AuthGate) - Details siehe Git-Historie. 2 Punkte bewusst NICHT
-angefasst (Nutzerentscheidung, weiterhin gültig):
-- 🟡 Touch-Target-Ausnahme bei Wochenendzeilen in `DayRow.tsx` - lassen.
-- 🟢 Swipe-Geste zur Tagesnavigation überlappt theoretisch mit Textauswahl - lassen.
+Drei große Arbeitsrunden führten zu V01:
+
+1. **UX/UI-Review (06.09.2026):** Import-Bestätigung mit Überschreib-Warnung, komma-sichere
+   Betragsfelder, aria-labels, Ladefeedback, Zeilenhöhe/Arbeitsstunden-Anzeige,
+   Legende-Button.
+2. **Engineering-Review (07.09.2026):** `strict` TypeScript, Store-Fehlerbehandlung
+   (`KVStore.get/set/delete` werfen jetzt bei echten Fehlern statt lautlos "Erfolg" zu
+   meiden), Deploy-Umstellung auf offizielle GitHub-Pages-Actions-Bereitstellung (main
+   enthält seitdem NUR Quellcode, kein Build-Output mehr), parallele Beleg-Ladevorgänge.
+3. **Nutzerwünsche + 2 kritische Live-Bugs (07.09.2026, Abend):** Restore aus dem
+   Rohdaten-Backup (inkl. echter Beleg-Dateien), "Zeitraum auf Tagestyp setzen" (Bulk-Urlaub
+   ohne Einzeltage anzuklicken), Homeoffice-Flag-Bug an Nicht-Arbeitstagen behoben. **Zwei
+   echte, live bestätigte Datenintegritäts-Bugs gefunden und behoben:** (a) ein
+   fehlgeschlagener Beleg-Download wurde als Dateiinhalt übernommen und hat damit einen
+   echten Beleg überschrieben (`appwriteStore.ts::get()` prüfte `resp.ok` nicht), (b) die
+   eigentliche Ursache dahinter - der Datei-Download lief ohne `credentials:'include'` und
+   schlug seit der Appwrite-Absicherung (05.09.2026) für JEDEN Beleg fehl, nicht nur den
+   einen beschädigten.
 
 ## Architektur
 
-React 19 + TypeScript (Vite-Build, `strict: true` seit 07.09.2026). `app/` enthält den
-gesamten Quellcode. Deployment läuft über GitHub-Pages-Actions-Bereitstellung (siehe eigenes
-Kapitel "Deployment" unten) - `main` enthält KEINEN Build-Output mehr, nur Quellcode + Doku.
+React 19 + TypeScript (Vite-Build, `strict: true`). `app/` enthält den gesamten Quellcode.
+Deployment läuft über GitHub-Pages-Actions-Bereitstellung (siehe eigenes Kapitel
+"Deployment" unten) - `main` enthält KEINEN Build-Output mehr, nur Quellcode + Doku.
 
 ```
 app/src/
   core/                     Reine Logik, 0 DOM-Abhängigkeit. Fast alles hier unit-getestet.
     types.ts                Datenmodell (TagesEintrag, Wochentyp, ...)
-    entry.ts                emptyEntry(), arbeitszeitMinuten(), fehltArbeitszeit()
+    entry.ts                emptyEntry(), arbeitszeitMinuten(), fehltArbeitszeit(),
+                            hatVersteckbareDaten(), schichtUnplausibel() (V01-Release-Audit:
+                            Warnung bei "Ende vor Start"/Pause zu lang)
     formatters.ts           pad(), fmtHHMM(), istVergangenheit(), daysInMonth(),
                             toNumber() (seit 06.09.2026 komma-sicher: "," UND "."
                             als Dezimaltrennzeichen - EINZIGE Zahl-Parser-Implementierung
@@ -120,9 +103,11 @@ app/src/
     MonthView.tsx           Kalender-Monatsansicht (Haupt-View) + SettingsMenu + Swipe.
                             Export-Button wird zu normalem (nicht-schwebendem) Button,
                             sobald ein Vorschau-Panel offen ist (verdeckte sonst Inhalte)
-    DayRow.tsx              Eine Tages-Zeile inkl. Flags (Homeoffice, Reiseart fehlt,
-                            ⚠ Keine Arbeitszeit erfasst für vergangene Arbeitstage). "km"
-                            neutral (kein Akzent), "extern" nutzt eigene info-Farbe
+    DayRow.tsx              Eine Tages-Zeile inkl. Flags (Homeoffice NUR bei typ==='A',
+                            Reiseart fehlt, ⚠ Keine Arbeitszeit erfasst für vergangene
+                            Arbeitstage). Kompakte Darstellung für ALLE Nicht-Arbeitstage
+                            (isKompakt, nicht nur Wochenende). "km" neutral (kein Akzent),
+                            "extern" nutzt eigene info-Farbe
     DetailSheet.tsx         Tages-Detailformular (größte Datei, Refactoring-Empfehlung siehe
                             "Offene Punkte"). Enthält: Tagestyp-Legende (ⓘ-Popover),
                             Bestätigungsdialog bei Tagestyp-Wechsel mit Bestandsdaten,
@@ -130,9 +115,12 @@ app/src/
                             (`BelegMeta.feld`). Betragsfelder (km/Transport/Hotel/Bewirtung/
                             Sonstiges) seit 06.09.2026 `type="text" inputMode="decimal"`
                             (nicht mehr `type="number"`, siehe UX-Review-Kapitel oben)
-    ImportConfirmDialog.tsx NEU (06.09.2026) - Bestätigungsdialog vor jedem Import: Format-
-                            Hinweis, Anzahl Einträge/Zeitraum, Überschreib-Warnung, optionaler
-                            Sicherheitskopie-Download. Siehe UX-Review-Kapitel oben.
+    ImportConfirmDialog.tsx Bestätigungsdialog vor jedem Import/Restore: Format-Hinweis,
+                            Anzahl Einträge/Zeitraum/Belege, Überschreib-Warnung, optionaler
+                            Sicherheitskopie-Download.
+    BulkTypDialog.tsx       "Zeitraum auf Tagestyp setzen" (07.09.2026) - Formular (Typ+Von+
+                            Bis) → Übersicht+Bestätigung (behalten/löschen bei bestehenden
+                            Daten). Wochenenden/Feiertage automatisch übersprungen.
     ExportView.tsx          Export-Vorschau + ZIP-Download-Trigger
     SettingsMenu.tsx        Zahnrad-Menü oben links (Light/Dark-Umschalter, Import, Diagnose)
     MonthPreviews.tsx       Ausklappbare Akkordeon-Vorschau in der Monatsansicht
@@ -169,9 +157,11 @@ app/src/
     pendingReceiptLinks.ts  Offline-/Unterbrechungs-Resilienz beim Beleg-Upload
     exportImport.ts         parseImportFile() – parst/validiert eine Import-Datei, schreibt
                             NICHTS (seit 06.09.2026, siehe UX-Review-Kapitel oben)
-    importPlan.ts           NEU (06.09.2026) - buildImportPlan() (prüft Überschreibungen),
-                            downloadPreImportBackup(), applyImportPlan() (schreibt erst nach
-                            Bestätigung im ImportConfirmDialog)
+    importPlan.ts           buildImportPlan() (prüft Überschreibungen, versteht auch das
+                            volle Rohdaten-Backup-Format inkl. Belegen), downloadPreImportBackup(),
+                            applyImportPlan() (schreibt erst nach Bestätigung)
+    bulkTyp.ts              buildBulkTypPlan()/applyBulkTypPlan() - "Zeitraum auf Tagestyp
+                            setzen", überspringt Wochenenden/Feiertage automatisch
     serviceWorker.ts        PWA-Caching (network-first für den eigenen Origin)
 
 test/
@@ -276,18 +266,22 @@ gebraucht). Zahnrad statt Hamburger-Menü bewusst: App hat nur eine Hauptansicht
 
 ## Backup
 
-vierte Datei im ZIP (`backupExport.ts`) – alle Einträge + Belege als Base64. Kein
-automatischer Restore vorhanden (JSON-Import versteht dieses Format nicht, er erwartet das
-einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eilig).
+Vierte Datei im ZIP (`backupExport.ts`) – alle Einträge + Belege als echte Dateien (Base64).
+**Vollständig wiederherstellbar** über den normalen Import-Dialog (`exportImport.ts` erkennt
+das Format `zeiterfassung-backup-v1` automatisch, `lib/importPlan.ts` restauriert Einträge
+UND lädt jeden Beleg als echte Datei erneut nach Appwrite Storage hoch, inkl.
+Kostenfeld-Zuordnung). Ein Backup ist immer nur für den Monat, in dem es exportiert wurde -
+für einen vollständigen Restore braucht es die Export-Datei jedes einzelnen Monats.
 
 ## Testing
 
-- **263 Unit-Tests** (Vitest, 35 Dateien) - `tsc --strict`: 0 Fehler. `cd app && npm run
+- **296 Unit-Tests** (Vitest) - `tsc --strict`: 0 Fehler. `cd app && npm run
   test`. `npm run verify` bündelt Test+Lint+Build – IMMER vor einem Push, der einen
   Live-Zyklus auslöst.
 - **E2E-Test** (Playwright, GitHub Actions) – nur täglich 06:00 UTC oder manuell per
-  `workflow_dispatch`. Letzter Lauf: 07.09.2026 (nach Deploy-Umstellung, gegen die neu
-  ausgelieferte Live-Seite), `pass: true, failedChecks: []`.
+  `workflow_dispatch`. Deckt den kompletten Kernworkflow ab: Eintrag anlegen → Beleg
+  hochladen → Reload/Persistenz → Export → Import → Restore (inkl. Beleg-Wiederherstellung)
+  → Aufräumen. Letzter Lauf (08.09.2026, V01-Release-Audit): `pass: true, failedChecks: []`.
   WICHTIG: Cron-Mails gehen an den GitHub-Account, der die cron:-Zeile zuletzt committete.
   Falls die Mails wieder ausbleiben → Nutzer muss die Zeile selbst im Browser-Editor
   anfassen (siehe CLAUDE_CHECKLIST.md, Abschnitt 0b).
@@ -296,6 +290,8 @@ einfache `entries`-Array ohne Belege – möglicher künftiger Ausbau, nicht eil
   als Diagnose ab Versuch 3.
 - **Diagnose im E2E**: nicht mehr über `#debugBtn` (existiert nicht mehr), sondern über
   `#settingsBtn` → Zahnrad-Menü → "Diagnose"-Eintrag klicken.
+- **Noch kein dedizierter E2E-Test** für "Zeitraum auf Tagestyp setzen" (nur Unit-Tests) -
+  bewusste Abwägung, siehe V02-Backlog.
 
 ## Deployment
 
@@ -311,65 +307,39 @@ enthält jetzt nur noch Quellcode, das zweimal real aufgetretene Root-Lösch-Ris
 (README/CLAUDE_CHECKLIST/`tools/` versehentlich mitgelöscht) ist strukturell nicht mehr
 möglich, nicht nur behoben.
 
-## Offene Punkte / nächste Schritte
+## Feature-Umfang V01 (fertig, nicht mehr im Detail auflisten)
 
-1. **`DetailSheet.tsx`** – Formular-UI, AutoSave-Debounce und Beleg-Upload in einer
-   Komponente. Aufteilung in `useAutoSave`, `useReceiptUpload` o.ä. wäre sauberer, aber
-   echtes Refactoring-Risiko. **Empfehlung: nur angehen, wenn ohnehin ein neues
-   Formularfeld eingebaut wird**, nie auf Vorrat.
-2. **August 2026**: keine externe Abgleichsquelle vorhanden. Kein Handlungsbedarf.
-3. **Zwei GitHub-Tokens vom 06./07.09.2026** – im Chat für Push/Secrets/Pages-Umstellung
-   verwendet. Nutzer hat angekündigt, beide **Ende dieser Woche** zu rotieren/widerrufen -
-   beim übernächsten Thread ggf. nachfragen, ob erledigt.
-4. **Kein Schema-Versionsfeld** in gespeicherten `TagesEintrag`-Zeilen (Engineering-Review,
-   Punkt 6) – bewusst NICHT proaktiv eingeführt (kein Overengineering für eine Ein-Personen-
-   App ohne konkreten Anlass). Erst einführen, wenn tatsächlich mal ein Feld
-   umbenannt/entfernt wird, dann als Teil DIESER Änderung.
-5. **`DayRow.tsx`-Touch-Target bei Wochenendzeilen** und **Swipe-/Textauswahl-Überlappung**
-   in `DetailSheet.tsx` (UX-Review, Punkte 5/6) – bewusst nicht angefasst, nicht erneut
-   vorschlagen, außer der Nutzer bringt es selbst wieder auf.
-6. **ExcelJS (~900KB) in `arbeitszeitExport.ts`** (Engineering-Review, Punkt 7) – bewusst
-   nicht ersetzt, bereits lazy-geladen, kein konkreter Leidensdruck. Nur auf expliziten
-   Wunsch/bei echter Beschwerde über langsame Exports angehen.
+Arbeitszeit-/Homeoffice-Erfassung, Reisekosten + Belege (Upload, Feld-Zuordnung, Löschen),
+Monats-Export (4 Dateien: Spesenabrechnung.xlsx, Belege.pdf, Arbeitszeiten.xlsx,
+Rohdaten-Backup.json), vollständiger Restore aus dem Backup, Import mit
+Überschreib-Bestätigung, "Zeitraum auf Tagestyp setzen" (Bulk-Urlaub), In-App-Vorschau
+(Spesen + Arbeitszeiten), Markierung unerfasster Arbeitstage, Appwrite-Absicherung
+(Login-Pflicht, keine "Any"-Berechtigung mehr), Light/Dark-Mode. Alles per Unit-Tests +
+mindestens ein echter E2E-Lauf verifiziert.
 
-## Was NICHT mehr offen ist
+## V02-Backlog (noch nicht priorisiert - hier sammeln, bis gebündelt angegangen wird)
 
-- Export → fertig (4 Dateien im ZIP, inkl. Backup)
-- Appwrite-Absicherung (Login, Berechtigungen) → fertig, live verifiziert
-- Markierung unerfasster Arbeitstage → fertig
-- Zahnrad-Menü (Import/Diagnose) → fertig
-- In-App-Vorschau (Spesen + Arbeitszeiten) → fertig
-- Beschreibungstext-Overflow-Bug (CSS min-width) → behoben
-- `importWorked`-Flakigkeit → robuster mit Backoff + direktem Appwrite-Read
-- Beleg-Upload/-Persistieren/-Löschen → fertig, per E2E bestätigt
-- Beleg-zu-Feld-Zuordnung, Bestätigungsdialog bei Tagestyp-Wechsel, Felder bei
-  Nicht-Arbeitstagen ausblenden → fertig
-- **UX/UI-Review 06.09.2026** (Import-Bestätigung, komma-sichere Betragsfelder, aria-labels
-  Monatswechsel, Ladefeedback AuthGate) → fertig
-- **Engineering-Review 07.09.2026** (strict TypeScript, Store-Fehlerbehandlung inkl. Test,
-  Deploy-Umstellung auf `actions/deploy-pages`, parallele Beleg-Ladevorgänge,
-  Checkliste eingedampft, 3 ungenutzte GitHub-Secrets gelöscht) → fertig
-- **Ungenutzter Appwrite-API-Key "backup-timesync"** → vom Nutzer in der Appwrite-Konsole
-  gelöscht (07.09.2026, Abend). Aufräum-Kapitel damit komplett abgeschlossen.
-- **KRITISCHER Beleg-Bug (07.09.2026, Abend)**: ein Beleg war durch einen Fehler beim
-  Download beschädigt worden (Appwrite-Fehlerantwort wurde als Dateiinhalt übernommen,
-  `appwriteStore.ts::get()` prüfte `resp.ok` nicht). Direkte Folgeursache gefunden und
-  behoben: der Datei-Download lief über einen rohen `fetch()` ohne
-  `credentials: 'include'` - schlug seit der Appwrite-Absicherung (05.09.2026) für JEDEN
-  Beleg fehl, nicht nur den einen beschädigten. E2E hat jetzt einen eigenen Check
-  (`receiptOpenedWithoutError`), der das wirkliche Öffnen prüft, nicht nur die Persistenz.
-- **Kompaktere Tageszeilen + Arbeitsstunden in der Monatsübersicht** (07.09.2026) - Padding/
-  Zeilenabstand reduziert (bleibt über der 44px-Touch-Target-Grenze), geleistete Arbeitszeit
-  (HH:MM) wird jetzt zusätzlich zum Kostenbetrag angezeigt.
-- **Legende-Button in `DetailSheet.tsx`** (07.09.2026) - von reinem Icon zu einem erkennbaren
-  Chip (Icon + "Legende"-Text) umgestaltet.
-- **Restore aus `_Rohdaten-Backup.json`** (07.09.2026) - `parseImportFile()` erkennt das
-  vollständige Backup-Format automatisch, stellt Einträge UND echte Beleg-Dateien wieder her
-  (inkl. Kostenfeld-Zuordnung). Nutzt dieselbe Bestätigungs-Infrastruktur wie der normale
-  Import. Dabei nebenbei eine unabhängige Lücke im Export selbst gefunden und behoben:
-  `backupExport.ts` sicherte bisher nur `name`+`dataUrl` pro Beleg, nicht `feld`/`mime`/
-  `createdAt` - jetzt werden alle Beleg-Metadaten gesichert. Per echtem E2E-Test gegen
-  Appwrite verifiziert (kompletter Restore-Zyklus inkl. Beleg-Öffnen).
+**Aus dem V01-Release-Audit (08.09.2026), bewusst zurückgestellt:**
+- Kein Schema-Versionsfeld in gespeicherten `TagesEintrag`-Zeilen - erst bei tatsächlicher
+  Datenmodell-Änderung einführen, nicht auf Vorrat.
+- ExcelJS (~900KB) in `arbeitszeitExport.ts` - bereits lazy-geladen, kein konkreter
+  Leidensdruck. Nur auf expliziten Wunsch/bei echter Beschwerde angehen.
+- `DetailSheet.tsx`-Aufteilung (größte Datei) - nur angehen, wenn ohnehin ein neues
+  Formularfeld eingebaut wird, nie auf Vorrat.
+- Moderate npm-audit-Meldung (transitiv `exceljs`→`uuid`) - reale Angriffsfläche in dieser
+  Client-Side-App sehr gering, Fix würde ein Breaking-Change-Downgrade erzwingen.
+- "Zeitraum auf Tagestyp setzen" hat noch keinen dedizierten E2E-Test (nur Unit-Tests).
+
+**Aus früheren Reviews, weiterhin bewusst unangetastet (Nutzerentscheidung):**
+- Touch-Target-Ausnahme bei Wochenendzeilen in `DayRow.tsx` - lassen.
+- Swipe-Geste zur Tagesnavigation überlappt theoretisch mit Textauswahl - lassen.
+- August 2026: keine externe Abgleichsquelle vorhanden - kein Handlungsbedarf.
+
+**Noch offen, unabhängig von der App selbst:**
+- Zwei GitHub-Tokens vom 06./07.09.2026 – Nutzer hat Rotation "Ende der Woche" angekündigt,
+  bei Gelegenheit nachfragen, ob erledigt.
+
+*(Neue Punkte einfach hier anhängen, wenn sie im nächsten Thread aufkommen.)*
 
 ## Bekannte Fallstricke (nicht erneut debuggen, Details siehe CLAUDE_CHECKLIST.md)
 

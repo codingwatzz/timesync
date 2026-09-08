@@ -3,6 +3,12 @@
 Diese Datei existiert, weil Claude sich zwischen Chat-Sitzungen an nichts erinnert. Sie ist das
 Gedächtnis. **Vor Beginn jeder Aufgabe in diesem Projekt: diese Datei lesen.**
 
+**🎉 Stand 08.09.2026: Version 01 ist fertig und als Git-Tag `v0.1.0` eingefroren** (Release-
+Audit bestanden, siehe `PROJEKT_UEBERSICHT.md`). Kein aktiver Entwicklungsauftrag mehr - neue
+Wünsche werden zunächst im Kapitel "V02-Backlog" dort gesammelt, nicht automatisch sofort
+umgesetzt. Diese Checkliste bleibt trotzdem für JEDE Aufgabe verbindlich (Workflow-/
+Technik-Lehren gelten unabhängig vom Entwicklungsstand).
+
 Entstanden am 31.08.2026 nach einer Sitzung, in der Ressourcen unnötig verbraucht wurden
 (viele Live-Testzyklen für einzelne Vermutungen) und zwei Dinge übersehen wurden (ein Bug
 blieb an mehreren Stellen unbehoben, personenbezogene Daten blieben im öffentlichen Git-
