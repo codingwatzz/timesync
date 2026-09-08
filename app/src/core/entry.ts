@@ -62,3 +62,18 @@ export function fehltArbeitszeit(e: TagesEintrag | undefined, typ: Wochentyp): b
   if (!e) return true;
   return arbeitszeitMinuten(e) === 0;
 }
+
+/** Prüft, ob für einen Tag bereits Daten vorliegen, die bei "kein Arbeitstag" normalerweise
+ * ausgeblendet würden (Zeiten/Fahrt&Kosten/Verpflegung/Belege - NICHT Sonstiges oder
+ * Beschreibung, die bleiben ohnehin immer sichtbar). "ho" bewusst NICHT geprüft - ist laut
+ * emptyEntry() für JEDEN Tag standardmäßig true, kein echtes Nutzer-Signal.
+ * Nach core/entry.ts verschoben (07.09.2026), damit sowohl DetailSheet.tsx (Bestätigungsdialog
+ * beim Einzeltag-Tagestyp-Wechsel) als auch lib/bulkTyp.ts (Zeitraum-Tagestyp-Wechsel) dieselbe
+ * Definition von "hat echte Daten" verwenden, statt sie zweimal leicht unterschiedlich
+ * nachzubauen. */
+export function hatVersteckbareDaten(e: TagesEintrag): boolean {
+  return Boolean(
+    e.start || e.ende || e.start2 || e.ende2 || e.km || e.transport || e.hotel
+    || e.bewirtung || e.reiseart || e.fr || e.mi || e.ab || e.receiptIds.length > 0,
+  );
+}

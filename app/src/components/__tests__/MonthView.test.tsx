@@ -17,7 +17,7 @@ describe('MonthView Kosten-Summe', () => {
     render(
       <MonthView
         year={2026} month={8} entries={entries} syncMode="appwrite" log={[]}
-        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
+        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop} onOpenBulkTyp={noop}
       />,
     );
     expect(screen.getByText('69,40')).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe('MonthView Kosten-Summe', () => {
     const { container } = render(
       <MonthView
         year={2026} month={8} entries={entries} syncMode="appwrite" log={[]}
-        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
+        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop} onOpenBulkTyp={noop}
       />,
     );
     const kmPill = Array.from(container.querySelectorAll('.summary-strip .pill')).find((p) => p.textContent?.includes('km'));
@@ -47,7 +47,7 @@ describe('MonthView Kosten-Summe', () => {
     const { container } = render(
       <MonthView
         year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
-        onPrevMonth={onPrevMonth} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop}
+        onPrevMonth={onPrevMonth} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop} onOpenBulkTyp={noop}
       />,
     );
     fireEvent.click(container.querySelector('#nextM')!);
@@ -61,7 +61,7 @@ describe('MonthView Kosten-Summe', () => {
     const { container } = render(
       <MonthView
         year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
-        onPrevMonth={noop} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop}
+        onPrevMonth={noop} onNextMonth={onNextMonth} onOpenDay={noop} onExport={noop} onImportFile={noop} onOpenBulkTyp={noop}
       />,
     );
     const main = container.querySelector('main')!;
@@ -75,7 +75,7 @@ describe('MonthView Kosten-Summe', () => {
     const { container } = render(
       <MonthView
         year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
-        onPrevMonth={onPrevMonth} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
+        onPrevMonth={onPrevMonth} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop} onOpenBulkTyp={noop}
       />,
     );
     const main = container.querySelector('main')!;
@@ -88,7 +88,7 @@ describe('MonthView Kosten-Summe', () => {
     render(
       <MonthView
         year={2026} month={8} entries={{}} syncMode="appwrite" log={[]}
-        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop}
+        onPrevMonth={noop} onNextMonth={noop} onOpenDay={noop} onExport={noop} onImportFile={noop} onOpenBulkTyp={noop}
       />,
     );
     expect(screen.getByText('Zeiterfassung')).toBeInTheDocument();

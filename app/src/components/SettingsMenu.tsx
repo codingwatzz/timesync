@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Settings, Upload, Wrench, Sun, Moon } from 'lucide-react';
+import { Settings, Upload, Wrench, Sun, Moon, CalendarRange } from 'lucide-react';
 import { DiagnosePanel } from './DiagnosePanel';
 import { useTheme } from '../hooks/useTheme';
 import type { StorageMode } from '../store/types';
@@ -8,15 +8,16 @@ interface SettingsMenuProps {
   mode: StorageMode;
   log: string[];
   onImportFile: (file: File) => void;
+  onOpenBulkTyp: () => void;
 }
 
 /** Zahnrad-Menü oben links - bündelt seltener gebrauchte Funktionen (Import, Diagnose,
- * Light/Dark), die vorher als eigene, ständig sichtbare Buttons in der Monatsansicht standen.
- * "Monat exportieren" bleibt bewusst ein eigener, gut sichtbarer Button (wird monatlich
- * gebraucht, im Gegensatz zu Import/Diagnose/Theme). Zahnrad statt Drei-Linien-Menü, weil diese
- * App nur EINE Hauptansicht hat (den Kalender) - ein Hamburger-Menü würde fälschlich mehrere
- * Top-Level-Seiten suggerieren. */
-export function SettingsMenu({ mode, log, onImportFile }: SettingsMenuProps) {
+ * Light/Dark, Zeitraum-Tagestyp), die vorher als eigene, ständig sichtbare Buttons in der
+ * Monatsansicht standen. "Monat exportieren" bleibt bewusst ein eigener, gut sichtbarer
+ * Button (wird monatlich gebraucht, im Gegensatz zu den anderen hier). Zahnrad statt
+ * Drei-Linien-Menü, weil diese App nur EINE Hauptansicht hat (den Kalender) - ein
+ * Hamburger-Menü würde fälschlich mehrere Top-Level-Seiten suggerieren. */
+export function SettingsMenu({ mode, log, onImportFile, onOpenBulkTyp }: SettingsMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [diagnoseOpen, setDiagnoseOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +51,13 @@ export function SettingsMenu({ mode, log, onImportFile }: SettingsMenuProps) {
               onClick={() => { setMenuOpen(false); importInputRef.current?.click(); }}
             >
               <Upload size={15} strokeWidth={2.25} /> Importieren
+            </button>
+            <button
+              id="bulkTypMenuBtn"
+              className="flex min-h-11 items-center gap-2 border-t border-border px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:-outline-offset-2 focus-visible:outline-none"
+              onClick={() => { setMenuOpen(false); onOpenBulkTyp(); }}
+            >
+              <CalendarRange size={15} strokeWidth={2.25} /> Zeitraum auf Tagestyp setzen
             </button>
             <button
               className="flex min-h-11 items-center gap-2 border-t border-border px-3.5 py-2.5 text-left text-sm text-text transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:-outline-offset-2 focus-visible:outline-none"

@@ -5,7 +5,7 @@ import { SettingsMenu } from '../SettingsMenu';
 
 describe('SettingsMenu', () => {
   it('zeigt das Dropdown erst NACH einem Klick auf das Zahnrad', () => {
-    render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} />);
+    render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} onOpenBulkTyp={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Importieren' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByTitle('Einstellungen'));
     expect(screen.getByRole('button', { name: 'Importieren' })).toBeInTheDocument();
@@ -13,7 +13,7 @@ describe('SettingsMenu', () => {
   });
 
   it('öffnet die Diagnose-Übersicht beim Klick auf "Diagnose" und schließt das Dropdown', () => {
-    const { container } = render(<SettingsMenu mode="appwrite" log={['Testeintrag']} onImportFile={vi.fn()} />);
+    const { container } = render(<SettingsMenu mode="appwrite" log={['Testeintrag']} onImportFile={vi.fn()} onOpenBulkTyp={vi.fn()} />);
     fireEvent.click(screen.getByTitle('Einstellungen'));
     fireEvent.click(screen.getByRole('button', { name: 'Diagnose' }));
     expect(container.querySelector('#debugOverlay.show')).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe('SettingsMenu', () => {
 
   it('löst den versteckten Datei-Dialog aus und ruft onImportFile beim Auswählen einer Datei auf', () => {
     const onImportFile = vi.fn();
-    const { container } = render(<SettingsMenu mode="appwrite" log={[]} onImportFile={onImportFile} />);
+    const { container } = render(<SettingsMenu mode="appwrite" log={[]} onImportFile={onImportFile} onOpenBulkTyp={vi.fn()} />);
     fireEvent.click(screen.getByTitle('Einstellungen'));
     const fileInput = container.querySelector<HTMLInputElement>('#importFileInput')!;
     const file = new File(['{}'], 'backup.json', { type: 'application/json' });
@@ -32,7 +32,7 @@ describe('SettingsMenu', () => {
   });
 
   it('schließt das Dropdown bei Klick auf den Hintergrund', () => {
-    const { container } = render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} />);
+    const { container } = render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} onOpenBulkTyp={vi.fn()} />);
     fireEvent.click(screen.getByTitle('Einstellungen'));
     expect(screen.getByText('Importieren')).toBeInTheDocument();
     fireEvent.click(container.querySelector('.settings-backdrop')!);
@@ -42,7 +42,7 @@ describe('SettingsMenu', () => {
   it('schaltet zwischen Dunkel- und Hell-Modus um (Klasse "light" auf <html>)', () => {
     localStorage.removeItem('zeiterfassung-theme');
     document.documentElement.classList.remove('light');
-    render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} />);
+    render(<SettingsMenu mode="appwrite" log={[]} onImportFile={vi.fn()} onOpenBulkTyp={vi.fn()} />);
     fireEvent.click(screen.getByTitle('Einstellungen'));
     expect(screen.getByRole('button', { name: /Heller Modus/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Heller Modus/ }));

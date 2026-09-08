@@ -10,6 +10,7 @@ import { DetailSheet } from './components/DetailSheet';
 import { ExportView } from './components/ExportView';
 import { Toast } from './components/Toast';
 import { ImportConfirmDialog } from './components/ImportConfirmDialog';
+import { BulkTypDialog } from './components/BulkTypDialog';
 import { parseImportFile } from './lib/exportImport';
 import { buildImportPlan, applyImportPlan } from './lib/importPlan';
 import type { ImportPlan } from './lib/importPlan';
@@ -42,6 +43,9 @@ export default function App() {
   // NACH expliziter Bestätigung wird tatsächlich geschrieben. Ersetzt das vorherige Verhalten,
   // bei dem eine ausgewählte Datei sofort und ohne Rückfrage geschrieben wurde.
   const [importPlan, setImportPlan] = useState<ImportPlan | null>(null);
+  // Zeitraum-Tagestyp-Dialog (Nutzerwunsch 07.09.2026) - eigener, einfacher offen/zu-State,
+  // die Formular-/Bestätigungs-Logik lebt komplett in BulkTypDialog.tsx selbst.
+  const [bulkTypOpen, setBulkTypOpen] = useState(false);
 
   function openDay(key: string) {
     setCrossMonthEntry(null);
@@ -159,6 +163,7 @@ export default function App() {
           onOpenDay={openDay}
           onExport={handleExport}
           onImportFile={handleImportFile}
+          onOpenBulkTyp={() => setBulkTypOpen(true)}
         />
       )}
 
@@ -179,6 +184,14 @@ export default function App() {
         plan={importPlan}
         onCancel={() => setImportPlan(null)}
         onConfirm={handleConfirmImport}
+      />
+      <BulkTypDialog
+        open={bulkTypOpen}
+        onClose={() => setBulkTypOpen(false)}
+        store={store}
+        saveEntry={saveEntry}
+        reload={reload}
+        showToast={showToast}
       />
     </div>
   );

@@ -30,10 +30,11 @@ interface MonthViewProps {
   onOpenDay: (key: string) => void;
   onExport: () => void;
   onImportFile: (file: File) => void;
+  onOpenBulkTyp: () => void;
 }
 
 export function MonthView({
-  year, month, entries, syncMode, log, onPrevMonth, onNextMonth, onOpenDay, onExport, onImportFile,
+  year, month, entries, syncMode, log, onPrevMonth, onNextMonth, onOpenDay, onExport, onImportFile, onOpenBulkTyp,
 }: MonthViewProps) {
   const n = daysInMonth(year, month);
   const days = Array.from({ length: n }, (_, i) => i + 1);
@@ -73,7 +74,7 @@ export function MonthView({
     <>
       <header className="sticky top-0 z-20 border-b border-border bg-surface-2 px-4 pb-2 pt-4">
         <div className="flex items-center gap-2">
-          <SettingsMenu mode={syncMode} log={log} onImportFile={onImportFile} />
+          <SettingsMenu mode={syncMode} log={log} onImportFile={onImportFile} onOpenBulkTyp={onOpenBulkTyp} />
           <h1 className="m-0 text-[19px] font-bold tracking-tight text-text">Zeiterfassung</h1>
           <span
             className={`flag ${badge.ok ? 'ho' : 'warn'} ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${

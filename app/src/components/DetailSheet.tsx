@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
 import { pad, pauseOptionsFor, fmtHHMM, toNumber, sanitizeAmountInput } from '../core/formatters';
-import { arbeitszeitMinuten } from '../core/entry';
+import { arbeitszeitMinuten, hatVersteckbareDaten } from '../core/entry';
 import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
@@ -36,22 +36,6 @@ const BELEG_FELD_LABEL: Record<BelegFeld, string> = {
 /** Kostenfelder, die einem Beleg zuordenbar sind (Sonstiges bewusst mit dabei, obwohl es
  * außerhalb des "Fahrt & Kosten"-Blocks steht - siehe UX-Audit-Folgeauftrag 06.09.2026). */
 const BELEG_ZUORDENBARE_FELDER = ['transport', 'hotel', 'bewirtung', 'sonstiges'] as const;
-
-/** Prüft, ob für einen Tag bereits Daten vorliegen, die bei "kein Arbeitstag" normalerweise
- * ausgeblendet würden (Zeiten/Fahrt&Kosten/Verpflegung/Belege - NICHT Sonstiges oder
- * Beschreibung, die bleiben ohnehin immer sichtbar). "ho" bewusst NICHT geprüft - ist laut
- * core/entry.ts::emptyEntry() für JEDEN Tag standardmäßig true, kein echtes Nutzer-Signal.
- * Wird für zwei Zwecke genutzt:
- * 1) Sheet startet beim Öffnen bereits "freigeschaltet", wenn solche Daten schon existieren
- *    (damit nichts Bestehendes unerwartet versteckt wird).
- * 2) Bestätigungsdialog beim Wechsel weg von "Arbeit" nur zeigen, wenn wirklich etwas zu
- *    verlieren/übersehen wäre. */
-function hatVersteckbareDaten(e: TagesEintrag): boolean {
-  return Boolean(
-    e.start || e.ende || e.start2 || e.ende2 || e.km || e.transport || e.hotel
-    || e.bewirtung || e.reiseart || e.fr || e.mi || e.ab || e.receiptIds.length > 0,
-  );
-}
 
 // ---------------------------------------------------------------------
 // Styling-Konstanten (Tailwind, Design-System "Slate & Teal", dark-first).
