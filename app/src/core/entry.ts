@@ -1,6 +1,7 @@
-import type { TagesEintrag, Wochentyp } from './types';
+import type { BelegFeld, BelegMeta, TagesEintrag, Wochentyp } from './types';
 import { defaultTyp } from './holidays';
 import { toNumber } from './formatters';
+import { BELEG_ZUORDENBARE_FELDER } from './constants';
 
 export function emptyEntry(year: number, month: number, day: number): TagesEintrag {
   return {
@@ -77,6 +78,27 @@ export function schichtUnplausibel(start: string, ende: string, pause: string): 
   if (![sh, sm, eh, em].every(Number.isFinite)) return false;
   const dauer = (eh * 60 + em) - (sh * 60 + sm) - toNumber(pause);
   return dauer <= 0;
+}
+
+/**
+ * Für welche Kostenfelder (Transport/Hotel/Bewirtung/Sonstiges) ist ein Betrag > 0 eingetragen,
+ * aber KEIN Beleg mit passender Zuordnung (`BelegMeta.feld`) vorhanden? Rein informativ (siehe
+ * BelegMeta.feld-Kommentar), beeinflusst den Export nicht.
+ * Ursprünglich nur inline in DetailSheet.tsx (Einzeltag-Ansicht) - nach core/entry.ts verschoben
+ * (08.09.2026), damit DayRow/useMonthEntries dieselbe Prüfung auch in der Monatsübersicht nutzen
+ * können, statt sie ein zweites Mal (potenziell abweichend) nachzubauen.
+ * `receipts` sind bewusst nur die zum jeweiligen Tag gehörenden BelegMeta-Objekte (nicht alle
+ * Belege des Monats) - der Aufrufer ist dafür verantwortlich, die richtige Teilmenge zu übergeben.
+ */
+export function belegFehltFuer(
+  e: Pick<TagesEintrag, 'transport' | 'hotel' | 'bewirtung' | 'sonstiges'>,
+  receipts: Pick<BelegMeta, 'feld'>[],
+): BelegFeld[] {
+  return BELEG_ZUORDENBARE_FELDER.filter((feldName) => {
+    const val = toNumber(e[feldName]);
+    if (!val || val <= 0) return false;
+    return !receipts.some((r) => r.feld === feldName);
+  });
 }
 
 /** Prüft, ob für einen Tag bereits Daten vorliegen, die bei "kein Arbeitstag" normalerweise

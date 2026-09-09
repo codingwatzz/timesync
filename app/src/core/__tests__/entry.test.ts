@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten, fehltArbeitszeit, schichtUnplausibel } from '../entry';
+import { emptyEntry, tagesKosten, istVorOrtTag, arbeitszeitMinuten, fehltArbeitszeit, schichtUnplausibel, belegFehltFuer } from '../entry';
 
 describe('emptyEntry', () => {
   it('setzt Homeoffice standardmäßig auf true', () => {
@@ -151,5 +151,43 @@ describe('schichtUnplausibel', () => {
 
   it('ist false bei einer knapp positiven Differenz nach Abzug der Pause', () => {
     expect(schichtUnplausibel('08:00', '08:31', '30')).toBe(false);
+  });
+});
+
+describe('belegFehltFuer', () => {
+  const basis = emptyEntry(2026, 10, 5);
+
+  it('liefert leeres Array ohne Kostenfelder', () => {
+    expect(belegFehltFuer(basis, [])).toEqual([]);
+  });
+
+  it('meldet ein Kostenfeld ohne jeden Beleg', () => {
+    const e = { ...basis, hotel: '270' };
+    expect(belegFehltFuer(e, [])).toEqual(['hotel']);
+  });
+
+  it('meldet KEIN Kostenfeld, wenn ein passend zugeordneter Beleg existiert', () => {
+    const e = { ...basis, hotel: '270' };
+    expect(belegFehltFuer(e, [{ feld: 'hotel' }])).toEqual([]);
+  });
+
+  it('meldet das Kostenfeld weiterhin, wenn nur ein Beleg für ein ANDERES Feld vorliegt (Beispiel 05.10.: Transport zugeordnet, Hotel nicht)', () => {
+    const e = { ...basis, transport: '57.85', hotel: '270' };
+    expect(belegFehltFuer(e, [{ feld: 'transport' }])).toEqual(['hotel']);
+  });
+
+  it('meldet KEIN Kostenfeld, wenn ein Beleg ohne Feld-Zuordnung ("") vorliegt, aber ein anderer Beleg passt', () => {
+    const e = { ...basis, transport: '10' };
+    expect(belegFehltFuer(e, [{ feld: '' }, { feld: 'transport' }])).toEqual([]);
+  });
+
+  it('ignoriert Kostenfelder mit Betrag 0 oder leer', () => {
+    const e = { ...basis, transport: '0', hotel: '', bewirtung: '5' };
+    expect(belegFehltFuer(e, [])).toEqual(['bewirtung']);
+  });
+
+  it('meldet mehrere fehlende Felder gleichzeitig, in fester Reihenfolge', () => {
+    const e = { ...basis, transport: '10', hotel: '20', bewirtung: '5', sonstiges: '3' };
+    expect(belegFehltFuer(e, [])).toEqual(['transport', 'hotel', 'bewirtung', 'sonstiges']);
   });
 });

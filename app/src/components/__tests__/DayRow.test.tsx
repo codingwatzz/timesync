@@ -217,4 +217,20 @@ describe('DayRow', () => {
     expect(container.querySelector('.stunden')).toHaveTextContent('08:00');
     expect(container.querySelector('.sum')).toHaveTextContent('20,00');
   });
+
+  it('zeigt das "Beleg fehlt"-Flag, wenn belegFehlt=true übergeben wird', () => {
+    const entry = { ...emptyEntry(2026, 10, 5), hotel: '270' };
+    render(
+      <DayRow year={2026} month={10} day={5} entry={entry} typ="A" feiertag={null} onClick={() => {}} belegFehlt />,
+    );
+    expect(screen.getByText('Beleg fehlt')).toBeInTheDocument();
+  });
+
+  it('zeigt das "Beleg fehlt"-Flag NICHT ohne das Prop (Default false, ältere Aufrufer bleiben unverändert)', () => {
+    const entry = { ...emptyEntry(2026, 10, 5), hotel: '270' };
+    render(
+      <DayRow year={2026} month={10} day={5} entry={entry} typ="A" feiertag={null} onClick={() => {}} />,
+    );
+    expect(screen.queryByText('Beleg fehlt')).not.toBeInTheDocument();
+  });
 });

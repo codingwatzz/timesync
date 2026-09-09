@@ -23,6 +23,9 @@ interface MonthViewProps {
   year: number;
   month: number;
   entries: Record<string, TagesEintrag>;
+  // Optional mit Default {} (siehe DayRow.belegFehlt) - bestehende Aufrufer/Tests ohne diese
+  // Prüfung funktionieren unverändert weiter, zeigen nur keine Beleg-Warnung an.
+  belegWarnungen?: Record<string, boolean>;
   syncMode: StorageMode;
   log: string[];
   onPrevMonth: () => void;
@@ -34,7 +37,7 @@ interface MonthViewProps {
 }
 
 export function MonthView({
-  year, month, entries, syncMode, log, onPrevMonth, onNextMonth, onOpenDay, onExport, onImportFile, onOpenBulkTyp,
+  year, month, entries, belegWarnungen = {}, syncMode, log, onPrevMonth, onNextMonth, onOpenDay, onExport, onImportFile, onOpenBulkTyp,
 }: MonthViewProps) {
   const n = daysInMonth(year, month);
   const days = Array.from({ length: n }, (_, i) => i + 1);
@@ -134,6 +137,7 @@ export function MonthView({
               key={key}
               year={year} month={month} day={d}
               entry={e} typ={typ} feiertag={feiertag}
+              belegFehlt={belegWarnungen[key]}
               onClick={() => onOpenDay(key)}
             />
           );

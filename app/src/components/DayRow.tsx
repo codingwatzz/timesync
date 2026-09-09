@@ -19,9 +19,16 @@ interface DayRowProps {
   typ: TagesEintrag['typ'];
   feiertag: string | null;
   onClick: () => void;
+  // Ob für diesen Tag mindestens ein Kostenfeld ohne zugeordneten Beleg dasteht (siehe
+  // core/entry.ts::belegFehltFuer). Bewusst nur ein Ja/Nein, keine Feld-Liste - die
+  // Monatsübersicht zeigt ohnehin nur ein generisches "Beleg fehlt"-Flag, die Details liefert
+  // das DetailSheet. Optional mit Default false (siehe Homeoffice-Flag-Kommentar oben) - die
+  // Monatsübersicht lädt die dafür nötigen Beleg-Metadaten separat (useMonthEntries), ältere
+  // Aufrufer ohne diese Prüfung funktionieren unverändert weiter, ohne diese Warnung anzuzeigen.
+  belegFehlt?: boolean;
 }
 
-export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayRowProps) {
+export function DayRow({ year, month, day, entry, typ, feiertag, onClick, belegFehlt = false }: DayRowProps) {
   const dow = WOCHENTAGE[new Date(year, month - 1, day).getDay()];
   const isWeekend = typ === 'W';
   // Kompaktere Darstellung für ALLE Nicht-Arbeitstage (Wochenende, Feiertag, Urlaub, Krank,
@@ -61,6 +68,18 @@ export function DayRow({ year, month, day, entry, typ, feiertag, onClick }: DayR
     flags.push(
       <span key="warn" className={`flag warn ${flagBase} bg-warning-soft text-warning`}>
         <AlertTriangle size={11} strokeWidth={2.5} /> Reiseart fehlt
+      </span>,
+    );
+  }
+  // Kostenbetrag ohne zugeordneten Beleg (z.B. "Kein Beleg zugeordnet für: Hotel" im
+  // DetailSheet) - dieselbe Warnung auch hier, damit sie schon in der Monatsübersicht auffällt,
+  // nicht erst beim Öffnen des einzelnen Tages (Nutzerwunsch 08.09.2026). Bewusst kurz gehalten
+  // ("Beleg fehlt" statt Feld-Aufzählung) - die Zeile ist schon kompakt, die Details liefert das
+  // DetailSheet beim Antippen.
+  if (belegFehlt) {
+    flags.push(
+      <span key="beleg" className={`flag warn ${flagBase} bg-warning-soft text-warning`}>
+        <AlertTriangle size={11} strokeWidth={2.5} /> Beleg fehlt
       </span>,
     );
   }

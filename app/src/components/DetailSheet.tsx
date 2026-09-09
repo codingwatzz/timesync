@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER } from '../core/constants';
-import { pad, pauseOptionsFor, fmtHHMM, toNumber, sanitizeAmountInput } from '../core/formatters';
-import { arbeitszeitMinuten, hatVersteckbareDaten, schichtUnplausibel } from '../core/entry';
+import { WOCHENTAGE, TYP_LABEL, REISEARTEN, LAENDER, BELEG_FELD_LABEL } from '../core/constants';
+import { pad, pauseOptionsFor, fmtHHMM, sanitizeAmountInput } from '../core/formatters';
+import { arbeitszeitMinuten, belegFehltFuer, hatVersteckbareDaten, schichtUnplausibel } from '../core/entry';
 import { feiertagName } from '../core/holidays';
 import { useStore } from '../hooks/useStore';
 import { loadReceipt, saveReceipt, deleteReceipt as deleteReceiptFromStore } from '../hooks/entryStorage';
@@ -24,18 +24,6 @@ const REISEART_LABEL: Record<string, string> = {
   'Abwesenheitstag (>8h)': 'Abwesend (>8h)',
   'Abwesenheitstag (24h)': 'Abwesend (24h)',
 };
-
-const BELEG_FELD_LABEL: Record<BelegFeld, string> = {
-  '': '– kein Feld –',
-  transport: 'Transport',
-  hotel: 'Hotel',
-  bewirtung: 'Bewirtung',
-  sonstiges: 'Sonstiges',
-};
-
-/** Kostenfelder, die einem Beleg zuordenbar sind (Sonstiges bewusst mit dabei, obwohl es
- * außerhalb des "Fahrt & Kosten"-Blocks steht - siehe UX-Audit-Folgeauftrag 06.09.2026). */
-const BELEG_ZUORDENBARE_FELDER = ['transport', 'hotel', 'bewirtung', 'sonstiges'] as const;
 
 // ---------------------------------------------------------------------
 // Styling-Konstanten (Tailwind, Design-System "Slate & Teal", dark-first).
@@ -335,14 +323,9 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
     update(field, !entry[field]);
   }
 
-  // Für welche Kostenfelder ist ein Betrag > 0 eingetragen, aber KEIN Beleg mit passender
-  // Zuordnung vorhanden? Rein informativ (siehe BelegMeta.feld-Kommentar), beeinflusst den
-  // Export nicht.
-  const belegFehltFuer = BELEG_ZUORDENBARE_FELDER.filter((feldName) => {
-    const val = toNumber(entry[feldName]);
-    if (!val || val <= 0) return false;
-    return !receipts.some((r) => r.feld === feldName);
-  });
+  // Für welche Kostenfelder ein Beleg fehlt - geteilte Logik, siehe core/entry.ts::belegFehltFuer
+  // (auch von der Monatsübersicht genutzt, seit 08.09.2026).
+  const belegFehltFuerFelder = belegFehltFuer(entry, receipts);
 
   /** Ordnet einen Beleg nachträglich einem Kostenfeld zu (oder entfernt die Zuordnung, '').
    * Kann sowohl direkt nach dem Hochladen als auch später jederzeit genutzt werden - dieselbe
@@ -609,10 +592,10 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
           Beträge akzeptieren „,“ oder „.“ als Trennzeichen zwischen Euro und Cent.
         </div>
 
-        {belegFehltFuer.length > 0 && (
+        {belegFehltFuerFelder.length > 0 && (
           <div className="mb-3.5 flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2.5 text-xs font-semibold text-warning">
             <AlertTriangle size={15} className="flex-shrink-0" strokeWidth={2.25} />
-            Kein Beleg zugeordnet für: {belegFehltFuer.map((f) => BELEG_FELD_LABEL[f]).join(', ')}
+            Kein Beleg zugeordnet für: {belegFehltFuerFelder.map((f) => BELEG_FELD_LABEL[f]).join(', ')}
           </div>
         )}
 

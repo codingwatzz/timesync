@@ -1,4 +1,4 @@
-import type { Reiseart, Reiseland, Wochentyp } from './types';
+import type { BelegFeld, Reiseart, Reiseland, Wochentyp } from './types';
 
 export const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'] as const;
 
@@ -16,6 +16,20 @@ export const REISEARTEN: Reiseart[] = [
 ];
 
 export const LAENDER: Reiseland[] = ['Deutschland', 'Österreich', 'Schweiz'];
+
+export const BELEG_FELD_LABEL: Record<BelegFeld, string> = {
+  '': '– kein Feld –',
+  transport: 'Transport',
+  hotel: 'Hotel',
+  bewirtung: 'Bewirtung',
+  sonstiges: 'Sonstiges',
+};
+
+/** Kostenfelder, die einem Beleg zuordenbar sind (Sonstiges bewusst mit dabei, obwohl es
+ * außerhalb des "Fahrt & Kosten"-Blocks steht - siehe UX-Audit-Folgeauftrag 06.09.2026).
+ * Zentral hier statt in DetailSheet.tsx, seit auch DayRow/useMonthEntries dieselbe Liste
+ * für die "Beleg fehlt"-Warnung in der Monatsübersicht brauchen (08.09.2026). */
+export const BELEG_ZUORDENBARE_FELDER = ['transport', 'hotel', 'bewirtung', 'sonstiges'] as const;
 
 // Feste Werte für die Spesenabrechnungs-Exportdateien - Ein-Personen-App, kein Eingabefeld
 // nötig (Nutzerwunsch 04.09.2026: "Name soll automatisch vergeben werden").

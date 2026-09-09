@@ -20,7 +20,7 @@ type View = 'month' | 'detail' | 'export';
 
 export default function App() {
   const { store, mode, log } = useStore();
-  const { year, month, entries, loadError, changeMonth, saveEntry, reload } = useMonthEntries();
+  const { year, month, entries, belegWarnungen, loadError, changeMonth, saveEntry, reload } = useMonthEntries();
   const { toastMessage, showToast } = useToast();
 
   // NEU (Engineering-Review 07.09.2026, Punkt 2): store.get()/set() werfen jetzt bei echten
@@ -157,7 +157,7 @@ export default function App() {
         />
       ) : (
         <MonthView
-          year={year} month={month} entries={entries} syncMode={mode} log={log}
+          year={year} month={month} entries={entries} belegWarnungen={belegWarnungen} syncMode={mode} log={log}
           onPrevMonth={() => changeMonth(-1)}
           onNextMonth={() => changeMonth(1)}
           onOpenDay={openDay}
