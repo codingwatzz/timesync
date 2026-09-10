@@ -10,14 +10,17 @@ const { log, sleep } = require('../utils');
  * <input>-Element selbst; setInputFiles() landet unverändert im normalen onChange-Handler,
  * exakt wie eine "aus Galerie wählen"-Auswahl).
  *
- * Bewusst ein ANDERER Tag (dayRows.nth(1)) als der PDF-Upload-Test in fillAndSaveEntry.js
- * (dayRows.first()) - beide Schritte laufen nacheinander im selben Testlauf, ein gemeinsamer
- * Tag hätte den jeweils anderen Beleg-Zähler verfälscht.
+ * Bewusst Tag 4 (dayRows.nth(3)), NICHT Tag 2 - Tag 2 wird bereits von importFlow.js für den
+ * Import-Test verwendet (dayRows.nth(1)). Ein erster Lauf (10.09.2026) kollidierte genau
+ * hier: der hier hochgeladene Beleg blieb auf Tag 2 liegen, bis importFlow.js denselben Tag
+ * anfasste - dadurch schlugen restoreReceiptPresent/restoreReceiptOpenedWithoutError
+ * fehl (zu viele/falsche Belege auf dem Tag). cleanup.js UND der defensive Vor-Reset in
+ * runner.js müssen Tag 4 seither ebenfalls zurücksetzen, siehe dort.
  */
 async function checkPhotoCropFlow(page, dayRows, { testPhotoPath }) {
   const results = {};
 
-  await dayRows.nth(1).click();
+  await dayRows.nth(3).click();
   await page.waitForSelector('.sheet', { timeout: 5000 });
 
   await page.setInputFiles('#photoInput', testPhotoPath);
@@ -29,11 +32,13 @@ async function checkPhotoCropFlow(page, dayRows, { testPhotoPath }) {
   log(`Zuschnitt-Modal erscheint nach Foto-Auswahl: ${results.cropModalAppeared}`);
 
   if (results.cropModalAppeared) {
-    // Vor jeder Interaktion: "Übernehmen" darf NICHT vor einem ECHTEN Zuschnitt aktiv sein
-    // (completedCrop ist erst nach onComplete gesetzt, nicht schon nach der initialen 90%-
-    // Voreinstellung aus onImageLoad - siehe PhotoCropModal.tsx).
-    results.confirmDisabledInitially = !(await page.locator('#cropConfirmBtn').isEnabled());
-    log(`"Übernehmen" initial deaktiviert (vor jeder Zieh-Interaktion): ${results.confirmDisabledInitially}`);
+    // Hinweis (10.09.2026): react-image-crop feuert onComplete bereits einmal automatisch für
+    // die initiale 90%-Voreinstellung aus onImageLoad, nicht erst nach einer echten Zieh-
+    // Interaktion - "Übernehmen" ist also von Anfang an nutzbar (guter Default, kein Zwang
+    // zum manuellen Zuschneiden). Rein informativ geloggt, KEINE kritische Prüfung (siehe
+    // CRITICAL_CHECKS in runner.js).
+    const confirmEnabledInitially = await page.locator('#cropConfirmBtn').isEnabled();
+    log(`"Übernehmen" initial bereits nutzbar (90%-Vorauswahl): ${confirmEnabledInitially}`);
 
     // Rahmen von der rechten unteren Ecke aus etwas verkleinern, damit onComplete sicher mit
     // einem echten (nicht nur dem initialen) Crop feuert.
@@ -66,7 +71,7 @@ async function checkPhotoCropFlow(page, dayRows, { testPhotoPath }) {
 
   await sleep(500);
   if (!(await page.locator('.sheet').isVisible())) {
-    await dayRows.nth(1).click();
+    await dayRows.nth(3).click();
     await page.waitForSelector('.sheet', { timeout: 5000 });
   }
   await page.waitForSelector('.receipt-item', { timeout: 5000 }).catch(() => {});

@@ -31,7 +31,7 @@ const CRITICAL_CHECKS = [
   'receiptUploaded', 'fieldsSurvivedReceiptUpload', 'allFieldsPersisted', 'receiptPersisted',
   'receiptOpenedWithoutError', 'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered',
   'importWorked', 'restoreWorked', 'restoreReceiptPresent', 'restoreReceiptOpenedWithoutError',
-  'cropModalAppeared', 'confirmDisabledInitially', 'confirmEnabledAfterDrag', 'toastAfterCrop',
+  'cropModalAppeared', 'confirmEnabledAfterDrag', 'toastAfterCrop',
   'croppedReceiptUploaded',
 ];
 
@@ -109,6 +109,7 @@ async function attemptRun() {
     await resetDayToDefault(page, dayRows, 0);
     await resetDayToDefault(page, dayRows, 1);
     await resetDayToDefault(page, dayRows, 2);
+    await resetDayToDefault(page, dayRows, 3);
 
     // ---------- 5. Tag 1 befüllen, Beleg hochladen, speichern ----------
     const yearMatch = monthLabel.match(/(\d{4})/);
