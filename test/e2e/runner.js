@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { RESULT_FILE, SCREENSHOT_DIR } = require('./config');
-const { log, sleep, MINIMAL_PDF, createMinimalPng } = require('./utils');
+const { log, sleep, MINIMAL_PDF } = require('./utils');
 const { navigateToSafeTestMonth } = require('./navigation');
 const { resetDayToDefault } = require('./dayHelpers');
 const { toAppwriteRowId } = require('./appwriteDirectCheck');
@@ -18,7 +18,6 @@ const { loadPage } = require('./steps/load');
 const { login } = require('./steps/login');
 const { readDiagnosePanel } = require('./steps/diagnose');
 const { fillAndSaveTestEntry } = require('./steps/fillAndSaveEntry');
-const { checkPhotoCropFlow } = require('./steps/photoCropFlow');
 const { reloadAndVerifyEntry } = require('./steps/reloadAndVerify');
 const { checkExportFlow } = require('./steps/exportFlow');
 const { checkImportFlow } = require('./steps/importFlow');
@@ -31,16 +30,12 @@ const CRITICAL_CHECKS = [
   'receiptUploaded', 'fieldsSurvivedReceiptUpload', 'allFieldsPersisted', 'receiptPersisted',
   'receiptOpenedWithoutError', 'receiptDeleted', 'exportShowsEntry', 'exportDownloadTriggered',
   'importWorked', 'restoreWorked', 'restoreReceiptPresent', 'restoreReceiptOpenedWithoutError',
-  'cropModalAppeared', 'confirmEnabledAfterDrag', 'toastAfterCrop',
-  'croppedReceiptUploaded',
 ];
 
 async function attemptRun() {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
   const testPdfPath = path.join(SCREENSHOT_DIR, 'test-beleg.pdf');
   fs.writeFileSync(testPdfPath, MINIMAL_PDF);
-  const testPhotoPath = path.join(SCREENSHOT_DIR, 'test-beleg-foto.png');
-  fs.writeFileSync(testPhotoPath, createMinimalPng());
   const testImportPath = path.join(SCREENSHOT_DIR, 'test-import.json');
 
   const browser = await chromium.launch();
@@ -109,7 +104,6 @@ async function attemptRun() {
     await resetDayToDefault(page, dayRows, 0);
     await resetDayToDefault(page, dayRows, 1);
     await resetDayToDefault(page, dayRows, 2);
-    await resetDayToDefault(page, dayRows, 3);
 
     // ---------- 5. Tag 1 befüllen, Beleg hochladen, speichern ----------
     const yearMatch = monthLabel.match(/(\d{4})/);
@@ -119,10 +113,6 @@ async function attemptRun() {
     const { results: fillResults, TEST_NOTE } = await fillAndSaveTestEntry(page, dayRows, { testPdfPath, day1RowId });
     Object.assign(results, fillResults);
     await shot('03_entry_with_receipt.png');
-
-    // ---------- 5b. Foto-Zuschnitt-Dialog (Tag 2, unabhängig von Tag 1 oben) ----------
-    Object.assign(results, await checkPhotoCropFlow(page, dayRows, { testPhotoPath }));
-    await shot('03b_photo_crop.png');
 
     // ---------- 6. Reload + vollständige Verifikation ----------
     const reloadResults = await reloadAndVerifyEntry(page, dayRows, {

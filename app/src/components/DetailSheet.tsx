@@ -11,7 +11,6 @@ import { useSwipe } from '../hooks/useSwipe';
 import { useSwipeDown } from '../hooks/useSwipeDown';
 import { Paperclip, Camera, FileText, X, Plus, AlertTriangle, HelpCircle, ShieldAlert } from 'lucide-react';
 import type { TagesEintrag, Wochentyp, BelegMeta, BelegFeld } from '../core/types';
-import { PhotoCropModal } from './PhotoCropModal';
 
 // Kurzform-Labels nur für die Dropdown-ANZEIGE (Werte selbst bleiben unverändert, siehe
 // core/constants.ts::REISEARTEN - die Exportlogik matcht auf die vollen Werte). Grund:
@@ -76,9 +75,6 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
   const [pendingTypWechsel, setPendingTypWechsel] = useState<Wochentyp | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  // Roh-Foto, das gerade zugeschnitten wird - null = kein Zuschnitt-Modal offen. Der eigentliche
-  // Upload (handlePhotoUpload) läuft erst NACH Bestätigung des Zuschnitts, siehe unten.
-  const [cropFile, setCropFile] = useState<File | null>(null);
 
   // Auto-Save: Änderungen werden ~1s nach der letzten Eingabe automatisch gespeichert, kein
   // Klick auf "Speichern" mehr nötig (vorher gingen Formularfeld-Änderungen verloren, wenn
@@ -719,13 +715,7 @@ export function DetailSheet({ dateKey, entry: initialEntry, onSave, onClose, sho
         />
         <input
           ref={photoInputRef} id="photoInput" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = ''; }}
-        />
-        <PhotoCropModal
-          key={cropFile ? `${cropFile.name}-${cropFile.lastModified}-${cropFile.size}` : 'none'}
-          file={cropFile}
-          onCancel={() => setCropFile(null)}
-          onConfirm={(cropped) => { setCropFile(null); handlePhotoUpload(cropped); }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ''; }}
         />
         </>
         )}
