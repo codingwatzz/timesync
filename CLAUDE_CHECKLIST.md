@@ -221,6 +221,18 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   wurden beide Fälle gleich behandelt, ein fehlgeschlagener Beleg-Upload z.B. wurde als
   Erfolg gemeldet). Beim Ändern dieser Datei: diese Unterscheidung nicht wieder aufweichen,
   `isNotFoundError()` ist dafür der richtige Test.
+- **Appwrite pausiert das Free-Tier-Projekt nach 7 Tagen ohne "Entwicklungsaktivität"** (real
+  erlebt 10.09.2026, Fehlermeldung im Login-Screen: "Project is paused due to inactivity").
+  Laut Appwrite-Support zählt dafür NUR Aktivität in der Console, ausdrücklich NICHT
+  API-/SDK-Traffic oder App-Nutzung - bestätigt durch den eigenen Fall: der tägliche
+  E2E-Test verbindet sich täglich per SDK, das hat die Pausierung nicht verhindert. Kein
+  Datenverlust, nur "Restore project" in `cloud.appwrite.io` nötig (nur der Nutzer selbst
+  kann das, kein Zugriff über Claudes Sandbox/Token möglich). Kein zuverlässiger
+  automatischer Workaround bekannt - ein reiner API-Heartbeat-Cronjob würde laut Appwrites
+  eigener Aussage vermutlich NICHT helfen. Falls das öfter stört: entweder alle paar Tage
+  manuell in der Console einloggen, oder auf einen bezahlten Plan wechseln (dort keine
+  Pausierung). Wichtig: pausierte Free-Projekte werden nach 90 Tagen komplett GELÖSCHT, also
+  nicht endlos ignorieren.
 
 ## 4. Parallele Sitzungen
 

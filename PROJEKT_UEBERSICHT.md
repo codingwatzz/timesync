@@ -220,6 +220,15 @@ Backup: vierte Datei im monatlichen Export-ZIP (`_Rohdaten-Backup.json`).
 Wichtiger Fallstrick: Appwrite-fileId für Belege = `toAppwriteId('receipt:' + rid)`, also
 **mit `receipt_`-Präfix**. `receiptIds` im Tageseintrag speichert die rohe `rid` OHNE Präfix.
 
+**Free-Tier-Inaktivitäts-Pause (real erlebt 10.09.2026):** Appwrite pausiert Free-Plan-Projekte
+automatisch nach 7 Tagen ohne "Entwicklungsaktivität" - App-Nutzung, API-/SDK-Traffic und auch
+der tägliche E2E-Test zählen laut Appwrite-Support NICHT dazu (bestätigt: der tägliche E2E-Lauf
+verband sich per SDK, das Projekt wurde trotzdem pausiert). Kein Datenverlust, nur ein
+"Restore project"-Klick in der Console nötig - aber pausierte Free-Projekte werden nach
+90 Tagen ganz gelöscht, also nicht endlos ignorieren. Kein zuverlässiger automatischer
+Workaround bekannt (Community-Keepalive-Skripte gibt es, aber laut Appwrite zählt nur
+Console-Aktivität). Siehe CLAUDE_CHECKLIST.md Abschnitt 3 für die Handlungsoptionen.
+
 ## Appwrite-Absicherung (Login + Berechtigungen)
 
 - `AuthGate.tsx` zeigt Login-Bildschirm VOR jedem Store-Zugriff
