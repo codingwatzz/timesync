@@ -1,6 +1,67 @@
 {
-  "pass": false,
-  "crashed": true,
-  "error": "Error: Login fehlgeschlagen - siehe Log für Details.\n    at attemptRun (/home/runner/work/timesync/timesync/test/e2e/runner.js:75:13)\n    at async main (/home/runner/work/timesync/timesync/test/e2e.js:27:5)",
-  "timestamp": "2026-09-24T06:14:20.542Z"
+  "loaded": true,
+  "loggedIn": true,
+  "syncActive": true,
+  "testMonthIsDecember": true,
+  "homeofficeDefaultActive": true,
+  "travelSectionVisible": true,
+  "reiseartWarningVisibleBefore": true,
+  "reiseartWarningVisibleAfter": false,
+  "receiptUploaded": true,
+  "fieldsSurvivedReceiptUpload": true,
+  "immediateAfterSave": {
+    "beschreibung": "E2E-Test 2026-09-25T06:14:04.881Z",
+    "km": "120"
+  },
+  "directReadRightAfterSave": {
+    "found": true,
+    "beschreibung": "E2E-Test 2026-09-25T06:14:04.881Z",
+    "km": "120"
+  },
+  "monthLabelBeforeReload": "Dezember 2033\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2033\n31 Tage",
+  "sameMonthAfterReload": true,
+  "directReadAfterReload": {
+    "found": true,
+    "beschreibung": "E2E-Test 2026-09-25T06:14:04.881Z",
+    "km": "120"
+  },
+  "persistedValues": {
+    "beschreibung": "E2E-Test 2026-09-25T06:14:04.881Z",
+    "start": "08:00",
+    "ende": "17:00",
+    "pause": "30",
+    "km": "120",
+    "transport": "15.50",
+    "hotel": "90",
+    "bewirtung": "12.30",
+    "sonstiges": "7.50",
+    "reiseland": "Österreich",
+    "reiseart": "Abwesenheitstag (>8h)"
+  },
+  "allFieldsPersisted": true,
+  "receiptPersisted": true,
+  "receiptOpenedWithoutError": true,
+  "receiptDeleted": true,
+  "exportShowsEntry": true,
+  "exportDownloadTriggered": true,
+  "importWorked": true,
+  "importedDescActual": "Import-Test-Eintrag",
+  "importGroundTruthConfirmed": false,
+  "restoreDialogMentionsReceipts": true,
+  "restoreWorked": true,
+  "restoreBeschreibungActual": "Restore-Test-Eintrag",
+  "restoreTransportActual": "25,50",
+  "restoreReceiptPresent": true,
+  "restoreReceiptOpenedWithoutError": true,
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1790316804076\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[06:13:28] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[06:13:28] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[06:13:28] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1790316804076\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[06:14:20] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[06:14:20] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[06:14:20] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()"
+  ],
+  "pageErrors": [],
+  "timestamp": "2026-09-25T06:15:42.101Z",
+  "reiseartWarningVisibleAfterOk": true,
+  "pass": true,
+  "failedChecks": []
 }
