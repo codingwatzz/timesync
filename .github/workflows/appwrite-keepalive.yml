@@ -1,0 +1,40 @@
+name: Appwrite Keepalive
+
+# Versuch, Appwrites Free-Tier-Inaktivitäts-Pause zu umgehen (siehe
+# tools/appwrite-keepalive/README.md - KEINE Erfolgsgarantie, nur ein Versuch).
+#
+# WICHTIG: die `schedule:`-Zeile fehlt hier ABSICHTLICH. Siehe CLAUDE_CHECKLIST.md Abschnitt 3
+# ("GitHub-Email-Benachrichtigung für geplante Workflow-Läufe hängt daran, wer die
+# cron:-Zeile zuletzt committet hat"): committet Claude diese Zeile, gehen künftige
+# Ausfall-Mails an eine Fantasie-Identität (z.B. claude@anthropic.com) statt an dich. Bitte
+# selbst im GitHub-Web-UI ergänzen (Bearbeiten-Stift oben rechts an dieser Datei), z.B.:
+#
+#   schedule:
+#     - cron: '0 8 */5 * *'   # alle 5 Tage, 08:00 UTC
+#
+# Bis dahin nur manuell auslösbar (Actions-Tab -> "Run workflow") - reicht zum Testen.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Heartbeat schreiben
+        working-directory: tools/appwrite-keepalive
+        env:
+          # Endpoint/Projekt/Datenbank/Tabelle sind KEINE Geheimnisse - dieselben Werte stehen
+          # bereits im Client-Bundle (siehe app/src/store/appwriteStore.ts). Nur der API-Key
+          # ist geheim und kommt als GitHub-Secret.
+          APPWRITE_ENDPOINT: https://fra.cloud.appwrite.io/v1
+          APPWRITE_PROJECT_ID: 6a92d8e0002e9b585e39
+          APPWRITE_DATABASE_ID: 6a92dad20003b47b4a19
+          APPWRITE_TABLE_ID: key-value
+          APPWRITE_KEEPALIVE_KEY: ${{ secrets.APPWRITE_KEEPALIVE_KEY }}
+        run: node heartbeat.js

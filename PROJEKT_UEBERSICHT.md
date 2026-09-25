@@ -225,9 +225,12 @@ automatisch nach 7 Tagen ohne "Entwicklungsaktivität" - App-Nutzung, API-/SDK-T
 der tägliche E2E-Test zählen laut Appwrite-Support NICHT dazu (bestätigt: der tägliche E2E-Lauf
 verband sich per SDK, das Projekt wurde trotzdem pausiert). Kein Datenverlust, nur ein
 "Restore project"-Klick in der Console nötig - aber pausierte Free-Projekte werden nach
-90 Tagen ganz gelöscht, also nicht endlos ignorieren. Kein zuverlässiger automatischer
-Workaround bekannt (Community-Keepalive-Skripte gibt es, aber laut Appwrite zählt nur
-Console-Aktivität). Siehe CLAUDE_CHECKLIST.md Abschnitt 3 für die Handlungsoptionen.
+90 Tagen ganz gelöscht, also nicht endlos ignorieren. **Versuch eines Workarounds (15.09.2026,
+`tools/appwrite-keepalive/`):** API-Key-basierter Heartbeat alle 5 Tage - ANDERER Mechanismus
+als der session-basierte App-/E2E-Zugriff, der nachweislich nicht zählt, aber OB das wirklich
+hilft ist nicht offiziell bestätigt (siehe README dort). **Setup noch nicht abgeschlossen** -
+zwei Schritte gehen nur über den Nutzer-Account (API-Key erstellen, GitHub-Secret hinterlegen),
+siehe `tools/appwrite-keepalive/README.md`.
 
 ## Appwrite-Absicherung (Login + Berechtigungen)
 
@@ -347,6 +350,10 @@ mindestens ein echter E2E-Lauf verifiziert.
 **Noch offen, unabhängig von der App selbst:**
 - Zwei GitHub-Tokens vom 06./07.09.2026 – Nutzer hat Rotation "Ende der Woche" angekündigt,
   bei Gelegenheit nachfragen, ob erledigt.
+- Appwrite-Keepalive-Setup (15.09.2026) noch nicht abgeschlossen - Nutzer muss selbst einen
+  API-Key erstellen, als GitHub-Secret hinterlegen und die `schedule:`-Zeile in
+  `appwrite-keepalive.yml` ergänzen (siehe `tools/appwrite-keepalive/README.md`). Bei
+  Gelegenheit nachfragen, ob erledigt bzw. ob der Heartbeat tatsächlich hilft.
 
 *(Neue Punkte einfach hier anhängen, wenn sie im nächsten Thread aufkommen.)*
 
