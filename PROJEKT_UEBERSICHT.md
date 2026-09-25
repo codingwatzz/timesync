@@ -228,9 +228,9 @@ verband sich per SDK, das Projekt wurde trotzdem pausiert). Kein Datenverlust, n
 90 Tagen ganz gelöscht, also nicht endlos ignorieren. **Versuch eines Workarounds (15.09.2026,
 `tools/appwrite-keepalive/`):** API-Key-basierter Heartbeat alle 5 Tage - ANDERER Mechanismus
 als der session-basierte App-/E2E-Zugriff, der nachweislich nicht zählt, aber OB das wirklich
-hilft ist nicht offiziell bestätigt (siehe README dort). **Setup noch nicht abgeschlossen** -
-zwei Schritte gehen nur über den Nutzer-Account (API-Key erstellen, GitHub-Secret hinterlegen),
-siehe `tools/appwrite-keepalive/README.md`.
+hilft ist nicht offiziell bestätigt (siehe README dort). **Setup abgeschlossen (16.09.2026)**
+- Zeitplan aktiv (alle 5 Tage), manueller Testlauf erfolgreich. Ob es wirklich hilft, zeigt
+sich erst nach einigen Wochen Abwarten.
 
 ## Appwrite-Absicherung (Login + Berechtigungen)
 
