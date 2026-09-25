@@ -350,10 +350,11 @@ mindestens ein echter E2E-Lauf verifiziert.
 **Noch offen, unabhängig von der App selbst:**
 - Zwei GitHub-Tokens vom 06./07.09.2026 – Nutzer hat Rotation "Ende der Woche" angekündigt,
   bei Gelegenheit nachfragen, ob erledigt.
-- Appwrite-Keepalive-Setup (15.09.2026) noch nicht abgeschlossen - Nutzer muss selbst einen
-  API-Key erstellen, als GitHub-Secret hinterlegen und die `schedule:`-Zeile in
-  `appwrite-keepalive.yml` ergänzen (siehe `tools/appwrite-keepalive/README.md`). Bei
-  Gelegenheit nachfragen, ob erledigt bzw. ob der Heartbeat tatsächlich hilft.
+- Appwrite-Keepalive-Setup abgeschlossen (16.09.2026) - API-Key erstellt, GitHub-Secret
+  hinterlegt, `schedule:`-Zeile vom Nutzer selbst ergänzt (`0 8 */5 * *`), manueller Testlauf
+  erfolgreich ("Success", ausgelöst vom Nutzer-Account, nicht von Claude). Ob es tatsächlich
+  die Free-Tier-Pause verhindert, zeigt sich erst nach einigen Wochen echten Abwartens - bei
+  Gelegenheit nachfragen, ob das Projekt seitdem pausiert wurde oder nicht.
 
 *(Neue Punkte einfach hier anhängen, wenn sie im nächsten Thread aufkommen.)*
 
