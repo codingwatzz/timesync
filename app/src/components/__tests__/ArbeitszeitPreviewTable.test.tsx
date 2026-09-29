@@ -46,4 +46,30 @@ describe('ArbeitszeitPreviewTable', () => {
     const prozentTreffer = screen.getAllByText(/\(.*%\)/);
     expect(prozentTreffer.length).toBeGreaterThanOrEqual(2); // mind. 1x Wochensumme + 1x GESAMT
   });
+
+  it('EXTRA-Zelle trägt NIE gleichzeitig text-text UND text-success/text-danger (Regressionstest' +
+     ' für den 29.09.2026 gemeldeten Bug "keine Farben zu sehen" - beide Klassen gleichzeitig' +
+     ' führten dazu, dass die im generierten CSS zuletzt stehende Regel (text-text) IMMER' +
+     ' gewann, unabhängig vom tatsächlichen Vorzeichen)', () => {
+    // Eine Woche mit klar positivem UND eine mit klar negativem Extra, damit beide Fälle
+    // (nicht nur der neutrale) durchlaufen werden.
+    const entries: Record<string, TagesEintrag> = {
+      '2026-08-17': eintrag({ typ: 'A', start: '08:00', ende: '20:00', pause: '' }), // deutlich +Extra
+      '2026-08-18': eintrag({ typ: 'A', start: '08:00', ende: '09:00', pause: '' }), // deutlich -Extra
+    };
+    const b = berechneArbeitszeit(2026, 8, entries);
+    const tag17 = b.zeilen.find((z) => z.art === 'tag' && z.datum.getDate() === 17);
+    const tag18 = b.zeilen.find((z) => z.art === 'tag' && z.datum.getDate() === 18);
+    expect(tag17?.art === 'tag' && tag17.extra > 0).toBe(true);
+    expect(tag18?.art === 'tag' && tag18.extra < 0).toBe(true);
+
+    const { container } = render(<ArbeitszeitPreviewTable berechnung={b} />);
+    const zellen = Array.from(container.querySelectorAll('td'));
+    const positivZelle = zellen.find((td) => td.className.includes('text-success'));
+    const negativZelle = zellen.find((td) => td.className.includes('text-danger'));
+    expect(positivZelle).toBeDefined();
+    expect(negativZelle).toBeDefined();
+    expect(positivZelle!.className).not.toMatch(/\btext-text\b/);
+    expect(negativZelle!.className).not.toMatch(/\btext-text\b/);
+  });
 });
