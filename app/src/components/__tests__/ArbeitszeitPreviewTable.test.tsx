@@ -33,4 +33,17 @@ describe('ArbeitszeitPreviewTable', () => {
     render(<ArbeitszeitPreviewTable berechnung={b} />);
     expect(screen.getByText(/\(HO\)/)).toBeInTheDocument();
   });
+
+  it('zeigt in der Wochensumme-Zeile Extra UND die %-Abweichung (nicht nur bei GESAMT)', () => {
+    const entries: Record<string, TagesEintrag> = {
+      '2026-08-17': eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' }),
+      '2026-08-24': eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' }),
+    };
+    const b = berechneArbeitszeit(2026, 8, entries);
+    render(<ArbeitszeitPreviewTable berechnung={b} />);
+    expect(screen.getAllByText('Wochensumme').length).toBeGreaterThanOrEqual(1);
+    // %-Zeichen kommt jetzt auch in mind. einer Wochensumme-Zeile vor, nicht nur bei GESAMT
+    const prozentTreffer = screen.getAllByText(/\(.*%\)/);
+    expect(prozentTreffer.length).toBeGreaterThanOrEqual(2); // mind. 1x Wochensumme + 1x GESAMT
+  });
 });

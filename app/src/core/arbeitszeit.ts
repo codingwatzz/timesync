@@ -20,7 +20,7 @@ export type ArbeitszeitZeile =
       start2: string; ende2: string; pause2: string;
       ist: number; soll: number; extra: number;
     }
-  | { art: 'wochensumme'; ist: number; soll: number; extra: number }
+  | { art: 'wochensumme'; ist: number; soll: number; extra: number; prozent: number }
   | { art: 'leerzeile' };
 
 export interface ArbeitszeitBerechnung {
@@ -79,7 +79,9 @@ export function berechneArbeitszeit(
     if (aktuelleWoche !== null && woche !== aktuelleWoche) {
       const wocheHatteInhalt = wochenAkkumulator.ist !== 0 || wochenAkkumulator.soll !== 0;
       if (wocheHatteInhalt) {
-        zeilen.push({ art: 'wochensumme', ...wochenAkkumulator, extra: wochenAkkumulator.ist - wochenAkkumulator.soll });
+        const wochenExtra = wochenAkkumulator.ist - wochenAkkumulator.soll;
+        const wochenProzent = wochenAkkumulator.soll > 0 ? (wochenExtra / wochenAkkumulator.soll) * 100 : 0;
+        zeilen.push({ art: 'wochensumme', ...wochenAkkumulator, extra: wochenExtra, prozent: wochenProzent });
         zeilen.push({ art: 'leerzeile' });
       }
       wochenAkkumulator = { ist: 0, soll: 0 };
@@ -110,7 +112,9 @@ export function berechneArbeitszeit(
   }
 
   if (wochenAkkumulator.ist !== 0 || wochenAkkumulator.soll !== 0) {
-    zeilen.push({ art: 'wochensumme', ...wochenAkkumulator, extra: wochenAkkumulator.ist - wochenAkkumulator.soll });
+    const letzteWochenExtra = wochenAkkumulator.ist - wochenAkkumulator.soll;
+    const letzteWochenProzent = wochenAkkumulator.soll > 0 ? (letzteWochenExtra / wochenAkkumulator.soll) * 100 : 0;
+    zeilen.push({ art: 'wochensumme', ...wochenAkkumulator, extra: letzteWochenExtra, prozent: letzteWochenProzent });
   }
 
   const gesamtExtra = gesamtIst - gesamtSoll;

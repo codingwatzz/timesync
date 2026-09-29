@@ -56,6 +56,26 @@ describe('berechneArbeitszeit', () => {
     expect(wochensummen.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('berechnet die %-Abweichung pro Wochensumme-Zeile korrekt (analog zu gesamtProzent)', () => {
+    // KW34 2026: nur Montag 17.08. mit Inhalt, IST=504min, SOLL=384min -> Extra=120min
+    const entries: Record<string, TagesEintrag> = {
+      '2026-08-17': eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' }),
+      '2026-08-24': eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' }), // KW35, beendet KW34
+    };
+    const b = berechneArbeitszeit(2026, 8, entries);
+    const idxTag17 = b.zeilen.findIndex((z) => z.art === 'tag' && z.datum.getDate() === 17);
+    const kw34 = b.zeilen.slice(idxTag17).find((z) => z.art === 'wochensumme');
+    expect(kw34).toBeDefined();
+    if (kw34?.art === 'wochensumme') {
+      // KW34 (17.-23.08.) hat nur einen dokumentierten Arbeitstag (Montag, IST=504) - die
+      // übrigen 4 Werktage (Di-Fr) werden automatisch mit IST=0/SOLL=384 aufgefüllt (siehe
+      // core/entry.ts::emptyEntry), zählen also mit negativem Extra in die Wochensumme mit.
+      const erwarteterExtra = 504 - 5 * SOLL_MINUTEN_PRO_ARBEITSTAG;
+      expect(kw34.extra).toBe(erwarteterExtra);
+      expect(kw34.prozent).toBeCloseTo((erwarteterExtra / (5 * SOLL_MINUTEN_PRO_ARBEITSTAG)) * 100, 5);
+    }
+  });
+
   it('summiert Gesamt-IST/SOLL über den ganzen Monat korrekt (unbelegte Werktage zählen automatisch als Arbeitstag mit IST=0, siehe core/entry.ts::emptyEntry)', () => {
     const entries: Record<string, TagesEintrag> = {
       '2026-08-03': eintrag({ typ: 'A', start: '08:00', ende: '16:24', pause: '' }), // Montag, +0

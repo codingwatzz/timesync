@@ -22,7 +22,9 @@ export function ArbeitszeitPreviewTable({ berechnung: b }: { berechnung: Arbeits
                   <td colSpan={2} className={`${td} font-sans font-bold`}>Wochensumme</td>
                   <td className={`${td} font-bold`}>{fmtHHMM(z.ist)}</td>
                   <td className={`${td} font-bold`}>{fmtHHMM(z.soll)}</td>
-                  <td className={`${td} font-bold ${z.extra > 0 ? 'text-success' : z.extra < 0 ? 'text-danger' : ''}`}>{fmtHHMMSigned(z.extra)}</td>
+                  <td className={`${td} font-bold ${z.extra > 0 ? 'text-success' : z.extra < 0 ? 'text-danger' : ''}`}>
+                    {fmtHHMMSigned(z.extra)} ({z.prozent >= 0 ? '+' : ''}{z.prozent.toFixed(1)}%)
+                  </td>
                 </tr>
               );
             }
