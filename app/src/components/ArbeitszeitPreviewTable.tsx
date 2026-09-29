@@ -51,7 +51,7 @@ export function ArbeitszeitPreviewTable({ berechnung: b }: { berechnung: Arbeits
                 <td className={`${td} font-sans`}>{TYP_LABEL[z.typ]}{z.typ === 'A' && z.ho ? ' (HO)' : ''}</td>
                 <td className={td}>{fmtHHMM(z.ist)}</td>
                 <td className={td}>{fmtHHMM(z.soll)}</td>
-                <td className={`${tdOhneFarbe} ${extraFarbe(z.extra)}`}>{fmtHHMMSigned(z.extra)}</td>
+                <td className={td}>{fmtHHMMSigned(z.extra)}</td>
               </tr>
             );
           })}
