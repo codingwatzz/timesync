@@ -1,13 +1,7 @@
 {
   "onlineLoaded": true,
   "serviceWorkerActive": true,
-  "loggedIn": true,
-  "offlineReloadCompleted": true,
-  "titleAfterOffline": "Zeiterfassung",
-  "hasVisibleContent": true,
-  "appRootRendered": true,
-  "headerVisible": true,
-  "pageErrors": [],
-  "timestamp": "2026-10-02T11:55:59.115Z",
-  "pass": true
+  "loggedIn": false,
+  "pass": false,
+  "error": "Login (online) fehlgeschlagen - Voraussetzung für den Offline-Test nicht erfüllt."
 }
