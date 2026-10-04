@@ -31,4 +31,25 @@ describe('LoginView', () => {
     const { container } = render(<LoginView onLogin={vi.fn()} error={null} />);
     expect(container.querySelector('#loginError')).not.toBeInTheDocument();
   });
+
+  it('zeigt bei pausiertem Projekt die Console-Hilfe mit Direktlink', () => {
+    const { container } = render(
+      <LoginView
+        onLogin={vi.fn()}
+        error="Project is paused due to inactivity. Please restore it from the console to resume operations."
+        consoleUrl="https://cloud.appwrite.io/console/project-fra-abc"
+      />,
+    );
+    const link = container.querySelector('#openConsoleLink') as HTMLAnchorElement;
+    expect(link).toBeInTheDocument();
+    expect(link.href).toBe('https://cloud.appwrite.io/console/project-fra-abc');
+    expect(link.target).toBe('_blank');
+  });
+
+  it('zeigt die Console-Hilfe NICHT bei anderen Fehlern', () => {
+    const { container } = render(
+      <LoginView onLogin={vi.fn()} error="Invalid credentials" consoleUrl="https://x.invalid" />,
+    );
+    expect(container.querySelector('#pausedHelp')).not.toBeInTheDocument();
+  });
 });

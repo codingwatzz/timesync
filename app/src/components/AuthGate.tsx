@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { LoginView } from './LoginView';
 import { StoreProvider } from '../hooks/StoreContext';
 import type { AppwriteConfig } from '../store/appwriteStore';
+import { appwriteConsoleUrl } from '../store/appwriteAuth';
 
 interface AuthGateProps {
   account: Account;
@@ -36,7 +37,7 @@ export function AuthGate({ account, storeConfig, children }: AuthGateProps) {
   }
 
   if (status === 'loggedOut') {
-    return <LoginView onLogin={login} error={error} />;
+    return <LoginView onLogin={login} error={error} consoleUrl={appwriteConsoleUrl(storeConfig.endpoint, storeConfig.projectId)} />;
   }
 
   // 'loggedIn' ODER 'offlineUnknown' (echter Netzwerkfehler bei der Session-Prüfung, z.B.

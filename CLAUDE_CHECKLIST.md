@@ -233,6 +233,11 @@ Aufgabe konkret abhaken (nicht nur im Kopf behalten):
   manuell in der Console einloggen, oder auf einen bezahlten Plan wechseln (dort keine
   Pausierung). Wichtig: pausierte Free-Projekte werden nach 90 Tagen komplett GELÖSCHT, also
   nicht endlos ignorieren.
+  Seit 04.10.2026 zeigt der Login-Bildschirm bei dieser Meldung eine Hilfe-Box mit
+  Direktlink zur Console (`appwriteConsoleUrl()` in `store/appwriteAuth.ts`; URL-Format nur
+  aus einem Forenbeitrag abgeleitet, nicht aus offizieller Doku). Der API-Key-Heartbeat
+  (`tools/appwrite-keepalive/`) hat nachweislich NICHT geholfen (lief 01.10. erfolgreich,
+  Projekt am 03.10. trotzdem pausiert).
 
 ## 4. Parallele Sitzungen
 

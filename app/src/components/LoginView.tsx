@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { istProjektPausiert } from '../store/appwriteAuth';
 
 interface LoginViewProps {
   onLogin: (email: string, password: string) => Promise<void>;
   error: string | null;
+  /** Direktlink zur Appwrite-Console, für die Hilfe bei pausiertem Projekt (optional). */
+  consoleUrl?: string;
 }
 
 const labelCls = 'mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-text-muted';
@@ -18,7 +21,7 @@ const inputCls =
  * fehlschlägt (siehe createStore.ts). Bewusst schlicht gehalten - Login passiert normalerweise
  * nur einmal pro Gerät, da Appwrite-Sessions lange halten.
  */
-export function LoginView({ onLogin, error }: LoginViewProps) {
+export function LoginView({ onLogin, error, consoleUrl }: LoginViewProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -44,6 +47,26 @@ export function LoginView({ onLogin, error }: LoginViewProps) {
           <div id="loginError" className="mb-3.5 flex items-center gap-1.5 rounded-lg border border-danger/40 bg-danger-soft px-3 py-2.5 text-xs font-semibold text-danger">
             <AlertTriangle size={15} className="flex-shrink-0" strokeWidth={2.25} />
             {error}
+          </div>
+        )}
+
+        {istProjektPausiert(error) && consoleUrl && (
+          <div id="pausedHelp" className="mb-3.5 rounded-lg border border-border bg-surface px-3 py-3 text-xs text-text-muted">
+            <div className="mb-1.5 font-semibold text-text">Appwrite-Projekt reaktivieren (Free-Tier-Pause, keine Daten verloren)</div>
+            <ol className="mb-2.5 ml-4 list-decimal space-y-0.5">
+              <li>Console öffnen und bei Appwrite anmelden</li>
+              <li>Oben auf „Restore“ / „Resume project“ klicken</li>
+              <li>1–2 Minuten warten, dann hier erneut anmelden</li>
+            </ol>
+            <a
+              id="openConsoleLink"
+              href={consoleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-secondary px-3 py-2.5 text-sm font-bold text-text-on-accent hover:bg-secondary-strong"
+            >
+              <ExternalLink size={15} strokeWidth={2.25} /> Appwrite-Console öffnen
+            </a>
           </div>
         )}
 
