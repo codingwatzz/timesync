@@ -10,24 +10,24 @@
   "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-10-09T12:37:56.247Z",
+    "beschreibung": "E2E-Test 2026-10-10T12:00:56.704Z",
     "km": "120"
   },
   "directReadRightAfterSave": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-10-09T12:37:56.247Z",
+    "beschreibung": "E2E-Test 2026-10-10T12:00:56.704Z",
     "km": "120"
   },
-  "monthLabelBeforeReload": "Dezember 2038\n31 Tage",
-  "monthLabelAfterReload": "Dezember 2038\n31 Tage",
+  "monthLabelBeforeReload": "Dezember 2037\n31 Tage",
+  "monthLabelAfterReload": "Dezember 2037\n31 Tage",
   "sameMonthAfterReload": true,
   "directReadAfterReload": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-10-09T12:37:56.247Z",
+    "beschreibung": "E2E-Test 2026-10-10T12:00:56.704Z",
     "km": "120"
   },
   "persistedValues": {
-    "beschreibung": "E2E-Test 2026-10-09T12:37:56.247Z",
+    "beschreibung": "E2E-Test 2026-10-10T12:00:56.704Z",
     "start": "08:00",
     "ende": "17:00",
     "pause": "30",
@@ -54,14 +54,14 @@
   "restoreTransportActual": "25,50",
   "restoreReceiptPresent": true,
   "restoreReceiptOpenedWithoutError": true,
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1791549415115\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[12:36:58] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[12:36:59] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[12:36:59] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1791549415115\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[12:38:11] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[12:38:12] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[12:38:12] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1791633601761\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[12:00:05] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[12:00:05] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[12:00:05] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1791633601761\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[12:01:11] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[12:01:12] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[12:01:12] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [
     "Failed to load resource: the server responded with a status of 401 ()",
     "Failed to load resource: the server responded with a status of 401 ()"
   ],
   "pageErrors": [],
-  "timestamp": "2026-10-09T12:39:55.752Z",
+  "timestamp": "2026-10-10T12:02:47.841Z",
   "reiseartWarningVisibleAfterOk": true,
   "pass": true,
   "failedChecks": []
