@@ -173,7 +173,13 @@ export async function createAppwriteStore(
         // Blob mit einem klar falschen Typ (z.B. "application/json", wie es bei der oben
         // beschriebenen Datei-Korruption der Fall war) wird NICHT hochgeladen, sondern wirft
         // hier, statt eine echte Datei stillschweigend mit Datenmüll zu überschreiben.
-        if (blob.type && blob.type !== 'application/pdf' && blob.size > 0) {
+        // NUR den Medientyp vergleichen, nicht den ganzen String: jsPDFs
+        // output('datauristring') liefert "data:application/pdf;filename=generated.pdf;base64,…",
+        // blob.type enthält dann den Parameter-Anhang ("application/pdf;filename=generated.pdf").
+        // Der strikte Vergleich davor hat dadurch JEDEN Foto->PDF-Upload abgelehnt (gemeldet
+        // 05.10.2026; der E2E-Test deckt nur den direkten PDF-Upload ab, nicht den Foto-Pfad).
+        const medientyp = blob.type.split(';')[0].trim().toLowerCase();
+        if (medientyp && medientyp !== 'application/pdf' && blob.size > 0) {
           throw new Error(`Beleg-Inhalt hat unerwarteten Typ "${blob.type}" statt "application/pdf" - Upload abgebrochen, um die bestehende Datei nicht zu überschreiben.`);
         }
         const file = new File([blob], `${obj.name ?? 'beleg'}.pdf`, { type: 'application/pdf' });

@@ -135,6 +135,16 @@ describe('createAppwriteStore', () => {
     vi.unstubAllGlobals();
   });
 
+  it('set() für einen Beleg: akzeptiert application/pdf MIT Parameter-Anhang (jsPDF-Data-URL, Foto->PDF)', async () => {
+    const store = await createAppwriteStore(CONFIG, () => {});
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf;filename=generated.pdf' }),
+    })));
+    await store.set('receipt:r1', JSON.stringify({ id: 'r1', name: 'beleg', dataUrl: 'data:application/pdf;filename=generated.pdf;base64,JVBERi0xLjQ=' }));
+    expect(createFile).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
   it('delete(): behandelt eine bereits nicht (mehr) vorhandene Zeile als Erfolg', async () => {
     const store = await createAppwriteStore(CONFIG, () => {});
     deleteRow.mockRejectedValueOnce(notFoundError());
