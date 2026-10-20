@@ -7,15 +7,15 @@
   "travelSectionVisible": true,
   "reiseartWarningVisibleBefore": true,
   "reiseartWarningVisibleAfter": false,
-  "receiptUploaded": false,
+  "receiptUploaded": true,
   "fieldsSurvivedReceiptUpload": true,
   "immediateAfterSave": {
-    "beschreibung": "E2E-Test 2026-10-19T12:16:19.785Z",
+    "beschreibung": "E2E-Test 2026-10-20T11:02:40.943Z",
     "km": "120"
   },
   "directReadRightAfterSave": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-10-19T12:16:19.785Z",
+    "beschreibung": "E2E-Test 2026-10-20T11:02:40.943Z",
     "km": "120"
   },
   "monthLabelBeforeReload": "Dezember 2040\n31 Tage",
@@ -23,11 +23,11 @@
   "sameMonthAfterReload": true,
   "directReadAfterReload": {
     "found": true,
-    "beschreibung": "E2E-Test 2026-10-19T12:16:19.785Z",
+    "beschreibung": "E2E-Test 2026-10-20T11:02:40.943Z",
     "km": "120"
   },
   "persistedValues": {
-    "beschreibung": "E2E-Test 2026-10-19T12:16:19.785Z",
+    "beschreibung": "E2E-Test 2026-10-20T11:02:40.943Z",
     "start": "08:00",
     "ende": "17:00",
     "pause": "30",
@@ -40,8 +40,8 @@
     "reiseart": "Abwesenheitstag (>8h)"
   },
   "allFieldsPersisted": true,
-  "receiptPersisted": false,
-  "receiptOpenedWithoutError": false,
+  "receiptPersisted": true,
+  "receiptOpenedWithoutError": true,
   "receiptDeleted": true,
   "exportShowsEntry": true,
   "exportDownloadTriggered": true,
@@ -54,19 +54,15 @@
   "restoreTransportActual": "25,50",
   "restoreReceiptPresent": true,
   "restoreReceiptOpenedWithoutError": true,
-  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1792412109066\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[12:15:12] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[12:15:13] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[12:15:13] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
-  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1792412109066\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[12:16:35] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[12:16:35] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[12:16:35] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelStart": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1792494088397\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[11:01:32] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[11:01:32] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[11:01:32] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
+  "debugPanelEnd": "Speicher-Modus: Appwrite Cloud-Sync (aktiv)\nURL: https://codingwatzz.github.io/timesync/?cachebust=1792494088397\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/130.0.6723.31 Safari/537.36\n\n[11:02:57] Verbinde mit https://fra.cloud.appwrite.io/v1 (Projekt 6a92d8e0002e9b585e39)…\n[11:02:57] Verbindungstest OK: Datenbank/Tabelle erreichbar (404 = Testzeile existiert nicht, das ist normal).\n[11:02:57] Speicher-Modus: Appwrite Cloud-Sync (aktiv)",
   "consoleErrors": [
     "Failed to load resource: the server responded with a status of 401 ()",
     "Failed to load resource: the server responded with a status of 401 ()"
   ],
   "pageErrors": [],
-  "timestamp": "2026-10-19T12:18:28.707Z",
+  "timestamp": "2026-10-20T11:04:53.884Z",
   "reiseartWarningVisibleAfterOk": true,
-  "pass": false,
-  "failedChecks": [
-    "receiptUploaded",
-    "receiptPersisted",
-    "receiptOpenedWithoutError"
-  ]
+  "pass": true,
+  "failedChecks": []
 }
