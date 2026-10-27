@@ -2,5 +2,5 @@
   "pass": false,
   "crashed": true,
   "error": "Error: Login fehlgeschlagen - siehe Log für Details.\n    at attemptRun (/home/runner/work/timesync/timesync/test/e2e/runner.js:75:13)\n    at async main (/home/runner/work/timesync/timesync/test/e2e.js:27:5)",
-  "timestamp": "2026-10-26T12:18:47.208Z"
+  "timestamp": "2026-10-27T11:39:15.291Z"
 }
